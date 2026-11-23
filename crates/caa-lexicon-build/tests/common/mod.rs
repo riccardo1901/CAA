@@ -36,6 +36,14 @@ maestro\tmaestro\tNOUN-M:s
 tre\ttre\tDET-NUM-CARD
 volte\tvolta\tNOUN-F:p
 ciao\tciao\tINT
+labbro\tlabbro\tNOUN-M:s
+labbra\tlabbro\tNOUN-F:p
+pasto\tpasto\tNOUN-M:s
+pasta\tpasta\tNOUN-F:s
+pastello\tpastello\tNOUN-M:s
+pastelli\tpastello\tNOUN-M:p
+uomo\tuomo\tNOUN-M:s
+uomini\tuomo\tNOUN-M:p
 città\tcittà\tNOUN-F:s
 più\tpiù\tADV
 così\tcosì\tADV
@@ -64,7 +72,11 @@ pub const ARASAAC: &str = r#"[
  {"_id":119,"keywords":[{"type":4,"keyword":"giallo"},{"type":2,"keyword":"giallo"}]},
  {"_id":120,"keywords":[{"type":6,"keyword":"la"}]},
  {"_id":121,"keywords":[{"type":6,"keyword":"in"}]},
- {"_id":122,"keywords":[{"type":6,"keyword":"ci"}]}
+ {"_id":122,"keywords":[{"type":6,"keyword":"ci"}]},
+ {"_id":123,"keywords":[{"type":2,"keyword":"labbra"}]},
+ {"_id":124,"keywords":[{"type":2,"keyword":"pasta"}]},
+ {"_id":125,"keywords":[{"type":2,"keyword":"pastelli"}]},
+ {"_id":126,"keywords":[{"type":2,"keyword":"uomini"}]}
 ]"#;
 
 pub fn engine(lemma_picto: &str, blocklist: &str) -> Engine<Vec<u8>> {

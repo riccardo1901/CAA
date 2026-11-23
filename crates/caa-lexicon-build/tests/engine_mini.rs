@@ -229,6 +229,32 @@ fn forma_esatta_e_pittogramma_del_singolare() {
 }
 
 #[test]
+fn il_plurale_si_usa_solo_se_e_il_plurale_dello_stesso_lemma() {
+    // Singolare senza pittogramma, plurale in ARASAAC: si usa il plurale…
+    let w = &run("pastello")[0];
+    assert_eq!(
+        (w.picto.map(|p| p.id), w.reason.picto),
+        (Some(125), PictoReason::PluralForm)
+    );
+    // …anche per i plurali irregolari (labbro → labbra, uomo → uomini)…
+    let w = &run("labbro")[0];
+    assert_eq!(
+        (w.picto.map(|p| p.id), w.reason.picto),
+        (Some(123), PictoReason::PluralForm)
+    );
+    let w = &run("uomo")[0];
+    assert_eq!(
+        (w.picto.map(|p| p.id), w.reason.picto),
+        (Some(126), PictoReason::PluralForm)
+    );
+    // …ma "pasto" non diventa "pasta": "pasta" è il singolare di un'altra parola.
+    let w = &run("pasto")[0];
+    assert_eq!((w.picto, w.reason.picto), (None, PictoReason::NoSymbol));
+    // Una parola che ha già il suo pittogramma non passa dal plurale.
+    assert_eq!(run("pasta")[0].reason.picto, PictoReason::ExactForm);
+}
+
+#[test]
 fn a_parita_vince_la_prima_chiave_poi_il_pittogramma_piu_specifico() {
     // "pane" ha due pittogrammi: uno con una sola parola chiave, uno con tre (più generico).
     assert_eq!(run("pane")[0].picto.map(|p| p.id), Some(104));

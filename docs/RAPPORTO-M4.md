@@ -42,7 +42,7 @@ Altre cifre della misura: 481 parole su 516 hanno il pittogramma della forma esa
 
 ## Scelte e estensioni rispetto alla specifica
 
-1. **Plurale se manca il singolare** (nuovo): ARASAAC ha "pastelli" e "sassi" ma non "pastello" e "sasso"; la specifica copre solo plurale → singolare.
+1. **Plurale se manca il singolare** (nuovo): ARASAAC ha "pastelli" e "sassi" ma non "pastello" e "sasso"; la specifica copre solo plurale → singolare. Vale per nomi e aggettivi. I plurali regolari si deducono dal suffisso (e si scartano se Morph-it! li conosce come altra parola); i plurali irregolari (*labbro* → *labbra*, *braccio* → *braccia*, *uomo* → *uomini*, *dio* → *dei*…) si accettano solo se Morph-it! li conferma come plurale dello stesso lemma, così *pasto* non diventa *pasta*. Misura su tutti i nomi singolari di Morph-it! assenti in ARASAAC con il plurale presente: **126 su 126 risolti** (la prima versione ne risolveva 122: mancavano gli irregolari). Non è una regola completa: copre i plurali che le regole e la tabella degli irregolari conoscono e non si applica a verbi né avverbi.
 2. **Refusi:** la specifica chiede "una sola forma vicina *frequente*", ma non abbiamo frequenze: si usa "una sola forma a distanza 1 e parola di almeno 5 lettere".
 3. **`readings` e `corrected` nel `Token`** (nuovi): tutte le letture, che la fase 7 dovrà scegliere, e la forma corretta di un possibile refuso.
 4. **`caa-eval` minimo anticipato a M4** (la specifica lo prevede in M7): serve alla regola "prima e dopo" di `CLAUDE.md`. Comandi: `dorati`, `copertura`, `velocita`, `mostra`.

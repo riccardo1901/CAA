@@ -333,13 +333,17 @@ fn elision_reading(key: &str) -> Option<Analysis> {
     ))
 }
 
-/// Possibili plurali di un singolare, nell'ordine in cui conviene provarli.
-fn plural_candidates(key: &str, gender: Option<Gender>) -> Vec<String> {
-    let mut out: Vec<String> = Vec::new();
-    let mut add = |from: &str, to: &str| {
+/// Possibili plurali di un singolare, nell'ordine in cui conviene provarli. Il booleano dice se il
+/// candidato è "stretto": un plurale irregolare (labbro → labbra) si accetta solo se Morph-it! lo
+/// conferma come plurale dello stesso lemma, perché una regola sul suffisso da sola farebbe
+/// diventare "pasto" il plurale... "pasta".
+fn plural_candidates(key: &str, gender: Option<Gender>) -> Vec<(String, bool)> {
+    let mut out: Vec<(String, bool)> = Vec::new();
+    let mut add = |from: &str, to: &str, strict: bool| {
         if let Some(stem) = key.strip_suffix(from) {
-            if !stem.is_empty() {
-                out.push(format!("{stem}{to}"));
+            // Un resto vuoto vale solo quando la regola copre la parola intera ("dio" → "dei").
+            if !stem.is_empty() || from.len() >= 3 {
+                out.push((format!("{stem}{to}"), strict));
             }
         }
     };
@@ -353,16 +357,28 @@ fn plural_candidates(key: &str, gender: Option<Gender>) -> Vec<String> {
         ("ga", "ghe"),
         ("io", "i"),
     ] {
-        add(from, to);
+        add(from, to, false);
     }
     if gender == Some(Gender::F) {
-        add("a", "e");
-        add("o", "i");
+        add("a", "e", false);
+        add("o", "i", false);
     } else {
-        add("o", "i");
-        add("a", "e");
+        add("o", "i", false);
+        add("a", "e", false);
     }
-    add("e", "i");
+    add("e", "i", false);
+    // Irregolari: -o → -a (dito/dita, labbro/labbra, uovo/uova, osso/ossa), -io → -a (braccio/braccia),
+    // -a → -i (ala/ali, arma/armi) e pochi altri.
+    for (from, to) in [
+        ("io", "a"),
+        ("o", "a"),
+        ("a", "i"),
+        ("omo", "omini"),
+        ("dio", "dei"),
+        ("bue", "buoi"),
+    ] {
+        add(from, to, true);
+    }
     out
 }
 
@@ -737,6 +753,18 @@ impl<D: AsRef<[u8]>> Engine<D> {
         })
     }
 
+    /// Il candidato è un plurale del lemma? Se Morph-it! lo conosce deve essere il plurale dello
+    /// stesso lemma; se non lo conosce vale solo per i candidati non "stretti".
+    fn plural_of(&self, candidate: &str, lemma_key: &str, strict: bool) -> bool {
+        let readings = self.morph.lookup(candidate);
+        if readings.is_empty() {
+            return !strict;
+        }
+        readings.iter().any(|r| {
+            r.feats.number == Some(Number::P) && self.morph.lemma(r.lemma_id) == Some(lemma_key)
+        })
+    }
+
     /// Catena di priorità dei livelli 5–8 (i livelli 1–4 arrivano con M6 e M8).
     fn choose_picto(&self, key: &str, a: &Analysis) -> Option<PictoChoice> {
         let lemma_key = normalize_key(&a.lemma);
@@ -759,8 +787,12 @@ impl<D: AsRef<[u8]>> Engine<D> {
             Vec::new()
         };
         // Solo per nomi e aggettivi al singolare (o senza numero).
-        let plurals = if !plural_reading && matches!(a.cat, Cat::Noun | Cat::Adj) {
+        let plurals: Vec<String> = if !plural_reading && matches!(a.cat, Cat::Noun | Cat::Adj) {
             plural_candidates(&lemma_key, a.feats.gender)
+                .into_iter()
+                .filter(|(cand, strict)| self.plural_of(cand, &lemma_key, *strict))
+                .map(|(cand, _)| cand)
+                .collect()
         } else {
             Vec::new()
         };
@@ -1025,15 +1057,26 @@ mod tests {
 
     #[test]
     fn plurali_candidati() {
-        assert_eq!(
-            plural_candidates("pastello", Some(Gender::M))[0],
-            "pastelli"
-        );
-        assert_eq!(plural_candidates("sasso", None)[0], "sassi");
-        assert_eq!(plural_candidates("mela", Some(Gender::F))[0], "mele");
-        let amico = plural_candidates("amico", None);
+        let names = |k: &str, g| -> Vec<String> {
+            plural_candidates(k, g)
+                .into_iter()
+                .map(|(c, _)| c)
+                .collect()
+        };
+        assert_eq!(names("pastello", Some(Gender::M))[0], "pastelli");
+        assert_eq!(names("sasso", None)[0], "sassi");
+        assert_eq!(names("mela", Some(Gender::F))[0], "mele");
+        let amico = names("amico", None);
         assert!(amico.contains(&"amici".to_string()) && amico.contains(&"amichi".to_string()));
-        assert!(plural_candidates("o", None).is_empty());
+        assert!(names("o", None).is_empty());
+        // Irregolari: tutti "stretti" (si accettano solo se Morph-it! li conferma).
+        let strict = |k: &str, c: &str| plural_candidates(k, None).contains(&(c.to_string(), true));
+        assert!(
+            strict("labbro", "labbra") && strict("braccio", "braccia") && strict("uomo", "uomini")
+        );
+        assert!(strict("dio", "dei") && strict("bue", "buoi") && strict("ala", "ali"));
+        // I regolari non lo sono.
+        assert!(plural_candidates("pasto", None).contains(&("pasti".to_string(), false)));
     }
 
     #[test]

@@ -373,7 +373,7 @@ Decisa la lettura, si sceglie il pittogramma con una catena di priorità. Si pre
     - la **forma esatta** ("occhiali", "forbici": i plurali fissi hanno spesso una parola chiave propria);
     - il **singolare dello stesso genere** ("maestre" → "maestra", non "maestro");
     - il **lemma**;
-    - il **plurale**, se il singolare non ha pittogramma (estensione di M4: ARASAAC ha "pastelli" e "sassi", non "pastello" e "sasso").
+    - il **plurale**, se il singolare non ha pittogramma (estensione di M4, per nomi e aggettivi: ARASAAC ha "pastelli" e "sassi", non "pastello" e "sasso"; i plurali irregolari come labbro → labbra si accettano solo se Morph-it! li conferma come plurale dello stesso lemma).
 
     A parità, vince il pittogramma la cui parola chiave ha la **stessa categoria** della lettura scelta, poi quello in cui la parola è la **prima parola chiave**, poi quello con **meno parole chiave** (più specifico).
 7. Stessa ricerca ignorando la categoria (penalità sulla confidenza)
