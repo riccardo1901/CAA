@@ -1,0 +1,9 @@
+[package]
+name = "caa-store"
+description = "Documenti, biblioteca, copie personali, sincronizzazione (scheletro di M0, logica in M9)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]

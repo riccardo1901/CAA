@@ -1,0 +1,27 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/caa-engine",
+    "crates/caa-lexicon-build",
+    "crates/caa-eval",
+    "crates/caa-store",
+    "src-tauri",
+]
+# `cargo test` e `cargo build` senza argomenti escludono l'app Tauri,
+# che richiede le librerie grafiche di sistema.
+default-members = [
+    "crates/caa-engine",
+    "crates/caa-lexicon-build",
+    "crates/caa-eval",
+    "crates/caa-store",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+publish = false
+
+[profile.release]
+lto = "thin"
+codegen-units = 1

@@ -1,0 +1,10 @@
+[package]
+name = "caa-engine"
+description = "Motore di simbolizzazione: testo italiano -> token annotati (libreria pura, nessun I/O)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+# Nessuna dipendenza: il motore resta pura logica, compilabile anche in WebAssembly.
+[dependencies]
