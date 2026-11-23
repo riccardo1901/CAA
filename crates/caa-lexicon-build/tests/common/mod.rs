@@ -55,6 +55,18 @@ dicendo\tdire\tVER:ger+pres
 prendi\tprendere\tVER:impr+pres+2+s
 giova\tgiovare\tVER:impr+pres+2+s
 giovane\tgiovane\tADJ:pos+m+s
+ho\tavere\tAUX:ind+pres+1+s
+mangiato\tmangiare\tVER:part+past+s+m
+era\tessere\tAUX:ind+impf+3+s
+sono\tessere\tAUX:ind+pres+1+s
+sto\tstare\tVER:ind+pres+1+s
+stava\tstare\tVER:ind+impf+3+s
+dormendo\tdormire\tVER:ger+pres
+mi\tmi\tPRO-PERS-CLI-1-M-S
+lavato\tlavare\tVER:part+past+s+m
+lavo\tlavare\tVER:ind+pres+1+s
+mangerò\tmangiare\tVER:ind+fut+1+s
+andato\tandare\tVER:part+past+s+m
 ";
 
 pub const ARASAAC: &str = r#"[
@@ -81,7 +93,11 @@ pub const ARASAAC: &str = r#"[
  {"_id":123,"keywords":[{"type":2,"keyword":"labbra"}]},
  {"_id":124,"keywords":[{"type":2,"keyword":"pasta"}]},
  {"_id":125,"keywords":[{"type":2,"keyword":"pastelli"}]},
- {"_id":126,"keywords":[{"type":2,"keyword":"uomini"}]}
+ {"_id":126,"keywords":[{"type":2,"keyword":"uomini"}]},
+ {"_id":127,"keywords":[{"type":3,"keyword":"lavarsi"}]},
+ {"_id":128,"keywords":[{"type":3,"keyword":"lavare"}]},
+ {"_id":129,"keywords":[{"type":3,"keyword":"dormire"}]},
+ {"_id":130,"keywords":[{"type":3,"keyword":"andare"}]}
 ]"#;
 
 pub fn engine(lemma_picto: &str, blocklist: &str) -> Engine<Vec<u8>> {

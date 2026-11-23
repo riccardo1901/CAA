@@ -25,6 +25,10 @@ pub struct Weights {
     pub non: f32,
     pub prep_inf: f32,
     pub modal_inf: f32,
+    /// Tempo composto o perifrasi completati. SPEC.md propone +1,0, ma già da 0,25 il treebank
+    /// perde parole (forza il verbo contro l'aggettivo); 0,1 è il valore più alto che non cambia
+    /// la misura e basta a scegliere il participio fra le letture dello stesso verbo.
+    pub group: f32,
     pub capital: f32,
     /// Lettura di nome proprio per una parola scritta in minuscolo (il prior non distingue le maiuscole).
     pub lower_propn: f32,
@@ -46,6 +50,7 @@ impl Default for Weights {
             non: 1.0,
             prep_inf: 0.5,
             modal_inf: 1.5,
+            group: 0.1,
             capital: 2.0,
             lower_propn: -3.0,
             temperature: 1.5,
@@ -88,6 +93,25 @@ fn is_finite(n: &Node) -> bool {
     is_verb(n.cat)
         && matches!(n.feats.mood, Some(Mood::Ind | Mood::Sub | Mood::Cond))
         && n.feats.person.is_some()
+}
+
+fn is_participle(n: &Node) -> bool {
+    is_verb(n.cat) && n.feats.mood == Some(Mood::Part)
+}
+
+/// avere/essere a un modo finito.
+fn is_auxiliary(n: &Node) -> bool {
+    is_verb(n.cat) && matches!(n.lemma.as_str(), "essere" | "avere") && is_finite(n)
+}
+
+/// `a` e `b` (anche a distanza, con la riga sopra) formano un tempo composto o una perifrasi.
+fn completes_group(a: &Node, b: &Node) -> bool {
+    (is_auxiliary(a) && is_participle(b))
+        || (is_verb(a.cat)
+            && a.lemma == "stare"
+            && is_finite(a)
+            && is_verb(b.cat)
+            && b.feats.mood == Some(Mood::Ger))
 }
 
 /// Persona e numero di un pronome personale soggetto.
@@ -149,11 +173,20 @@ pub fn local_score(z: Option<&Node>, a: Option<&Node>, b: Option<&Node>, w: &Wei
         if a.cat == Cat::Modal && is_infinitive(b) {
             s += w.modal_inf;
         }
+        // Gruppi verbali completati: ausiliare + participio, stare + gerundio, e il passivo con
+        // "stato" ("è stato chiamato"): il bonus va alla lettura che li completa.
+        if completes_group(a, b) {
+            s += w.group;
+        }
         if subject_agrees(a, b) {
             s += w.subject;
         }
         if let Some(z) = z {
             // Con un clitico in mezzo ("devo farlo") o una negazione ("lui non va").
+            // Con un avverbio ("era già uscito") o "stato" in mezzo ("è stato chiamato").
+            if (a.cat == Cat::Adv || is_participle(a)) && is_auxiliary(z) && completes_group(z, b) {
+                s += w.group;
+            }
             if z.cat == Cat::Modal && a.cat == Cat::Clitic && is_infinitive(b) {
                 s += w.modal_inf;
             }

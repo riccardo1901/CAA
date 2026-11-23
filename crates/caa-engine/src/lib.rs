@@ -8,6 +8,7 @@ pub mod clitics;
 pub mod curated;
 pub mod engine;
 pub mod golden;
+pub mod groups;
 pub mod lexicon;
 pub mod norm;
 pub mod tagger;

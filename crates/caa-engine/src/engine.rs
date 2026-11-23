@@ -8,6 +8,7 @@ use std::cmp::Reverse;
 use std::fmt;
 
 use crate::curated::Curated;
+use crate::groups::{reflexive_agrees, tense_mark, verbal_groups, Tense3, VerbalKind, View};
 use crate::lexicon::{picto_flags, MorphLexicon, PictoEntry, PictoIndex};
 use crate::norm::normalize_key;
 use crate::tagger::Tagger;
@@ -79,6 +80,28 @@ pub struct PictoRef {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct GroupRef {
     pub id: u32,
+    pub kind: GroupKind,
+    pub role: GroupRole,
+}
+
+/// Che tipo di gruppo (estensione del contratto: la specifica ha solo l'identificativo).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GroupKind {
+    /// avere/essere + participio, passivo.
+    Compound,
+    /// stare + gerundio.
+    Progressive,
+    /// Verbo con il suo pronome riflessivo ("mi lavo" = lavarsi).
+    Pronominal,
+    /// Espressione multiparola di ARASAAC.
+    Multiword,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GroupRole {
+    /// Porta il pittogramma e i segni.
+    Head,
+    Member,
 }
 
 /// Alternativa del menu (fase 10, M8).
@@ -145,6 +168,8 @@ pub enum PictoReason {
     PluralForm,
     IgnoringCategory,
     NumberWord,
+    /// Verbo pronominale: "lavarsi" per "mi lavo".
+    Pronominal,
 }
 
 /// Perché il motore ha scelto così (debug e menu delle alternative).
@@ -166,6 +191,7 @@ impl Reason {
             PictoReason::PluralForm => "plurale (manca il singolare)",
             PictoReason::IgnoringCategory => "ignorando la categoria",
             PictoReason::NumberWord => "numero in lettere",
+            PictoReason::Pronominal => "verbo pronominale",
         }
     }
 }
@@ -195,6 +221,7 @@ impl fmt::Display for Reason {
             PictoReason::PluralForm => "pittogramma del plurale (manca il singolare)",
             PictoReason::IgnoringCategory => "pittogramma trovato ignorando la categoria",
             PictoReason::NumberWord => "pittogramma del numero in lettere",
+            PictoReason::Pronominal => "pittogramma del verbo pronominale",
         };
         write!(f, "{reading}; {picto}")
     }
@@ -500,6 +527,11 @@ struct PictoChoice {
     id: u32,
     reason: PictoReason,
     penalty: f32,
+    /// Chiave con cui si è trovato (serve a sapere se il pittogramma è già plurale).
+    matched: String,
+    /// Il pittogramma è stato trovato con un plurale derivato da ARASAAC ("maestre" per
+    /// "maestra"): l'immagine resta quella del singolare.
+    derived_plural: bool,
 }
 
 pub struct Engine<D: AsRef<[u8]>> {
@@ -577,12 +609,152 @@ impl<D: AsRef<[u8]>> Engine<D> {
             .map(|(p, surface)| self.slot_for(p, surface))
             .collect();
         self.decide(&prepared, &mut slots);
-        prepared
+        let mut tokens: Vec<Token> = prepared
             .iter()
             .zip(slots)
             .zip(surfaces)
             .map(|((p, slot), surface)| self.finish(p, surface, slot))
-            .collect()
+            .collect();
+        self.apply_groups(&mut tokens);
+        tokens
+    }
+
+    /// Chiave ARASAAC del verbo pronominale ("lavare" → "lavarsi": infinito senza -e più "si";
+    /// "condurre" → "condursi").
+    fn pronominal_picto(&self, lemma: &str) -> Option<u32> {
+        let lemma = normalize_key(lemma);
+        let stem = if lemma.ends_with("rre") {
+            lemma.strip_suffix("re")?
+        } else if lemma.ends_with("are") || lemma.ends_with("ere") || lemma.ends_with("ire") {
+            lemma.strip_suffix('e')?
+        } else {
+            return None;
+        };
+        let key = format!("{stem}si");
+        let entries: Vec<PictoEntry> = self
+            .picto
+            .lookup(&key)
+            .into_iter()
+            .filter(|e| !self.curated.is_blocked(&[key.as_str()], e.id))
+            .collect();
+        Self::best_entry(entries).map(|e| e.id)
+    }
+
+    /// Fasi 4, 5 e 9 sulle letture già scelte: segni dei tempi semplici, gruppi verbali (tempi
+    /// composti, passivo, "stare" + gerundio), verbi pronominali.
+    fn apply_groups(&self, tokens: &mut [Token]) {
+        let set_tense = |t: &mut Token, mark: Tense3| {
+            let flag = match mark {
+                Tense3::Past => Modifiers::PAST,
+                Tense3::Future => Modifiers::FUTURE,
+                Tense3::None => 0,
+            };
+            t.modifiers = Modifiers((t.modifiers.0 & Modifiers::PLURAL) | flag);
+        };
+        // Tempi semplici: ogni forma verbale finita porta il suo segno.
+        for t in tokens.iter_mut() {
+            let Some(a) = &t.analysis else { continue };
+            if t.kind == TokenKind::Word && matches!(a.cat, Cat::Verb | Cat::Aux | Cat::Modal) {
+                let mark = tense_mark(&a.feats, false);
+                set_tense(t, mark);
+            }
+        }
+        let views: Vec<View> = tokens
+            .iter()
+            .map(|t| {
+                let a = t.analysis.as_ref();
+                View {
+                    word: t.kind == TokenKind::Word && a.is_some(),
+                    cat: a.map_or(Cat::Punct, |a| a.cat),
+                    lemma: a.map_or(String::new(), |a| normalize_key(&a.lemma)),
+                    feats: a.map_or(Feats::default(), |a| a.feats),
+                    key: normalize_key(&t.surface),
+                    also_adjective: t.readings.iter().any(|r| r.cat == Cat::Adj),
+                }
+            })
+            .collect();
+        let mut next_id = 1;
+        let mut in_group = vec![false; tokens.len()];
+        let link = |tokens: &mut [Token], idx: usize, id: u32, kind: GroupKind, head: bool| {
+            tokens[idx].group = Some(GroupRef {
+                id,
+                kind,
+                role: if head {
+                    GroupRole::Head
+                } else {
+                    GroupRole::Member
+                },
+            });
+        };
+        for g in verbal_groups(&views) {
+            let id = next_id;
+            next_id += 1;
+            let mut kind = match g.kind {
+                VerbalKind::Compound => GroupKind::Compound,
+                VerbalKind::Progressive => GroupKind::Progressive,
+            };
+            // Verbo pronominale ("mi sono lavato" = lavarsi): serve il pittogramma di "lavarsi".
+            let mut members = g.hidden.clone();
+            if let Some(c) = g.reflexive {
+                let lemma = views[g.head].lemma.clone();
+                if let Some(picto) = self.pronominal_picto(&lemma) {
+                    kind = GroupKind::Pronominal;
+                    members.push(c);
+                    let head = &mut tokens[g.head];
+                    head.picto = Some(PictoRef { id: picto });
+                    head.display = Display::Full;
+                    head.reason.picto = PictoReason::Pronominal;
+                }
+            }
+            for &m in &members {
+                tokens[m].display = Display::Hidden;
+                tokens[m].modifiers = Modifiers::default();
+                link(tokens, m, id, kind, false);
+                in_group[m] = true;
+            }
+            set_tense(&mut tokens[g.head], g.tense);
+            link(tokens, g.head, id, kind, true);
+            in_group[g.head] = true;
+        }
+        // Verbo semplice con il riflessivo davanti ("mi lavo", "si pettina").
+        for i in 1..tokens.len() {
+            if in_group[i] || in_group[i - 1] || !views[i].word || views[i].cat != Cat::Verb {
+                continue;
+            }
+            if !reflexive_agrees(&views[i - 1], &views[i].feats)
+                || views[i].feats.mood == Some(Mood::Impr)
+            {
+                continue;
+            }
+            if let Some(picto) = self.pronominal_picto(&views[i].lemma) {
+                let id = next_id;
+                next_id += 1;
+                tokens[i - 1].display = Display::Hidden;
+                link(tokens, i - 1, id, GroupKind::Pronominal, false);
+                link(tokens, i, id, GroupKind::Pronominal, true);
+                tokens[i].picto = Some(PictoRef { id: picto });
+                tokens[i].display = Display::Full;
+                tokens[i].reason.picto = PictoReason::Pronominal;
+                in_group[i] = true;
+                in_group[i - 1] = true;
+            }
+        }
+        // Clitico riflessivo attaccato ("lavarsi", "lavandosi"): stesso pittogramma pronominale.
+        for (i, t) in tokens.iter_mut().enumerate() {
+            let Some(a) = &t.analysis else { continue };
+            let reflexive_suffix = a
+                .feats
+                .enclitic
+                .is_some_and(|e| e.pieces().first() == Some(&"si"));
+            if in_group[i] || !reflexive_suffix {
+                continue;
+            }
+            if let Some(picto) = self.pronominal_picto(&a.lemma) {
+                t.picto = Some(PictoRef { id: picto });
+                t.display = Display::Full;
+                t.reason.picto = PictoReason::Pronominal;
+            }
+        }
     }
 
     /// Fase 7: per ogni frase sceglie le letture con la decodifica; senza tagger resta la scelta
@@ -968,6 +1140,8 @@ impl<D: AsRef<[u8]>> Engine<D> {
                     id,
                     reason: PictoReason::Curated,
                     penalty: 0.0,
+                    matched: lemma_key.clone(),
+                    derived_plural: false,
                 });
             }
         }
@@ -1015,12 +1189,16 @@ impl<D: AsRef<[u8]>> Engine<D> {
                                 id: best.id,
                                 reason: PictoReason::IgnoringCategory,
                                 penalty: 0.2,
+                                matched: k.to_string(),
+                                derived_plural: best.has_flag(picto_flags::PLURAL_FORM),
                             }
                         } else {
                             PictoChoice {
                                 id: best.id,
                                 reason,
                                 penalty: 0.0,
+                                matched: k.to_string(),
+                                derived_plural: best.has_flag(picto_flags::PLURAL_FORM),
                             }
                         });
                     }
@@ -1242,6 +1420,9 @@ impl<D: AsRef<[u8]>> Engine<D> {
         } else {
             source_cap.min(0.5)
         };
+        let matched = choice
+            .as_ref()
+            .map(|c| (c.reason, c.matched.clone(), c.derived_plural));
         let mut t = Token {
             span_utf16: (p.raw.start16, p.raw.end16),
             surface,
@@ -1267,6 +1448,16 @@ impl<D: AsRef<[u8]>> Engine<D> {
             confidence = (confidence - c.penalty).max(0.0);
         }
         t.confidence = confidence;
+        // PLURALE: nome plurale il cui pittogramma è del singolare: trovato con il singolare o il
+        // lemma, oppure con un plurale derivato da ARASAAC ("maestre" per "maestra"). Se la forma
+        // è una parola chiave a sé ("occhiali", "pastelli", "mani") l'immagine è già plurale.
+        if chosen.cat == Cat::Noun && chosen.feats.number == Some(Number::P) {
+            if let Some(c) = &matched {
+                if c.0 != PictoReason::PluralForm && (c.1 != p.key || c.2) {
+                    t.modifiers = Modifiers(Modifiers::PLURAL);
+                }
+            }
+        }
         t.analysis = Some(chosen);
         t.readings = readings;
         t.corrected = corrected;

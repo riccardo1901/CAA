@@ -370,3 +370,109 @@ fn non_si_scompone_una_parola_che_non_e_un_verbo_con_clitico() {
         assert!(enclitic(&t[0]).is_empty(), "{w}");
     }
 }
+
+// --- Fasi 5 e 9: tempi, gruppi verbali, pronominali, plurale ----------------------------------
+
+use caa_engine::engine::{Display, GroupKind, GroupRole, Modifiers};
+
+fn mods(t: &Token) -> u8 {
+    t.modifiers.0
+}
+
+#[test]
+fn passato_prossimo_nasconde_l_ausiliare_e_segna_il_passato() {
+    let t = run("Ho mangiato il pane.");
+    let (ho, mangiato) = (word(&t, "Ho"), word(&t, "mangiato"));
+    assert_eq!(ho.display, Display::Hidden);
+    assert_eq!(mangiato.display, Display::Full);
+    assert_eq!(mods(mangiato), Modifiers::PAST);
+    assert_eq!(mods(ho), 0);
+    let (g1, g2) = (ho.group.unwrap(), mangiato.group.unwrap());
+    assert_eq!(
+        (g1.id, g1.kind, g1.role),
+        (g2.id, GroupKind::Compound, GroupRole::Member)
+    );
+    assert_eq!(g2.role, GroupRole::Head);
+    assert!(word(&t, "pane").group.is_none());
+}
+
+#[test]
+fn essere_senza_participio_resta_un_verbo_pieno_con_il_segno() {
+    // "era" da solo: essere all'imperfetto, visibile, con PASSATO (golden 9).
+    let t = run("era");
+    assert_eq!(
+        (t[0].display, mods(&t[0]), t[0].group),
+        (Display::Full, Modifiers::PAST, None)
+    );
+    // "ho" senza participio: nessun gruppo, non nascosto, nessun segno.
+    let t = run("ho il pane");
+    let ho = word(&t, "ho");
+    assert_ne!(ho.display, Display::Hidden);
+    assert_eq!((mods(ho), ho.group), (0, None));
+}
+
+#[test]
+fn futuro_semplice_e_stare_con_gerundio() {
+    assert_eq!(mods(&run("mangerò")[0]), Modifiers::FUTURE);
+    let t = run("stava dormendo");
+    assert_eq!(
+        (t[0].display, t[1].display),
+        (Display::Hidden, Display::Full)
+    );
+    assert_eq!(
+        (mods(&t[1]), t[1].group.unwrap().kind),
+        (Modifiers::PAST, GroupKind::Progressive)
+    );
+    let t = run("sto dormendo");
+    assert_eq!(mods(&t[1]), 0);
+}
+
+#[test]
+fn verbo_pronominale_prende_il_pittogramma_di_lavarsi() {
+    // "mi lavo": riflessivo della stessa persona e "lavarsi" esiste in ARASAAC.
+    let t = run("Mi lavo");
+    assert_eq!(
+        (t[0].display, t[1].picto.map(|p| p.id)),
+        (Display::Hidden, Some(127))
+    );
+    assert_eq!(t[1].group.unwrap().kind, GroupKind::Pronominal);
+    assert_eq!(t[1].reason.picto, PictoReason::Pronominal);
+    // Con il tempo composto: "mi sono lavato" = lavarsi + PASSATO, "mi" e "sono" nascosti.
+    let t = run("Mi sono lavato");
+    assert_eq!(
+        (
+            t[0].display,
+            t[1].display,
+            t[2].display,
+            t[2].picto.map(|p| p.id),
+            mods(&t[2])
+        ),
+        (
+            Display::Hidden,
+            Display::Hidden,
+            Display::Full,
+            Some(127),
+            Modifiers::PAST
+        )
+    );
+    // "lavarsi" attaccato: stesso pittogramma.
+    assert_eq!(run("lavarsi")[0].picto.map(|p| p.id), Some(127));
+}
+
+#[test]
+fn senza_pittogramma_pronominale_il_clitico_resta() {
+    // "andare" non ha "andarsi" in ARASAAC: "mi sono andato" non forma un gruppo pronominale.
+    let t = run("Mi sono andato");
+    assert_ne!(t[0].display, Display::Hidden);
+    assert_ne!(t[0].group.map(|g| g.kind), Some(GroupKind::Pronominal));
+}
+
+#[test]
+fn plurale_solo_se_il_pittogramma_e_del_singolare() {
+    // maestre → maestra + PLURALE; occhiali ha una parola chiave propria: nessun segno.
+    assert_eq!(mods(&run("maestre")[0]), Modifiers::PLURAL);
+    assert_eq!(mods(&run("occhiali")[0]), 0);
+    assert_eq!(mods(&run("maestra")[0]), 0);
+    // Un plurale che non ha un pittogramma né singolare né plurale: niente segno.
+    assert_eq!(mods(&run("labbra")[0]), 0);
+}
