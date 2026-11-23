@@ -1,0 +1,20 @@
+# Parole del lessico di base senza pittogramma ARASAAC (nessuna chiave esatta nei dati di novembre 2026).
+# Elenco delle eccezioni di M4: il test sui dati veri confronta questo elenco con la misura, così un cambio nei dati si nota.
+# Colonne: parola<TAB>categoria. Per aggiungere un pittogramma a mano si usa lexicon/overrides/lemma_picto.tsv.
+pagella	NOUN
+bidello	NOUN
+camera	NOUN
+sera	NOUN
+gioia	NOUN
+partire	VERB
+tornare	VERB
+restare	VERB
+bagnare	VERB
+bravo	ADJ
+falso	ADJ
+presto	ADV
+tardi	ADV
+già	ADV
+davanti	ADV
+insieme	ADV
+forse	ADV

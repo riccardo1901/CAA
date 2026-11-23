@@ -260,6 +260,32 @@ impl<D: AsRef<[u8]>> MorphLexicon<D> {
         self.build_id
     }
 
+    /// Forme a distanza di Levenshtein al più `max_distance` dalla chiave (al massimo 8, escluse la
+    /// chiave stessa e la chiave sentinella). Serve alla correzione dei refusi (fase 3).
+    pub fn similar_forms(&self, key: &str, max_distance: u32) -> Vec<String> {
+        use fst::automaton::Levenshtein;
+        use fst::{IntoStreamer, Streamer};
+        let Ok(automaton) = Levenshtein::new(key, max_distance) else {
+            return Vec::new();
+        };
+        let mut stream = self.forms.search(automaton).into_stream();
+        let mut out = Vec::new();
+        while let Some((k, _)) = stream.next() {
+            if k.first() == Some(&0) {
+                continue; // la chiave sentinella non è una forma
+            }
+            if let Ok(s) = std::str::from_utf8(k) {
+                if s != key {
+                    out.push(s.to_string());
+                    if out.len() >= 8 {
+                        break;
+                    }
+                }
+            }
+        }
+        out
+    }
+
     /// Numero di forme (senza la chiave sentinella).
     pub fn form_count(&self) -> usize {
         self.forms.len().saturating_sub(1)

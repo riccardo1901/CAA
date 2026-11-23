@@ -1,8 +1,11 @@
 [package]
 name = "caa-eval"
+description = "Valutazione del motore: test dorati, copertura delle parole di base, velocità"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 publish.workspace = true
 
 [dependencies]
+caa-engine = { path = "../caa-engine" }
+caa-store = { path = "../caa-store" }

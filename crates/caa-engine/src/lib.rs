@@ -4,8 +4,12 @@
 //! compilato e la conversione degli offset in unità UTF-16. Le fasi del motore arrivano
 //! nelle milestone successive (M4 e seguenti).
 
+pub mod curated;
+pub mod engine;
+pub mod golden;
 pub mod lexicon;
 pub mod norm;
+pub mod tokenize;
 pub mod types;
 
 /// Intervallo di un token nel paragrafo, in unità UTF-16 (come in JavaScript).

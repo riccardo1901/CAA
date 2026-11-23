@@ -238,6 +238,7 @@ Divide su spazi e punteggiatura, poi gestisce i casi italiani:
 
 - **Elisione**: un token che contiene `'` seguito da lettera si divide in due: `l'albero` → `l'` + `albero`; `dell'acqua` → `dell'` + `acqua`; `c'era` → `c'` + `era`; `quest'anno` → `quest'` + `anno`. Il prefisso eliso si risolve con una piccola tabella (`l'` → il/la/lo, `un'` → una, `dell'` → di + il, `c'` → ci, `m'` → mi, `s'` → si, `t'` → ti, `v'` → vi, `d'` → di, `quest'`, `quell'`, `nessun'`, `buon'`, `sant'`, più le preposizioni articolate `all'`, `dall'`, `nell'`, `sull'`; la tabella è `ELIDED_PREFIXES` in `caa-engine`).
 - **Eccezioni**: `po'` (troncamento: "un po'" è un'espressione), `mo'`, imperativi tronchi `da'`, `fa'`, `di'`, `sta'`, `va'`.
+- **Apostrofo finale** (`po'`, `E'`, `perche'`): si prova prima la forma con l'apostrofo, poi la forma accentata (`perche'` → `perché`, `E'` → `è`, solo se esiste nel lessico); se nessuna esiste è una virgoletta e si stacca come punteggiatura. Il testo originale e gli offset non cambiano mai: la normalizzazione si applica a ogni token, non al testo intero.
 - **Numeri**: cifre come token `Number`; "3" e "tre" hanno lo stesso trattamento. Orari ("alle 8", "8:30") e date restano token unici.
 - **Trattini**: `anti-age` resta un token; il trattino di dialogo (– o — a inizio riga) è punteggiatura.
 - **Offset**: ogni token porta l'intervallo originale, già convertito in UTF-16.
@@ -269,7 +270,7 @@ Il primo compito su questi dati è **elencare tutte le etichette distinte** pres
 
 1. **Maiuscola, anche a inizio frase** → lettura `Propn` con punteggio alto ("Marco", "Crema"). Le parole che invece sono in lessico ma hanno la maiuscola a metà frase ("Rosa", "Bianca", "Serena") ricevono una lettura Propn in più, con bonus: decide la fase 7.
 2. **Chiave ARASAAC esatta**: se la forma non ha letture in Morph-it! (né in `forms_extra.tsv`) ma, normalizzata, è una chiave di `picto_index.bin`, si crea una lettura dalla categoria della parola chiave ARASAAC (tipi verificati in `docs/RAPPORTO-M1.md`): tipo 1 → `Propn`, tipo 2 → `Noun`, tipo 3 → `Verb` all'infinito, tipo 4 → `Adj` (`Adv` se termina in `-mente`). I tipi 5 e 6 (frasi, lettere, orari) e le chiavi senza tipo non producono una lettura e si prosegue con i punti seguenti. Il lemma è la chiave stessa; se la chiave è un plurale indicato da ARASAAC (flag `PLURAL_FORM`), la lettura è plurale e il lemma è la parola chiave singolare (se l'indice non basta per risalirvi, `picto_index.bin` si estende con il singolare). Genere e numero si deducono dal flag di plurale e dal suffisso (-o/-i, -a/-e); dove restano dubbi il tratto resta vuoto e decide la fase 7. Confidenza intermedia, da tarare sul corpus: la parola ha un pittogramma, ma l'analisi grammaticale è dedotta. È la regola che rende inutile elencare a mano in `forms_extra.tsv` le parole con un pittogramma ma sconosciute a Morph-it! (a novembre 2026 circa 1.150 nomi comuni); `forms_extra.tsv` resta per le eccezioni e per le forme coniugate dei verbi. `caa-eval` riporta quante parole del corpus sono risolte in questo modo.
-3. **Errore di battitura**: ricerca con automa di Levenshtein a distanza 1 sul lessico (il crate `fst` lo supporta nativamente). Se c'è una sola forma vicina frequente, la si propone come lettura con confidenza bassa e la parola viene sottolineata.
+3. **Errore di battitura**: ricerca con automa di Levenshtein a distanza 1 sul lessico (il crate `fst` lo supporta nativamente). Se c'è una sola forma vicina frequente, la si propone come lettura con confidenza bassa e la parola viene sottolineata. (Implementazione di M4: senza frequenze, vale "una sola forma a distanza 1 e parola di almeno 5 lettere".)
 4. **Indovino per suffisso**: `-mente` → avverbio; `-zione`, `-sione`, `-tà` → nome femminile; `-are/-ere/-ire` → infinito; `-ando/-endo` → gerundio; `-ato/-uto/-ito` → participio. Sempre confidenza bassa.
 5. Altrimenti token `Unknown`: nessun simbolo, sottolineatura.
 
@@ -371,7 +372,8 @@ Decisa la lettura, si sceglie il pittogramma con una catena di priorità. Si pre
 6. Indice ARASAAC, cercando nell'ordine:
     - la **forma esatta** ("occhiali", "forbici": i plurali fissi hanno spesso una parola chiave propria);
     - il **singolare dello stesso genere** ("maestre" → "maestra", non "maestro");
-    - il **lemma**.
+    - il **lemma**;
+    - il **plurale**, se il singolare non ha pittogramma (estensione di M4: ARASAAC ha "pastelli" e "sassi", non "pastello" e "sasso").
 
     A parità, vince il pittogramma la cui parola chiave ha la **stessa categoria** della lettura scelta, poi quello in cui la parola è la **prima parola chiave**, poi quello con **meno parole chiave** (più specifico).
 7. Stessa ricerca ignorando la categoria (penalità sulla confidenza)
@@ -707,7 +709,7 @@ Dodici milestone in ordine di dipendenza. Ognuna si chiude solo quando il criter
 4. **M3 — Prototipo editor.** ProseMirror con simboli finti (un'immagine fissa per parola) e le due soluzioni di resa A e B.
     - *Accettazione*: tutte le prove della sezione Editor superate da una delle due soluzioni, su un PC Windows della scuola. *Esito*: superata dalla soluzione A su un PC Windows personale (Edge/WebView2 157); la prova su un PC della scuola entra nel pilota (M11).
 5. **M4 — Motore, fasi 1–3 e 8.** Normalizzazione, tokenizzazione, letture (compresa la lettura da chiave ARASAAC per le parole sconosciute a Morph-it!), scelta del pittogramma senza contesto (prima lettura).
-    - *Accettazione*: test dorati di tokenizzazione ed elisione verdi; ogni parola del lessico scolastico di base riceve un pittogramma.
+    - *Accettazione*: test dorati di tokenizzazione ed elisione verdi; ogni parola del lessico scolastico di base riceve un pittogramma. *Esito* (`docs/RAPPORTO-M4.md`): 48 test dorati su 48; il lessico di base (`lexicon/lessico_base.tsv`, 516 parole piene, definito in M4) ha il 96,7% di copertura (97,7% sulle parole piene) e le 17 eccezioni, lacune di ARASAAC, sono elencate; `caa-eval` minimo (test dorati, copertura, velocità) anticipato a M4.
 6. **M5 — Disambiguazione.** Statistiche del tagger dal treebank, Viterbi, forward-backward, regole di contesto, confidenza.
     - *Accettazione*: test dorati 1, 2, 9, 10, 17, 18, 19 verdi.
 7. **M6 — Strutture verbali e multiparola.** Clitici, pronominali, tempi composti, perifrasi, trie delle multiparola, seconda passata.

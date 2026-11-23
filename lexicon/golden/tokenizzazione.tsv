@@ -1,0 +1,67 @@
+# Test dorati di tokenizzazione: frase<TAB>token attesi (K:testo, K = W parola, N numero, P punteggiatura, S simbolo).
+# Prima i 20 test dorati di SPEC.md (solo la parte di tokenizzazione, elisione e normalizzazione),
+# poi i casi di tokenizzazione veri e propri.
+#
+# I 20 test dorati di SPEC.md
+Apri la porta.	W:Apri W:la W:porta P:.
+Lei la porta a scuola.	W:Lei W:la W:porta W:a W:scuola P:.
+Ieri sono andato al mare.	W:Ieri W:sono W:andato W:al W:mare P:.
+Domani mangeremo la pizza.	W:Domani W:mangeremo W:la W:pizza P:.
+Marco si lava le mani.	W:Marco W:si W:lava W:le W:mani P:.
+Mi sono divertito al parco.	W:Mi W:sono W:divertito W:al W:parco P:.
+Dammi il libro.	W:Dammi W:il W:libro P:.
+Il bambino stava dormendo.	W:Il W:bambino W:stava W:dormendo P:.
+C'era una volta un re.	W:C' W:era W:una W:volta W:un W:re P:.
+Ho mangiato il riso.	W:Ho W:mangiato W:il W:riso P:.
+Ho riso tanto.	W:Ho W:riso W:tanto P:.
+I ragazzi hanno fatto colazione.	W:I W:ragazzi W:hanno W:fatto W:colazione P:.
+E' una bella giornata.	W:E' W:una W:bella W:giornata P:.
+Prendo gli occhiali.	W:Prendo W:gli W:occhiali P:.
+Le maestre sono arrivate.	W:Le W:maestre W:sono W:arrivate P:.
+Non ho fame.	W:Non W:ho W:fame P:.
+Lui sale le scale.	W:Lui W:sale W:le W:scale P:.
+Metti il sale nell'acqua.	W:Metti W:il W:sale W:nell' W:acqua P:.
+Mangio ancora un po' di pane.	W:Mangio W:ancora W:un W:po' W:di W:pane P:.
+Devo studiare la storia.	W:Devo W:studiare W:la W:storia P:.
+#
+# Elisione
+L'albero è grande.	W:L' W:albero W:è W:grande P:.
+Ho visto dell'acqua.	W:Ho W:visto W:dell' W:acqua P:.
+Quest'anno vado all'asilo.	W:Quest' W:anno W:vado W:all' W:asilo P:.
+Nessun'idea, un'amica e l'uovo.	W:Nessun' W:idea P:, W:un' W:amica W:e W:l' W:uovo P:.
+Sull'albero c'è un nido.	W:Sull' W:albero W:c' W:è W:un W:nido P:.
+L’albero con l’apostrofo tipografico.	W:L’ W:albero W:con W:l’ W:apostrofo W:tipografico P:.
+Nell'8 marzo.	W:Nell' N:8 W:marzo P:.
+#
+# Troncamenti e accento scritto con l'apostrofo
+Un po' di pane.	W:Un W:po' W:di W:pane P:.
+Perche' no?	W:Perche' W:no P:?
+La citta' e' bella.	W:La W:citta' W:e' W:bella P:.
+Piu' tardi, cosi' e gia' fatto.	W:Piu' W:tardi P:, W:cosi' W:e W:gia' W:fatto P:.
+Prendo un caffe' e basta.	W:Prendo W:un W:caffe' W:e W:basta P:.
+#
+# Apostrofo come virgoletta
+'Ciao' disse Marco.	P:' W:Ciao P:' W:disse W:Marco P:.
+#
+# Numeri, orari, date
+Alle 8:30 del 12/11/2026.	W:Alle N:8:30 W:del N:12/11/2026 P:.
+Pesa 3,5 kg e costa 1.000 euro.	W:Pesa N:3,5 W:kg W:e W:costa N:1.000 W:euro P:.
+Ho 3 anni.	W:Ho N:3 W:anni P:.
+Abito al numero 12.	W:Abito W:al W:numero N:12 P:.
+#
+# Trattini
+Un trattamento anti-age.	W:Un W:trattamento W:anti-age P:.
+– Ciao! — disse lei.	P:– W:Ciao P:! P:— W:disse W:lei P:.
+Tre - due fa uno.	W:Tre P:- W:due W:fa W:uno P:.
+#
+# Punteggiatura, virgolette e puntini
+«Che bello!» esclamò.	P:« W:Che W:bello P:! P:» W:esclamò P:.
+Boh... forse…	W:Boh P:... W:forse P:…
+(Sì), no; ok: bene?	P:( W:Sì P:) P:, W:no P:; W:ok P:: W:bene P:?
+Disse "ciao" e uscì.	W:Disse P:" W:ciao P:" W:e W:uscì P:.
+#
+# Simboli, emoji, spazi
+Costa 5 € 😀 al 100%.	W:Costa N:5 S:€ S:😀 W:al N:100 S:%  P:.
+Marco è a casa 😀 perché è in città.	W:Marco W:è W:a W:casa S:😀 W:perché W:è W:in W:città P:.
+Due   spazi	W:Due W:spazi
+Una riga	W:Una W:riga

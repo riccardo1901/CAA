@@ -8,5 +8,5 @@ publish.workspace = true
 
 # Solo logica pura (nessun I/O, nessuna rete): il motore resta compilabile anche in WebAssembly.
 [dependencies]
-fst = "0.4"
+fst = { version = "0.4", features = ["levenshtein"] }
 unicode-normalization = "0.1"
