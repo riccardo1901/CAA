@@ -34,7 +34,7 @@ Programma desktop (Tauri 2) per docenti: scrivono un testo italiano e vedono sop
 
 ## Comandi
 
-Struttura: `crates/` (motore, build del lessico, valutazione, archivio), `src-tauri/` (app), `ui/` (frontend Vite + TypeScript), `scripts/` (scarico dei dati), `lexicon/overrides/` (correzioni curate in TSV, versionate), `lexicon/golden/` (tokenizzazione, analisi, limiti noti) e `lexicon/lessico_base*.tsv` (casi e parole per misurare il motore), `docs/` (rapporti di milestone e idee).
+Struttura: `crates/` (motore, build del lessico, valutazione, archivio), `src-tauri/` (app), `ui/` (frontend Vite + TypeScript), `scripts/` (scarico dei dati), `lexicon/overrides/` (correzioni curate in TSV, versionate), `corpus/` (testi e annotazioni di M7), `lexicon/golden/` (tokenizzazione, analisi, limiti noti) e `lexicon/lessico_base*.tsv` (casi e parole per misurare il motore), `docs/` (rapporti di milestone e idee).
 
 ```bash
 # Test Rust (motore, lessico, valutazione, archivio; esclude l'app Tauri)
@@ -72,6 +72,12 @@ node scripts/fetch-treebank.mjs                          # ISDT e MarkIT in data
 cargo run --release -q -p caa-eval -- tagger             # categoria e lemma contro ISDT dev (--conllu FILE per test)
 cargo run --release -q -p caa-eval -- analisi            # test dorati di analisi (lexicon/golden/analisi.tsv)
 cargo run --release -q -p caa-eval -- tara               # taratura, ablazione, calibrazione (solo su dev)
+
+# Corpus (M7): 20 testi annotati in corpus/ (vedi corpus/LEGGIMI.md); sviluppo si usa per correggere, prova solo per misurare
+cargo run --release -q -p caa-eval -- corpus             # correzioni per 100 parole, metriche, errori per causa
+cargo run --release -q -p caa-eval -- corpus --gruppo prova
+cargo run --release -q -p caa-eval -- prepara corpus/testi/X.txt   # bozza TSV da correggere a mano
+cargo run --release -q -p caa-eval -- candidati sale     # pittogrammi dell'indice per una parola
 
 # Strutture (M6): clitici, tempi composti, pronominali, multiparola (serve data/build con arasaac/mwe.bin)
 cargo run --release -q -p caa-eval -- strutture          # i 20 test dorati di SPEC.md, parola per parola

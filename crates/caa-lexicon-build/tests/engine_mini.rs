@@ -541,3 +541,40 @@ fn il_lemma_per_le_multiparola_e_pronominale_anche_per_lavati() {
     // Un imperativo con il clitico di un'altra persona ("lavami" = lava + mi) non e' riflessivo.
     assert!(e.lemma_set("lavami").contains(&"lavare".to_string()));
 }
+
+#[test]
+fn lemma_picto_vale_anche_per_la_forma() {
+    // Una riga di lemma_picto con una FORMA ("maestre") vince su quella del lemma ("maestra"):
+    // serve per "i" (articolo) contro la lettera "i" che ha lo stesso testo (M7).
+    let e = engine(
+        "maestre\tNOUN\t107\t1\tforma\nmaestra\tNOUN\t106\t1\tlemma\n",
+        "",
+    );
+    assert_eq!(
+        e.symbolize_text("maestre")[0].picto.map(|p| p.id),
+        Some(107)
+    );
+    assert_eq!(
+        e.symbolize_text("maestra")[0].picto.map(|p| p.id),
+        Some(106)
+    );
+    assert_eq!(
+        e.symbolize_text("maestro")[0].picto.map(|p| p.id),
+        Some(107)
+    );
+}
+
+#[test]
+fn il_pronominale_rispetta_lemma_picto() {
+    // "fermarsi" ha un pittogramma sbagliato nell'indice (semaforo per bici): lemma_picto lo corregge
+    // anche per "mi fermo" (M7). Qui "lavarsi" -> 128 al posto di 127.
+    let e = engine("lavarsi\tVERB\t128\t1\tprova\n", "");
+    assert_eq!(
+        e.symbolize_text("Mi lavo")[1].picto.map(|p| p.id),
+        Some(128)
+    );
+    assert_eq!(
+        e.symbolize_text("lavarsi")[0].picto.map(|p| p.id),
+        Some(128)
+    );
+}

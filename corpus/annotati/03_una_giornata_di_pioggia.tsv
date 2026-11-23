@@ -6,7 +6,7 @@
 # frase: Stamattina pioveva a dirotto.
 Stamattina	ADV	stamattina	25704|32848	-	Full
 pioveva	VERB	piovere	7148	PAST	Full
-a	ADP	a	3021	-	Full
+a	ADP	a	7041	-	Full
 dirotto	ADV	dirotto	-	-	TextOnly
 .	PUNCT	.	-	-	TextOnly
 
@@ -17,7 +17,7 @@ guardato	VERB	guardare	37487	PAST	Full
 fuori	ADV	fuori	-	-	Hidden
 dalla	ARTADP	da	11712	-	Full
 finestra	NOUN	finestra	2611|24465|32918	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 ha	AUX	avere	-	-	Hidden
 sospirato	VERB	sospirare	-	PAST	TextOnly
 :	PUNCT	:	-	-	TextOnly
@@ -37,7 +37,7 @@ dato	VERB	dare	28431|17038|17040	PAST	Full
 lo	ART	il	8476	-	Full
 stivale	NOUN	stivale	8299	-	Full
 giallo	ADJ	giallo	2648	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 l'	ART	il	8476	-	Full
 impermeabile	NOUN	impermeabile	4927|8122	-	Full
 .	PUNCT	.	-	-	TextOnly
@@ -49,7 +49,7 @@ usciti	VERB	uscire	2806|6606|28689	PAST	Full
 con	ADP	con	7064	-	Full
 l'	ART	il	8476	-	Full
 ombrello	NOUN	ombrello	2500|37456	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 hanno	AUX	avere	-	-	Hidden
 camminato	VERB	camminare	3251|6044|32214|32908|29951	PAST	Full
 fino	ADV	fino	7771	-	Full
@@ -67,7 +67,7 @@ una	ART	un	8474	-	Full
 lumaca	NOUN	lumaca	2685|8061|25827	-	Full
 sul	ARTADP	su	5451	-	Full
 muro	NOUN	muro	8266|39074	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 dei	ARTADP	di	8475	-	Full
 bambini	NOUN	bambino	31462|6975|7178|36560	-	Full
 che	PRON	che	11351	-	Full
@@ -86,7 +86,7 @@ ma	CONJ	ma	11377	-	Full
 si	CLITIC	si	-	-	Hidden
 è	AUX	essere	-	-	Hidden
 bagnato	VERB	bagnarsi	6149|36559|37364	PAST	Full
-i	ART	il	3030	-	Full
+i	ART	il	8477	-	Full
 calzini	NOUN	calzino	2298	-	Full
 !	PUNCT	!	-	-	TextOnly
 
@@ -99,7 +99,7 @@ ha	AUX	avere	-	-	Hidden
 acceso	VERB	accendere	8103	PAST	Full
 la	ART	il	-	-	Hidden
 luce	NOUN	luce	-	-	Hidden
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 ha	AUX	avere	-	-	Hidden
 raccontato	VERB	raccontare	38631	PAST	Full
 una	ART	un	-	-	Hidden
@@ -111,9 +111,9 @@ Fuori	ADV	fuori	5475	-	Full
 il	ART	il	8476	-	Full
 vento	NOUN	vento	7259|23731	-	Full
 muoveva	VERB	muovere	7167|27371	PAST	Full
-i	ART	il	3030	-	Full
+i	ART	il	8477	-	Full
 rami	NOUN	ramo	7224	PLURAL	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 il	ART	il	8476	-	Full
 cielo	NOUN	cielo	38270	-	Full
 era	VERB	essere	5581|5465|5858	PAST	Full

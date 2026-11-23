@@ -4,7 +4,7 @@
 # origine: scritto per il progetto (sintetico)
 
 # frase: A scuola c'è una campanella.
-A	ADP	a	3021	-	Full
+A	ADP	a	7041	-	Full
 scuola	NOUN	scuola	3082|6454|32446	-	Full
 c'	CLITIC	ci	-	-	TextOnly
 è	VERB	essere	5581	-	Full
@@ -32,7 +32,7 @@ classe	NOUN	classe	9814|9815|33072|39686|15734|5913	-	Full
 Io	PRON	io	31807|2617|6632|7309|7310	-	Full
 mi	CLITIC	mi	-	-	Hidden
 fermo	VERB	fermare	37185	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 smetto	VERB	smettere	28429|27393	-	Full
 di	ADP	di	7074	-	Full
 giocare	VERB	giocare	2439|6537|23392|36884	-	Full
@@ -40,11 +40,11 @@ giocare	VERB	giocare	2439|6537|23392|36884	-	Full
 
 # frase: Metto a posto il pallone e cammino con calma verso la mia fila.
 Metto	VERB	mettere	5514|8680	-	Full
-a	ADP	a	3021	-	Hidden
+a	ADP	a	7041	-	Hidden
 posto	NOUN	posto	-	-	Hidden
 il	ART	il	8476	-	Full
 pallone	NOUN	pallone	2269|3241	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 cammino	VERB	camminare	3251|6044|32214|32908	-	Full
 con	ADP	con	7064	-	Full
 calma	NOUN	calma	37828|38050	-	Full
@@ -70,7 +70,7 @@ La	ART	la	8476	-	Full
 maestra	NOUN	maestra	2456|6555|28003	-	Full
 ci	CLITIC	ci	7183|7184|7185|7186|32306	-	Full
 saluta	VERB	salutare	37807|6009|6522|34567	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 noi	PRON	noi	31672|31674|7183|7184|7185|7186|32306	-	Full
 rispondiamo	VERB	rispondere	9030|9031|28433	-	Full
 :	PUNCT	:	-	-	TextOnly
@@ -89,7 +89,7 @@ classe	NOUN	classe	9814|9815|33072|39686|15734|5913	-	Full
 appendo	VERB	appendere	37896	-	Full
 lo	ART	il	-	-	Hidden
 zaino	NOUN	zaino	-	-	Hidden
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 mi	CLITIC	mi	-	-	Hidden
 siedo	VERB	sedere	2801|6611|35033|30826	-	Full
 al	ARTADP	a	11709	-	Full
@@ -106,7 +106,7 @@ la	ART	la	8476	-	Full
 maestra	NOUN	maestra	2456|6555|28003	-	Full
 è	VERB	essere	5581	-	Full
 contenta	ADJ	contento	28647|3245|31923|35547|9907|32123	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 anche	ADV	anche	11591	-	Full
 io	PRON	io	-	-	Hidden
 mi	CLITIC	mi	-	-	Hidden

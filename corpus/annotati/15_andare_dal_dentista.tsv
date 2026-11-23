@@ -4,7 +4,7 @@
 # origine: scritto per il progetto (sintetico)
 
 # frase: A volte vado dal dentista.
-A	ADP	a	27564|27387	-	Full
+A	ADP	a	7041|27564|27387	-	Full
 volte	NOUN	volta	-	-	Hidden
 vado	VERB	andare	2432	-	Full
 dal	ARTADP	da	11712	-	Full
@@ -32,7 +32,7 @@ d'	ADP	di	-	-	Hidden
 aspetto	NOUN	aspetto	-	-	Hidden
 mi	CLITIC	mi	-	-	Hidden
 siedo	VERB	sedere	2801|6611|35033|30826	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 aspetto	VERB	aspettare	8109|16697|27547|28677	-	Full
 il	ART	il	7158	-	Full
 mio	DET	mio	-	-	Hidden
@@ -65,7 +65,7 @@ siedo	VERB	sedere	2801|6611|35033|30826	-	Full
 sulla	ARTADP	su	5451	-	Full
 poltrona	NOUN	poltrona	35173|2570|25475	-	Full
 grande	ADJ	grande	4658	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 apro	VERB	aprire	10137|24825	-	Full
 bene	ADV	bene	5397	-	Full
 la	ART	la	8476	-	Full
@@ -106,7 +106,7 @@ paura	NOUN	paura	-	-	Hidden
 posso	MODAL	potere	35949	-	Full
 respirare	VERB	respirare	34377|34409|34508	-	Full
 piano	ADV	piano	4676	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 stringere	VERB	stringere	13024|37858	-	Full
 la	ART	la	8476	-	Full
 mano	NOUN	mano	2928	-	Full
@@ -136,6 +136,6 @@ ho	VERB	avere	7271	-	Full
 i	ART	il	8477	-	Full
 denti	NOUN	dente	2737	-	Full
 puliti	ADJ	pulito	26172|4680	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 sani	ADJ	sano	12293|37797	-	Full
 .	PUNCT	.	-	-	TextOnly

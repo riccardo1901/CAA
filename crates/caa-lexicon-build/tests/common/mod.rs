@@ -151,3 +151,21 @@ pub fn engine_mwe(lemma_picto: &str, blocklist: &str) -> Engine<Vec<u8>> {
     let built = build_mwe(&plain, &arasaac::index_entries(&pictograms), 7).unwrap();
     plain.with_mwe(caa_engine::mwe::MweIndex::new(built.bytes).unwrap())
 }
+
+/// Come `engine`, con i prior curati di `ambiguity_priors.tsv`.
+#[allow(dead_code)] // la usa solo tagger_mini
+pub fn engine_priors(priors: &str) -> Engine<Vec<u8>> {
+    let pictograms = arasaac::parse(ARASAAC.as_bytes()).unwrap();
+    let o = compile(&Inputs {
+        build_id: 7,
+        morphit: MORPH,
+        pictograms: &pictograms,
+        forms_extra: &[],
+    })
+    .unwrap();
+    Engine::new(
+        MorphLexicon::new(o.morph_fst, o.lemmas_fst, o.morph_feats).unwrap(),
+        PictoIndex::new(o.picto_index).unwrap(),
+        Curated::parse("", "").unwrap().with_priors(priors).unwrap(),
+    )
+}

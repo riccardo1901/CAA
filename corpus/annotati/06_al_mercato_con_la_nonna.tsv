@@ -23,7 +23,7 @@ grande	ADJ	grande	4658	-	Full
 borsa	NOUN	borsa	39829|27620	-	Full
 di	ADP	di	7074	-	Full
 stoffa	NOUN	stoffa	3402	-	Full
-e	CONJ	e	11399|3026	-	Full
+e	CONJ	e	11399	-	Full
 io	PRON	io	2617|6632|7309|7310|31807	-	Full
 spingo	VERB	spingere	4638|6485|16355|39442	-	Full
 il	ART	il	8476	-	Full
@@ -46,7 +46,7 @@ arance	NOUN	arancia	2483	PLURAL	Full
 ,	PUNCT	,	-	-	TextOnly
 le	ART	la	8477	-	Full
 pere	NOUN	pera	2561	PLURAL	Full
-e	CONJ	e	11399|3026	-	Full
+e	CONJ	e	11399	-	Full
 le	ART	la	8477	-	Full
 fragole	NOUN	fragola	2400	PLURAL	Full
 .	PUNCT	.	-	-	TextOnly
@@ -59,7 +59,7 @@ due	NUM	due	2628|4890|7027|35679	-	Full
 chili	NOUN	chilo	7138|39481	PLURAL	Full
 di	ADP	di	7074	-	Full
 mele	NOUN	mela	2462|13644|13645	PLURAL	Full
-e	CONJ	e	11399|3026	-	Full
+e	CONJ	e	11399	-	Full
 un	ART	un	8474	-	Full
 cavolo	NOUN	cavolo	2708	-	Full
 .	PUNCT	.	-	-	TextOnly
@@ -87,13 +87,13 @@ sogliole	NOUN	sogliola	21884|21957	PLURAL	Full
 # frase: Io guardo i pesci con gli occhi grandi e la bocca aperta.
 Io	PRON	io	2617|6632|7309|7310|31807	-	Full
 guardo	VERB	guardare	2474|6564|28673|16907	-	Full
-i	ART	il	8477|3030	-	Full
+i	ART	il	8477	-	Full
 pesci	NOUN	pesce	7199	-	Full
 con	ADP	con	7064	-	Full
 gli	ART	il	8477	-	Full
 occhi	NOUN	occhio	2876	-	Full
 grandi	ADJ	grande	4658	-	Full
-e	CONJ	e	11399|3026	-	Full
+e	CONJ	e	11399	-	Full
 la	ART	la	8476	-	Full
 bocca	NOUN	bocca	2663	-	Full
 aperta	ADJ	aperto	-	-	TextOnly
@@ -120,7 +120,7 @@ che	CONJ	che	11351	-	Full
 troppo	ADV	troppo	39188	-	Full
 salato	ADJ	salato	4739|32152|32524|37759	-	Full
 ,	PUNCT	,	-	-	TextOnly
-e	CONJ	e	11399|3026	-	Full
+e	CONJ	e	11399	-	Full
 allora	ADV	allora	-	-	TextOnly
 ne	CLITIC	ne	-	-	TextOnly
 prende	VERB	prendere	10148|4606|32773	-	Full
@@ -132,14 +132,14 @@ dolce	ADJ	dolce	4636|10201|31837|32440	-	Full
 # frase: Quando torniamo a casa, la borsa è pesante e piena.
 Quando	CONJ	quando	24053	-	Full
 torniamo	VERB	tornare	29714	-	Full
-a	ADP	a	7041|7034|3021	-	Full
+a	ADP	a	7041|7034	-	Full
 casa	NOUN	casa	2317|6964	-	Full
 ,	PUNCT	,	-	-	TextOnly
 la	ART	la	8476	-	Full
 borsa	NOUN	borsa	39829|27620	-	Full
 è	VERB	essere	5581|5465|5466|5858|36480	-	Full
 pesante	ADJ	pesante	27025	-	Full
-e	CONJ	e	11399|3026	-	Full
+e	CONJ	e	11399	-	Full
 piena	ADJ	pieno	26176|31190	-	Full
 .	PUNCT	.	-	-	TextOnly
 
@@ -148,7 +148,7 @@ Io	PRON	io	2617|6632|7309|7310|31807	-	Full
 aiuto	VERB	aiutare	32648|4570	-	Full
 la	ART	la	8476	-	Full
 nonna	NOUN	nonna	2243|10194|23710|23709	-	Full
-a	ADP	a	7041|3021	-	Full
+a	ADP	a	7041	-	Full
 mettere	VERB	mettere	6989|8166|32757|38708	-	Full
 la	ART	la	8476	-	Full
 spesa	NOUN	spesa	9058	-	Full

@@ -24,9 +24,9 @@ si	CLITIC	si	-	-	Hidden
 ferma	VERB	fermare	37185	-	Full
 alla	ARTADP	a	3021|11709	-	Full
 fermata	NOUN	fermata	2499	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 aspetta	VERB	aspettare	8109|16697|27547|28677|39062|25077|25078	-	Full
-i	ART	il	8477|3030	-	Full
+i	ART	il	8477	-	Full
 passeggeri	NOUN	passeggero	16105|16107|28181	PLURAL	Full
 .	PUNCT	.	-	-	TextOnly
 
@@ -46,7 +46,7 @@ Poi	ADV	poi	13080|32749	-	Full
 salgo	VERB	salire	2795|6617|8226|36593|36594|36595|36968|28171	-	Full
 con	ADP	con	7064	-	Full
 calma	NOUN	calma	37828|38050	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 non	ADV	non	5526|5525	-	Full
 spingo	VERB	spingere	15375|16655|39441	-	Full
 nessuno	PRON	nessuno	11314|26941|5800	-	Full
@@ -66,7 +66,7 @@ mi	CLITIC	mi	-	-	Hidden
 siedo	VERB	sedere	2801|6611|30826|35029|35033	-	Full
 sul	ARTADP	su	5451	-	Full
 sedile	NOUN	sedile	19520	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 tengo	VERB	tenere	39414	-	Full
 lo	ART	il	8476	-	Full
 zaino	NOUN	zaino	2475|4696|34743	-	Full
@@ -94,7 +94,7 @@ Guardo	VERB	guardare	37487	-	Full
 fuori	ADV	fuori	-	-	Hidden
 dal	ARTADP	da	7074|11712	-	Full
 finestrino	NOUN	finestrino	2611|24465	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 non	ADV	non	5526|5525	-	Full
 urlo	VERB	urlare	4686|7120|31125|31127|6552|36137	-	Full
 .	PUNCT	.	-	-	TextOnly
@@ -108,7 +108,7 @@ fermata	NOUN	fermata	2499	-	Full
 ,	PUNCT	,	-	-	TextOnly
 mi	CLITIC	mi	-	-	Hidden
 alzo	VERB	alzare	4677|6548|34523	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 scendo	VERB	scendere	2654|6053|8035|24723|34807|37244|36842|36843|36844|36879	-	Full
 con	ADP	con	7064	-	Full
 la	ART	la	8476	-	Full
@@ -119,7 +119,7 @@ mamma	NOUN	mamma	2458|31148	-	Full
 Sono	AUX	essere	-	-	Hidden
 stato	VERB	essere	5581|36480	PAST	Full
 bravo	ADJ	bravo	4581|32432	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 il	ART	il	8476	-	Full
 viaggio	NOUN	viaggio	32508|11393	-	Full
 è	AUX	essere	-	-	Hidden

@@ -42,12 +42,13 @@ pub struct Summary {
     pub manifest: PathBuf,
 }
 
-const OVERRIDE_FILES: [&str; 5] = [
+const OVERRIDE_FILES: [&str; 6] = [
     "forms_extra.tsv",
     "lemma_picto.tsv",
     "mwe_extra.tsv",
     "function_words.tsv",
     "blocklist.tsv",
+    "ambiguity_priors.tsv",
 ];
 
 fn io_err(path: &Path, e: io::Error) -> String {
@@ -173,6 +174,10 @@ pub fn run(cfg: &Config) -> Result<Summary, String> {
     };
     let overrides = Overrides::parse(&override_texts)
         .map_err(|e| format!("file curati non validi:\n  {}", e.join("\n  ")))?;
+    // I prior curati si leggono a ogni apertura del motore: alla build si controllano subito.
+    caa_engine::curated::Curated::empty()
+        .with_priors(&texts[5])
+        .map_err(|e| format!("ambiguity_priors.tsv non valido:\n  {}", e.join("\n  ")))?;
     let known_ids: HashSet<u32> = pictograms.iter().map(|p| p.id).collect();
     let id_errors = overrides.check_ids(&known_ids);
     if !id_errors.is_empty() {

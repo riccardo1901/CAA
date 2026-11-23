@@ -29,7 +29,7 @@ germi	NOUN	germe	23787	-	Full
 Apro	VERB	aprire	11737|21341|36265|37017	-	Full
 il	ART	il	-	-	Hidden
 rubinetto	NOUN	rubinetto	-	-	Hidden
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 bagno	VERB	bagnare	-	-	TextOnly
 le	ART	la	8477	-	Full
 mani	NOUN	mano	9830	-	Full
@@ -42,7 +42,7 @@ acqua	NOUN	acqua	6889	-	Full
 Prendo	VERB	prendere	10148|6888|32773	-	Full
 il	ART	il	8476	-	Full
 sapone	NOUN	sapone	25171|2964|8094	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 strofino	VERB	strofinare	35977|34371	-	Full
 bene	ADV	bene	5397	-	Full
 le	ART	la	8477	-	Full
@@ -59,7 +59,7 @@ Conto	VERB	contare	2714	-	Full
 fino	ADP	fino	7771	-	Full
 a	ADP	a	-	-	Hidden
 venti	NUM	venti	29550	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 poi	ADV	poi	-	-	TextOnly
 sciacquo	VERB	sciacquare	8977|34824	-	Full
 il	ART	il	8476	-	Full
@@ -70,7 +70,7 @@ sapone	NOUN	sapone	25171|2964|8094	-	Full
 Chiudo	VERB	chiudere	11739|37022	-	Full
 il	ART	il	-	-	Hidden
 rubinetto	NOUN	rubinetto	-	-	Hidden
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 asciugo	VERB	asciugare	2566|30520|37049	-	Full
 le	ART	la	-	-	Hidden
 mani	NOUN	mano	-	-	Hidden
@@ -90,7 +90,7 @@ essere	AUX	essere	-	-	Hidden
 stato	VERB	essere	5581	PAST	Full
 in	ADP	in	7034	-	Full
 bagno	NOUN	bagno	27555|5921|37331|38626|38627|39122	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 dopo	ADP	dopo	13080|32749	-	Full
 aver	AUX	avere	-	-	Hidden
 giocato	VERB	giocare	2439|6537|23392|36884	PAST	Full
@@ -106,7 +106,7 @@ pulite	ADJ	pulito	26172|4680	-	Full
 ,	PUNCT	,	-	-	TextOnly
 sto	VERB	stare	13630	-	Full
 bene	ADV	bene	-	-	Hidden
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 posso	MODAL	potere	35949	-	Full
 mangiare	VERB	mangiare	2349|6456|28641	-	Full
 con	ADP	con	7064	-	Full

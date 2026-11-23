@@ -88,7 +88,9 @@ pub fn open_engine(dir: &Path) -> Result<Engine<Mmap>, LoadError> {
             Err(e) => Err(LoadError::Io(path, e)),
         }
     };
+    let priors = read("ambiguity_priors.tsv")?;
     let curated = Curated::parse(&read("lemma_picto.tsv")?, &read("blocklist.tsv")?)
+        .and_then(|c| c.with_priors(&priors))
         .map_err(LoadError::Curated)?;
     let build_id = lexicon.morph.build_id();
     let mut engine = Engine::new(lexicon.morph, lexicon.picto, curated);

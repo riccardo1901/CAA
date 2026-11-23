@@ -903,7 +903,14 @@ impl<D: AsRef<[u8]>> Engine<D> {
     /// Chiave ARASAAC del verbo pronominale ("lavare" → "lavarsi": infinito senza -e più "si";
     /// "condurre" → "condursi").
     fn pronominal_picto(&self, lemma: &str) -> Option<u32> {
-        self.picto_for_key(&pronominal_lemma(lemma)?)
+        let key = pronominal_lemma(lemma)?;
+        // Una riga di lemma_picto per il verbo pronominale ("fermarsi") vince sull'indice.
+        if let Some(id) = self.curated.preferred(&key, Cat::Verb) {
+            if !self.curated.is_blocked(&[key.as_str()], id) {
+                return Some(id);
+            }
+        }
+        self.picto_for_key(&key)
     }
 
     /// Il pittogramma di una parola chiave ARASAAC esatta (senza i bloccati).
@@ -1155,6 +1162,7 @@ impl<D: AsRef<[u8]>> Engine<D> {
                 if lemma_seen {
                     prior += LEMMA_BONUS;
                 }
+                prior += self.curated.prior_bonus(&p.key, a.cat);
                 // Spareggio a parità di categoria: come in M4, prima la lettura con pittogramma.
                 prior -= slot.rank[i] as f32 * 1e-3;
                 Node {
@@ -1491,7 +1499,12 @@ impl<D: AsRef<[u8]>> Engine<D> {
         let lemma_key = normalize_key(&a.lemma);
         let blocked = |id: u32| self.curated.is_blocked(&[key, lemma_key.as_str()], id);
         // 5. pittogramma preferito per lemma e categoria
-        if let Some(id) = self.curated.preferred(&lemma_key, a.cat) {
+        // Prima la riga che nomina la forma ("i" articolo, non la lettera "i"), poi quella del lemma.
+        if let Some(id) = self
+            .curated
+            .preferred(key, a.cat)
+            .or_else(|| self.curated.preferred(&lemma_key, a.cat))
+        {
             if !blocked(id) {
                 return Some(PictoChoice {
                     id,

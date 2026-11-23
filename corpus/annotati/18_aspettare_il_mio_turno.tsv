@@ -30,11 +30,11 @@ ancora	ADV	ancora	37162	-	Full
 .	PUNCT	.	-	-	TextOnly
 
 # frase: A volte devo aspettare e non è facile.
-A	ADP	a	27387|27564	-	Full
+A	ADP	a	7041|27387|27564	-	Full
 volte	NOUN	volta	-	-	Hidden
 devo	MODAL	dovere	15523	-	Full
 aspettare	VERB	aspettare	8109|16697|27547|28677|39062	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 non	ADV	non	5526|5525	-	Full
 è	VERB	essere	5581|36480	-	Full
 facile	ADJ	facile	4645|32302|32434	-	Full
@@ -80,9 +80,9 @@ nervoso	ADJ	nervoso	38930	-	Full
 ,	PUNCT	,	-	-	TextOnly
 respiro	VERB	respirare	34377|34409|34508	-	Full
 piano	ADV	piano	4676	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 dico	VERB	dire	9692|9693|28663	-	Full
-a	ADP	a	3021|7041	-	Full
+a	ADP	a	7041	-	Full
 me	PRON	me	2617|6632|7309|7310|31807	-	Full
 stesso	ADJ	stesso	-	-	TextOnly
 :	PUNCT	:	-	-	TextOnly
@@ -104,7 +104,7 @@ quando	CONJ	quando	24053	-	Full
 rispetto	VERB	rispettare	36720|11621	-	Full
 il	ART	il	8476	-	Full
 turno	NOUN	turno	7158|22190	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 giocano	VERB	giocare	2439|6537|23392|35717|35723|36884|37068|37952	-	Full
 volentieri	ADV	volentieri	-	-	TextOnly
 con	ADP	con	39801	-	Full

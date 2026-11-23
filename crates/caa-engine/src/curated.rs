@@ -2,8 +2,9 @@
 //! `blocklist.tsv`. Il motore non apre file: riceve il testo, e il docente può modificarli.
 //!
 //! Colonne (separate da tabulazione; righe vuote e `#` ignorate; l'ultima colonna, la nota, è facoltativa):
-//! * `lemma_picto.tsv`: `lemma`, `categoria` (NOUN, VERB…), `id` ARASAAC, `priorità` (intero)
+//! * `lemma_picto.tsv`: `lemma` (o forma: la forma vince sul lemma), `categoria` (NOUN, VERB…), `id` ARASAAC, `priorità` (intero)
 //! * `blocklist.tsv`: `chiave` (forma o lemma), `id` ARASAAC
+//! * `ambiguity_priors.tsv` (M7): `forma`, `categoria`, `peso` (si somma al prior del tagger)
 
 use std::collections::{HashMap, HashSet};
 
@@ -14,6 +15,7 @@ use crate::types::Cat;
 pub struct Curated {
     preferred: HashMap<String, Vec<(Cat, u32, i32)>>,
     blocked: HashSet<(String, u32)>,
+    priors: HashMap<(String, Cat), f32>,
 }
 
 fn rows(text: &str) -> impl Iterator<Item = (usize, Vec<&str>)> {
@@ -67,6 +69,38 @@ impl Curated {
         } else {
             Err(errors)
         }
+    }
+
+    /// Aggiunge `ambiguity_priors.tsv` (SPEC.md, fase 7: prior curati per le forme ambigue più
+    /// frequenti). Colonne: `forma`, `categoria`, `peso` (logaritmo naturale, si somma al prior del
+    /// treebank: positivo favorisce quella categoria per quella forma, negativo la sfavorisce).
+    pub fn with_priors(mut self, text: &str) -> Result<Self, Vec<String>> {
+        let mut errors = Vec::new();
+        for (line, f) in rows(text) {
+            match (
+                f.len() >= 3,
+                f.get(1).and_then(|c| Cat::from_name(c)),
+                f.get(2).and_then(|w| w.parse::<f32>().ok()),
+            ) {
+                (true, Some(cat), Some(weight)) if !f[0].is_empty() && weight.is_finite() => {
+                    self.priors.insert((normalize_key(f[0]), cat), weight);
+                }
+                _ => errors.push(format!("ambiguity_priors.tsv:{line}: riga non valida")),
+            }
+        }
+        if errors.is_empty() {
+            Ok(self)
+        } else {
+            Err(errors)
+        }
+    }
+
+    /// Peso curato per una forma normalizzata e una categoria (0 se non c'è).
+    pub fn prior_bonus(&self, key: &str, cat: Cat) -> f32 {
+        self.priors
+            .get(&(key.to_string(), cat))
+            .copied()
+            .unwrap_or(0.0)
     }
 
     /// Pittogramma preferito per un lemma e una categoria: priorità più alta, a parità id più basso.
@@ -124,6 +158,22 @@ mod tests {
                 "blocklist.tsv:1: riga non valida"
             ]
         );
+    }
+
+    #[test]
+    fn prior_curati_per_forma_e_categoria() {
+        let c = Curated::parse("", "")
+            .unwrap()
+            .with_priors("# forma\tcategoria\tpeso\naspetto\tVERB\t1.5\nAspetto\tNOUN\t-0.5\n")
+            .unwrap();
+        assert_eq!(c.prior_bonus("aspetto", Cat::Verb), 1.5);
+        assert_eq!(c.prior_bonus("aspetto", Cat::Noun), -0.5);
+        assert_eq!(c.prior_bonus("aspetto", Cat::Adj), 0.0);
+        assert_eq!(c.prior_bonus("altro", Cat::Verb), 0.0);
+        let e = Curated::empty()
+            .with_priors("a\tBOH\t1\nb\tVERB\tx\nsolo\n")
+            .unwrap_err();
+        assert_eq!(e.len(), 3, "{e:?}");
     }
 
     #[test]

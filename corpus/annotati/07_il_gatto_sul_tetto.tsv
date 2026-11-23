@@ -13,18 +13,18 @@ Briciola	PROPN	briciola	-	-	TextOnly
 salito	VERB	salire	2795|6617|8226	PAST	Full
 sul	ARTADP	su	5451|7814	-	Full
 tetto	NOUN	tetto	2584	-	Full
-e	CONJ	e	11399|3026	-	Full
+e	CONJ	e	11399	-	Full
 non	ADV	non	5526|5525	-	Full
 è	AUX	essere	-	-	Hidden
 riuscito	VERB	riuscire	11750|35949	PAST	Full
-a	ADP	a	7041|3021	-	Full
+a	ADP	a	7041	-	Full
 scendere	VERB	scendere	2654|6053|8035|34807|37244	-	Full
 .	PUNCT	.	-	-	TextOnly
 
 # frase: Miagolava forte e tremava dalla paura.
 Miagolava	VERB	miagolare	7156	PAST	Full
 forte	ADV	forte	36165|36047	-	Full
-e	CONJ	e	11399|3026	-	Full
+e	CONJ	e	11399	-	Full
 tremava	VERB	tremare	7109	PAST	Full
 dalla	ARTADP	da	11712	-	Full
 paura	NOUN	paura	10261|35571|39248|39668	-	Full
@@ -37,10 +37,10 @@ ha	AUX	avere	-	-	Hidden
 preso	VERB	prendere	10148|4606|32773|39414	PAST	Full
 la	ART	la	8476	-	Full
 scala	NOUN	scala	2743	-	Full
-e	CONJ	e	11399|3026	-	Full
+e	CONJ	e	11399	-	Full
 ha	AUX	avere	-	-	Hidden
 provato	VERB	provare	26144	PAST	Full
-a	ADP	a	7041|3021	-	Full
+a	ADP	a	7041	-	Full
 raggiungerlo	VERB	raggiungere	24208	-	Full
 ,	PUNCT	,	-	-	TextOnly
 ma	CONJ	ma	11377	-	Full
@@ -55,12 +55,12 @@ corta	ADJ	corto	4615|26002	-	Full
 Allora	ADV	allora	-	-	TextOnly
 ha	AUX	avere	-	-	Hidden
 chiamato	VERB	chiamare	36305|36306	PAST	Full
-i	ART	il	8477|3030	-	Full
+i	ART	il	8477	-	Full
 pompieri	NOUN	pompiere	2664|6066|11193	PLURAL	Full
 .	PUNCT	.	-	-	TextOnly
 
 # frase: I pompieri sono arrivati con un camion rosso e una scala lunghissima.
-I	ART	il	8477|3030	-	Full
+I	ART	il	8477	-	Full
 pompieri	NOUN	pompiere	2664|6066|11193	PLURAL	Full
 sono	AUX	essere	-	-	Hidden
 arrivati	VERB	arrivare	11708|13356|16805|16807	PAST	Full
@@ -68,7 +68,7 @@ con	ADP	con	7064	-	Full
 un	ART	un	8474	-	Full
 camion	NOUN	camion	6956|2306|4925|6982	-	Full
 rosso	ADJ	rosso	2808	-	Full
-e	CONJ	e	11399|3026	-	Full
+e	CONJ	e	11399	-	Full
 una	ART	una	8474	-	Full
 scala	NOUN	scala	2743	-	Full
 lunghissima	ADJ	lungo	4675|26162	-	Full
@@ -81,7 +81,7 @@ pompiere	NOUN	pompiere	2664|6066|11193	-	Full
 salito	VERB	salire	8226|2795|6617	PAST	Full
 piano	ADV	piano	4676	-	Full
 piano	ADV	piano	4676	-	Full
-e	CONJ	e	11399|3026	-	Full
+e	CONJ	e	11399	-	Full
 ha	AUX	avere	-	-	Hidden
 preso	VERB	prendere	10148|4606|32773|39414	PAST	Full
 il	ART	il	8476	-	Full
@@ -97,7 +97,7 @@ ha	AUX	avere	-	-	Hidden
 fatto	VERB	fare	11749|32751	PAST	Full
 le	ART	la	8477	-	Full
 fusa	NOUN	fusa	-	-	TextOnly
-e	CONJ	e	11399|3026	-	Full
+e	CONJ	e	11399	-	Full
 ha	AUX	avere	-	-	Hidden
 leccato	VERB	leccare	37025|37026|39016|15355|16611	PAST	Full
 la	ART	la	8476	-	Full
@@ -108,7 +108,7 @@ pompiere	NOUN	pompiere	2664|6066|11193	-	Full
 
 # frase: Tutti i bambini del palazzo hanno applaudito.
 Tutti	DET	tutto	5596|27091|32438	-	Full
-i	ART	il	8477|3030	-	Full
+i	ART	il	8477	-	Full
 bambini	NOUN	bambino	31462|6975|7178|36560	-	Full
 del	ARTADP	di	11712	-	Full
 palazzo	NOUN	palazzo	5989	-	Full

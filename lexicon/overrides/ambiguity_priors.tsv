@@ -1,0 +1,22 @@
+# Prior curati per le forme ambigue frequenti (SPEC.md, fase 7). Si sommano al prior del treebank,
+# che e' fatto di giornali e leggi: nei testi per bambini la prima persona del presente e' molto
+# piu' frequente del nome omografo ("aspetto", "cammino", "entro", "conto").
+# forma	categoria	peso (logaritmo naturale; positivo favorisce)	nota
+aspetto	VERB	4.5	prima persona di aspettare, piu' frequente del nome
+cammino	VERB	4.5	prima persona di camminare
+entro	VERB	4.5	prima persona di entrare, piu' frequente della preposizione
+conto	VERB	4.5	prima persona di contare
+bagno	VERB	4.5	prima persona di bagnare; il nome resta possibile
+uso	VERB	4.5	prima persona di usare
+porto	VERB	4.5	prima persona di portare
+respiro	VERB	4.5	prima persona di respirare
+rispetto	VERB	4.5	prima persona di rispettare
+urlo	VERB	4.5	prima persona di urlare
+salto	VERB	4.5	prima persona di saltare
+gioco	VERB	4.5	prima persona di giocare
+lavo	VERB	4.5	prima persona di lavare
+sogno	VERB	4.5	prima persona di sognare
+passo	VERB	4.5	prima persona di passare
+quando	CONJ	1.5	nei testi per bambini quasi sempre congiunzione ("quando suona"), non interrogativo
+fino	ADP	2	"fino a": preposizione piu' frequente dell'aggettivo
+piano	ADV	1.5	"piano piano", "cammina piano"; dopo l'articolo il nome vince per le transizioni

@@ -17,7 +17,7 @@ cuore	NOUN	cuore	2715|4613	-	Full
 che	PRON	che	11351	-	Full
 batte	VERB	battere	-	-	TextOnly
 forte	ADV	forte	25121	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 le	ART	la	8477	-	Full
 guance	NOUN	guancia	2919	PLURAL	Full
 che	PRON	che	11351	-	Full
@@ -27,7 +27,7 @@ calde	ADJ	caldo	35561|28655|26716|35597|4583	-	Full
 
 # frase: Succede a tutti.
 Succede	VERB	succedere	-	-	TextOnly
-a	ADP	a	3021|7041	-	Full
+a	ADP	a	7041	-	Full
 tutti	PRON	tutto	36081	-	Full
 .	PUNCT	.	-	-	TextOnly
 
@@ -37,7 +37,7 @@ sono	VERB	essere	5581|36480	-	Full
 arrabbiato	ADJ	arrabbiato	21820|2374|31884|35539|35567	-	Full
 non	ADV	non	5526|5525	-	Full
 urlo	VERB	urlare	4686|7120|31125|31127|6552|36137	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 non	ADV	non	5526|5525	-	Full
 do	VERB	dare	39082|15463|16845|34349|34488|34489	-	Full
 calci	NOUN	calcio	-	-	Hidden
@@ -46,7 +46,7 @@ calci	NOUN	calcio	-	-	Hidden
 # frase: Mi fermo e faccio tre respiri lunghi.
 Mi	CLITIC	mi	-	-	Hidden
 fermo	VERB	fermare	37185	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 faccio	VERB	fare	11749|32751	-	Full
 tre	NUM	tre	2629	-	Full
 respiri	NOUN	respiro	34377|34409|34508	PLURAL	Full
@@ -60,7 +60,7 @@ in	ADP	in	7034	-	Full
 un	ART	un	8474	-	Full
 angolo	NOUN	angolo	39269	-	Full
 tranquillo	ADJ	tranquillo	-	-	Hidden
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 abbracciare	VERB	abbracciare	34369|6023	-	Full
 il	ART	il	8476	-	Full
 mio	DET	mio	12264	-	Full
@@ -87,7 +87,7 @@ po'	ADV	poco	37661|5546	-	Full
 la	ART	la	8476	-	Full
 rabbia	NOUN	rabbia	35567|2374|21820|31884|35539	-	Full
 passa	VERB	passare	-	-	TextOnly
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 mi	CLITIC	mi	-	-	Hidden
 sento	VERB	sentire	37719|30194|30195|30196|30197|30198	-	Full
 meglio	ADV	meglio	5397|39515	-	Full
@@ -108,12 +108,12 @@ gentili	ADJ	gentile	33994	-	Full
 # frase: La maestra e i miei amici capiscono e sono fieri di me.
 La	ART	la	8476	-	Full
 maestra	NOUN	maestra	2456|6555|28003	-	Full
-e	CONJ	e	3026	-	Full
-i	ART	il	8477|3030	-	Full
+e	CONJ	e	11399	-	Full
+i	ART	il	8477	-	Full
 miei	DET	mio	12266	-	Full
 amici	NOUN	amico	2255|25792	-	Full
 capiscono	VERB	capire	6019	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 sono	VERB	essere	5581|36480	-	Full
 fieri	ADJ	fiero	31408	-	Full
 di	ADP	di	7074	-	Full

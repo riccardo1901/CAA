@@ -16,7 +16,7 @@ Si	CLITIC	si	-	-	Hidden
 è	AUX	essere	-	-	Hidden
 svegliata	VERB	svegliarsi	8988|8989|25209|28625|31857	PAST	Full
 presto	ADV	presto	-	-	TextOnly
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 ha	AUX	avere	-	-	Hidden
 trovato	VERB	trovare	24741|24742|24773|24774	PAST	Full
 un	ART	un	8474	-	Full
@@ -51,7 +51,7 @@ ha	AUX	avere	-	-	Hidden
 espresso	VERB	esprimere	-	PAST	TextOnly
 un	ART	un	8474	-	Full
 desiderio	NOUN	desiderio	36518	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 ha	AUX	avere	-	-	Hidden
 soffiato	VERB	soffiare	34506|10179|16895|7258	PAST	Full
 forte	ADV	forte	-	-	TextOnly
@@ -65,7 +65,7 @@ arrivati	VERB	arrivare	11708|13356|16805|16807	PAST	Full
 gli	ART	il	8477	-	Full
 amici	NOUN	amico	2255|25792	-	Full
 con	ADP	con	7064	-	Full
-i	ART	il	3030	-	Full
+i	ART	il	8477	-	Full
 regali	NOUN	regalo	3149|25381	PLURAL	Full
 .	PUNCT	.	-	-	TextOnly
 
@@ -93,7 +93,7 @@ Hanno	AUX	avere	-	-	Hidden
 giocato	VERB	giocare	2439|6537|23392	PAST	Full
 in	ADP	in	7034	-	Full
 giardino	NOUN	giardino	2434|30608|37986	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 hanno	AUX	avere	-	-	Hidden
 cantato	VERB	cantare	2315|6960|28657|32015	PAST	Full
 la	ART	il	8476	-	Full
@@ -139,7 +139,7 @@ si	CLITIC	si	-	-	Hidden
 messa	VERB	mettersi	34494|34569|32135	PAST	Full
 il	ART	il	8476	-	Full
 pigiama	NOUN	pigiama	2522	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 si	CLITIC	si	-	-	Hidden
 è	AUX	essere	-	-	Hidden
 addormentata	VERB	addormentarsi	2369|6479|28623	PAST	Full

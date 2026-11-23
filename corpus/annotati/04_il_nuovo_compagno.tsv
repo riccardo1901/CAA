@@ -18,7 +18,7 @@ nuovo	ADJ	nuovo	4705|11316	-	Full
 Si	CLITIC	si	-	-	Hidden
 chiama	VERB	chiamarsi	27357|7061	-	Full
 Karim	PROPN	karim	-	-	TextOnly
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 viene	VERB	venire	11708|13356	-	Full
 da	ADP	da	7077	-	Full
 un	ART	un	8474	-	Full
@@ -30,7 +30,7 @@ lontano	ADJ	lontano	30385|36759	-	Full
 Karim	PROPN	karim	-	-	TextOnly
 era	VERB	essere	5581|5465|5858	PAST	Full
 timido	ADJ	timido	8707|31750|37791|6922	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 non	ADV	non	5526|5525	-	Full
 parlava	VERB	parlare	3345|6517|36544	PAST	Full
 molto	ADV	molto	5521|25708	-	Full
@@ -42,9 +42,9 @@ maestra	NOUN	maestra	2456|6555|28003	-	Full
 lo	CLITIC	lo	6480|31670	-	Full
 ha	AUX	avere	-	-	Hidden
 presentato	VERB	presentare	31902|11308|16823|39430	PAST	Full
-a	ADP	a	3021	-	Full
+a	ADP	a	7041	-	Full
 tutti	PRON	tutto	36081	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 lo	CLITIC	lo	6480|31670	-	Full
 ha	AUX	avere	-	-	Hidden
 fatto	VERB	fare	11749|32751	PAST	Full
@@ -84,7 +84,7 @@ noi	PRON	noi	31672|31674|32306	-	Full
 Karim	PROPN	karim	-	-	TextOnly
 ha	AUX	avere	-	-	Hidden
 sorriso	VERB	sorridere	13354	PAST	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 ha	AUX	avere	-	-	Hidden
 detto	VERB	dire	31973	PAST	Full
 di	ADP	di	-	-	Hidden
@@ -96,7 +96,7 @@ Hanno	AUX	avere	-	-	Hidden
 giocato	VERB	giocare	31892|35371|35411|6537	PAST	Full
 a	ADP	a	-	-	Hidden
 palla	NOUN	palla	-	-	Hidden
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 Karim	PROPN	karim	-	-	TextOnly
 ha	AUX	avere	-	-	Hidden
 segnato	VERB	segnare	-	PAST	TextOnly
@@ -132,7 +132,7 @@ Adesso	ADV	adesso	13026|32747|9848	-	Full
 ha	VERB	avere	7271|32761	-	Full
 tanti	DET	tanto	25492|7168	-	Full
 amici	NOUN	amico	2255|25792	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 non	ADV	non	5526|5525	-	Full
 è	VERB	essere	5581|5465|5858	-	Full
 più	ADV	più	-	-	TextOnly

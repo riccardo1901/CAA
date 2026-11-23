@@ -23,7 +23,7 @@ ha	AUX	avere	-	-	Hidden
 messo	VERB	mettere	8166|6989|32757	PAST	Full
 nello	ARTADP	in	7034	-	Full
 zaino	NOUN	zaino	2475	-	Full
-e	CONJ	e	11399|3026	-	Full
+e	CONJ	e	11399	-	Full
 ha	AUX	avere	-	-	Hidden
 salutato	VERB	salutare	6009|6522|34567|37807	PAST	Full
 la	ART	la	8476	-	Full
@@ -31,7 +31,7 @@ mamma	NOUN	mamma	2458|31148	-	Full
 .	PUNCT	.	-	-	TextOnly
 
 # frase: A scuola, però, non ha trovato il panino.
-A	ADP	a	7041|7034|3021	-	Full
+A	ADP	a	7041|7034	-	Full
 scuola	NOUN	scuola	3082|6454	-	Full
 ,	PUNCT	,	-	-	TextOnly
 però	ADV	però	11377	-	Full
@@ -52,7 +52,7 @@ zaino	NOUN	zaino	2475	-	Full
 sotto	ADP	sotto	5437|7047|5355	-	Full
 il	ART	il	8476	-	Full
 banco	NOUN	banco	36285	-	Full
-e	CONJ	e	11399|3026	-	Full
+e	CONJ	e	11399	-	Full
 perfino	ADV	perfino	-	-	TextOnly
 nell'	ARTADP	in	7034	-	Full
 armadio	NOUN	armadio	2258|6909	-	Full
@@ -66,7 +66,7 @@ Niente	PRON	niente	29839|32522	-	Full
 Pietro	PROPN	pietro	-	-	TextOnly
 era	VERB	essere	5581|5465|5466|5858|36480	PAST	Full
 triste	ADJ	triste	2606|7286|11959|31939|35545	-	Full
-e	CONJ	e	11399|3026	-	Full
+e	CONJ	e	11399	-	Full
 aveva	VERB	avere	7272|35559|35579	PAST	Full
 fame	NOUN	fame	-	-	Hidden
 .	PUNCT	.	-	-	TextOnly
@@ -93,7 +93,7 @@ Hanno	AUX	avere	-	-	Hidden
 mangiato	VERB	mangiare	2349|6456|28641	PAST	Full
 una	ART	una	8474	-	Full
 mela	NOUN	mela	2462|13644|13645	-	Full
-a	ADP	a	7041|3021	-	Full
+a	ADP	a	7041	-	Full
 metà	NOUN	metà	19570|5516	-	Full
 .	PUNCT	.	-	-	TextOnly
 
@@ -126,7 +126,7 @@ Pietro	PROPN	pietro	-	-	TextOnly
 ha	AUX	avere	-	-	Hidden
 ringraziato	VERB	ringraziare	38783	PAST	Full
 Davide	PROPN	davide	-	-	TextOnly
-e	CONJ	e	11399|3026	-	Full
+e	CONJ	e	11399	-	Full
 gli	CLITIC	gli	6481|31670	-	Full
 ha	AUX	avere	-	-	Hidden
 regalato	VERB	regalare	16025|16877|16879|16881	PAST	Full

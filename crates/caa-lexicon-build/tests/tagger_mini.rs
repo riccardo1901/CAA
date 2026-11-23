@@ -26,6 +26,10 @@ fn sentence(id: usize, words: &[(&str, &str, &str)]) -> String {
 }
 
 fn tagged() -> caa_engine::engine::Engine<Vec<u8>> {
+    tagged_with(engine("", ""))
+}
+
+fn tagged_with(base: caa_engine::engine::Engine<Vec<u8>>) -> caa_engine::engine::Engine<Vec<u8>> {
     let mut text = String::new();
     // "porta" è verbo dopo un nome ("il maestro porta"), nome dopo l'articolo ("la porta").
     for i in 0..6 {
@@ -55,7 +59,7 @@ fn tagged() -> caa_engine::engine::Engine<Vec<u8>> {
         .iter()
         .all(|s| s.tokens.iter().all(|t| t.cat.is_some())));
     let build = build_tagger(&sentences, 7).unwrap();
-    engine("", "").with_tagger(Tagger::new(build.bytes).unwrap())
+    base.with_tagger(Tagger::new(build.bytes).unwrap())
 }
 
 fn word<'a>(tokens: &'a [Token], surface: &str) -> &'a Token {
@@ -137,4 +141,19 @@ fn un_numero_in_cifre_vale_come_in_lettere() {
         (cat(p), p.confidence)
     };
     assert_eq!(porta(&con_cifra), porta(&con_lettere));
+}
+
+#[test]
+fn i_prior_curati_spostano_la_scelta() {
+    // Senza prior "pane" in "porta pane" resta com'e'; con un prior forte per "porta" = nome o
+    // verbo la lettura cambia (M7: forme ambigue frequenti nei testi per bambini).
+    let senza = tagged();
+    let frase = "Porta il pane.";
+    let base = cat(word(&senza.symbolize_text(frase), "Porta"));
+    let (a_favore, contro) = ("Porta\tNOUN\t6\n", "Porta\tVERB\t6\n");
+    let noun = tagged_with(common::engine_priors(a_favore));
+    let verb = tagged_with(common::engine_priors(contro));
+    assert_eq!(cat(word(&noun.symbolize_text(frase), "Porta")), Cat::Noun);
+    assert_eq!(cat(word(&verb.symbolize_text(frase), "Porta")), Cat::Verb);
+    let _ = base;
 }

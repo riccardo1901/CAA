@@ -25,3 +25,12 @@ Una riga per token, 6 colonne separate da tabulazione: `forma`, `categoria`, `le
 - **Pittogrammi accettati** (colonna 4): gli id ARASAAC che un docente accetterebbe per quel significato in quella frase, separati da `|`. Più di uno quando vanno bene più immagini. Gli ausiliari nascosti hanno `-`.
 - **Espressioni**: dove ARASAAC ha un pittogramma che copre davvero un'espressione della frase ("far colazione", "lavarsi i denti", "andare a scuola"), la testa è la prima parola con l'id dell'espressione e le altre parole assorbite sono `Hidden`. Altrimenti ogni parola ha il suo simbolo.
 - Un pittogramma sbagliato nel significato (per esempio "sale" = condimento dove serve "salire") **non** si accetta, anche se l'immagine è per la parola giusta.
+
+## Cose da sapere sull'annotazione (M7)
+
+- Le bozze del motore sono state corrette da cinque annotatori indipendenti (uno ogni quattro testi). Chi annota tende a lasciare la bozza com'è dove non è sicuro: per questo, dopo l'annotazione, le tre parole grammaticali più frequenti che il motore sbagliava nelle bozze ("e", "a", "i": la bozza dava la lettera dell'alfabeto) sono state **armonizzate**: il pittogramma accettato è quello grammaticale (11399, 7041, 8477), mai la lettera. Senza questa armonizzazione la misura di partenza sarebbe stata gonfiata dagli annotatori che avevano accettato le lettere.
+- Il lemma dei verbi pronominali si scrive "lavarsi" ma per il motore è "lavare" (il pronominale sta nel pittogramma): la misura li considera uguali.
+- I riflessivi della stessa persona ("mi lavo", "si è messa") sono sempre `Hidden`, anche se ARASAAC non ha il verbo con "-si"; "c'è", "ci sono" = "esserci" (il "ci" è nascosto).
+- Sinonimi: dove una parola non ha pittogramma gli annotatori hanno accettato quello di un sinonimo sensato ("tornare" → "ritornare"); è il tipo di scelta che in M8 farà il menu delle alternative e che il motore impara dai file curati.
+- 14 testi di sviluppo e 6 di prova; la prova non si usa per correggere (nemmeno guardando le singole parole).
+

@@ -21,18 +21,18 @@ Un	ART	un	8474	-	Full
 giorno	NOUN	giorno	37371|26799|7022	-	Full
 si	CLITIC	si	-	-	Hidden
 schiusero	VERB	schiudere	28409	PAST	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 nacquero	VERB	nascere	34252	PAST	Full
 cinque	NUM	cinque	2631	-	Full
 anatroccoli	NOUN	anatroccolo	2563	PLURAL	Full
 gialli	ADJ	giallo	2648	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 uno	PRON	uno	4889|2627|7291	-	Full
 più	ADV	più	4658	-	Full
 grande	ADJ	grande	-	-	Hidden
 ,	PUNCT	,	-	-	TextOnly
 grigio	ADJ	grigio	3340	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 goffo	ADJ	goffo	-	-	TextOnly
 .	PUNCT	.	-	-	TextOnly
 
@@ -53,7 +53,7 @@ brutto	ADJ	brutto	4648|26090	-	Full
 # frase: Non somiglia a nessuno!".
 Non	ADV	non	5526	-	Full
 somiglia	VERB	somigliare	37590	-	Full
-a	ADP	a	3021	-	Full
+a	ADP	a	7041	-	Full
 nessuno	PRON	nessuno	11314|26941	-	Full
 !	PUNCT	!	-	-	TextOnly
 "	PUNCT	"	-	-	TextOnly
@@ -64,7 +64,7 @@ L'	ART	il	8476	-	Full
 anatroccolo	NOUN	anatroccolo	2563	-	Full
 era	VERB	essere	5581	PAST	Full
 triste	ADJ	triste	2606|11959|31939|35545	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 un	ART	un	8474	-	Full
 mattino	NOUN	mattino	25704	-	Full
 scappò	VERB	scappare	31014|38017|31015	PAST	Full
@@ -137,7 +137,7 @@ lo	CLITIC	lo	8476|31670	-	Full
 accolsero	VERB	accogliere	39677	PAST	Full
 con	ADP	con	7064	-	Full
 gioia	NOUN	gioia	8582	-	Full
-e	CONJ	e	3026	-	Full
+e	CONJ	e	11399	-	Full
 lui	PRON	lui	31670	-	Full
 non	ADV	non	5526	-	Full
 fu	VERB	essere	5581	PAST	Full
