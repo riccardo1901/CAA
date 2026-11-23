@@ -236,7 +236,7 @@ Lavora su una copia per la ricerca; il testo originale resta intatto per la visu
 
 Divide su spazi e punteggiatura, poi gestisce i casi italiani:
 
-- **Elisione**: un token che contiene `'` seguito da lettera si divide in due: `l'albero` → `l'` + `albero`; `dell'acqua` → `dell'` + `acqua`; `c'era` → `c'` + `era`; `quest'anno` → `quest'` + `anno`. Il prefisso eliso si risolve con una piccola tabella (`l'` → il/la/lo, `un'` → una, `dell'` → di + il, `c'` → ci, `m'` → mi, `s'` → si, `t'` → ti, `v'` → vi, `d'` → di, `quest'`, `quell'`, `nessun'`, `buon'`, `sant'`).
+- **Elisione**: un token che contiene `'` seguito da lettera si divide in due: `l'albero` → `l'` + `albero`; `dell'acqua` → `dell'` + `acqua`; `c'era` → `c'` + `era`; `quest'anno` → `quest'` + `anno`. Il prefisso eliso si risolve con una piccola tabella (`l'` → il/la/lo, `un'` → una, `dell'` → di + il, `c'` → ci, `m'` → mi, `s'` → si, `t'` → ti, `v'` → vi, `d'` → di, `quest'`, `quell'`, `nessun'`, `buon'`, `sant'`, più le preposizioni articolate `all'`, `dall'`, `nell'`, `sull'`; la tabella è `ELIDED_PREFIXES` in `caa-engine`).
 - **Eccezioni**: `po'` (troncamento: "un po'" è un'espressione), `mo'`, imperativi tronchi `da'`, `fa'`, `di'`, `sta'`, `va'`.
 - **Numeri**: cifre come token `Number`; "3" e "tre" hanno lo stesso trattamento. Orari ("alle 8", "8:30") e date restano token unici.
 - **Trattini**: `anti-age` resta un token; il trattino di dialogo (– o — a inizio riga) è punteggiatura.

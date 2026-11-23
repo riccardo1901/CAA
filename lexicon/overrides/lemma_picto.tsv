@@ -1,2 +1,11 @@
 # Pittogramma preferito per lemma e categoria. Priorita piu alta = preferito.
 # lemma	categoria (NOUN, VERB, ADJ, ADV...)	id ARASAAC	priorita (intero)	nota
+consigliare	VERB	37708	1	refuso nella chiave ARASAAC: cnsigliare
+responsabilità	NOUN	37234	1	refuso nella chiave ARASAAC: responsabilit
+scorciatoia	NOUN	38284	1	refuso nella chiave ARASAAC: scorciatioia
+paragrafo	NOUN	28251	1	refuso nella chiave ARASAAC: paràgrafo
+antilope	NOUN	27570	1	refuso nella chiave ARASAAC: antílope
+bulloneria	NOUN	24280	1	refuso nella chiave ARASAAC: bullonerìa
+cheesecake	NOUN	38499	1	refuso nella chiave ARASAAC: cheescake
+machete	NOUN	38513	1	refuso nella chiave ARASAAC: macete
+orangotango	NOUN	39491	1	refuso nella chiave ARASAAC: orangotan

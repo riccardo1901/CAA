@@ -20,6 +20,19 @@ pub fn normalize_key(s: &str) -> String {
     lower.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
+/// Prefissi elisi riconosciuti dal tokenizzatore (SPEC.md, fase 2: l', un', dell', c', m', s', t', v',
+/// d', quest', quell', nessun', buon', sant'), più le altre preposizioni articolate elise
+/// (all', dall', nell', sull'). Sempre con l'apostrofo e in minuscolo.
+pub const ELIDED_PREFIXES: [&str; 18] = [
+    "l'", "un'", "dell'", "all'", "dall'", "nell'", "sull'", "c'", "m'", "s'", "t'", "v'", "d'",
+    "quest'", "quell'", "nessun'", "buon'", "sant'",
+];
+
+/// Vero se `s` (con l'apostrofo finale, già normalizzato) è un prefisso eliso noto.
+pub fn is_elided_prefix(s: &str) -> bool {
+    ELIDED_PREFIXES.contains(&s)
+}
+
 /// Versione senza accenti di una stringa, usata solo come ripiego per i refusi
 /// ("perche" → trova "perché"). Non va mai usata per la ricerca principale.
 pub fn fold_accents(s: &str) -> String {
@@ -69,6 +82,21 @@ mod tests {
             let once = normalize_key(s);
             assert_eq!(normalize_key(&once), once);
         }
+    }
+
+    #[test]
+    fn prefissi_elisi() {
+        for p in ["l'", "dell'", "all'", "sull'", "un'", "quest'", "sant'"] {
+            assert!(is_elided_prefix(p), "{p}");
+        }
+        // Senza apostrofo, o fuori tabella: no. "po'" è un troncamento, non un prefisso eliso.
+        for p in ["l", "dell", "sott'", "po'", "", "'"] {
+            assert!(!is_elided_prefix(p), "{p:?}");
+        }
+        // La tabella contiene solo prefissi minuscoli già normalizzati.
+        assert!(ELIDED_PREFIXES
+            .iter()
+            .all(|p| normalize_key(p) == *p && p.ends_with('\'')));
     }
 
     #[test]
