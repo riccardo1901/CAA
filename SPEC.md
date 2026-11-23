@@ -145,7 +145,7 @@ Tre fonti, tenute in **file separati** e unite solo a runtime tramite la stringa
 
 File TSV leggibili e modificabili da un docente, versionati in git:
 
-- `forms_extra.tsv`: forme mancanti (`forma, lemma, tratti`)
+- `forms_extra.tsv`: forme mancanti (`forma, lemma, tratti`); per le parole con una chiave ARASAAC bastano le eccezioni (fase 3, punto 2)
 - `lemma_picto.tsv`: pittogramma preferito per lemma e categoria, con priorità (`lemma, categoria, id, priorità, nota`)
 - `mwe_extra.tsv`: espressioni multiparola aggiuntive
 - `function_words.tsv`: comportamento di articoli, preposizioni, ausiliari (simbolo, nessun simbolo, simbolo ridotto)
@@ -268,9 +268,10 @@ Il primo compito su questi dati è **elencare tutte le etichette distinte** pres
 **Parole sconosciute** (non in lessico):
 
 1. **Maiuscola, anche a inizio frase** → lettura `Propn` con punteggio alto ("Marco", "Crema"). Le parole che invece sono in lessico ma hanno la maiuscola a metà frase ("Rosa", "Bianca", "Serena") ricevono una lettura Propn in più, con bonus: decide la fase 7.
-2. **Errore di battitura**: ricerca con automa di Levenshtein a distanza 1 sul lessico (il crate `fst` lo supporta nativamente). Se c'è una sola forma vicina frequente, la si propone come lettura con confidenza bassa e la parola viene sottolineata.
-3. **Indovino per suffisso**: `-mente` → avverbio; `-zione`, `-sione`, `-tà` → nome femminile; `-are/-ere/-ire` → infinito; `-ando/-endo` → gerundio; `-ato/-uto/-ito` → participio. Sempre confidenza bassa.
-4. Altrimenti token `Unknown`: nessun simbolo, sottolineatura.
+2. **Chiave ARASAAC esatta**: se la forma non ha letture in Morph-it! (né in `forms_extra.tsv`) ma, normalizzata, è una chiave di `picto_index.bin`, si crea una lettura dalla categoria della parola chiave ARASAAC (tipi verificati in `docs/RAPPORTO-M1.md`): tipo 1 → `Propn`, tipo 2 → `Noun`, tipo 3 → `Verb` all'infinito, tipo 4 → `Adj` (`Adv` se termina in `-mente`). I tipi 5 e 6 (frasi, lettere, orari) e le chiavi senza tipo non producono una lettura e si prosegue con i punti seguenti. Il lemma è la chiave stessa; se la chiave è un plurale indicato da ARASAAC (flag `PLURAL_FORM`), la lettura è plurale e il lemma è la parola chiave singolare (se l'indice non basta per risalirvi, `picto_index.bin` si estende con il singolare). Genere e numero si deducono dal flag di plurale e dal suffisso (-o/-i, -a/-e); dove restano dubbi il tratto resta vuoto e decide la fase 7. Confidenza intermedia, da tarare sul corpus: la parola ha un pittogramma, ma l'analisi grammaticale è dedotta. È la regola che rende inutile elencare a mano in `forms_extra.tsv` le parole con un pittogramma ma sconosciute a Morph-it! (a novembre 2026 circa 1.150 nomi comuni); `forms_extra.tsv` resta per le eccezioni e per le forme coniugate dei verbi. `caa-eval` riporta quante parole del corpus sono risolte in questo modo.
+3. **Errore di battitura**: ricerca con automa di Levenshtein a distanza 1 sul lessico (il crate `fst` lo supporta nativamente). Se c'è una sola forma vicina frequente, la si propone come lettura con confidenza bassa e la parola viene sottolineata.
+4. **Indovino per suffisso**: `-mente` → avverbio; `-zione`, `-sione`, `-tà` → nome femminile; `-are/-ere/-ire` → infinito; `-ando/-endo` → gerundio; `-ato/-uto/-ito` → participio. Sempre confidenza bassa.
+5. Altrimenti token `Unknown`: nessun simbolo, sottolineatura.
 
 ### 4. Clitici e verbi pronominali
 
@@ -442,7 +443,7 @@ I file restano separati per licenza (vedi Fonti dati). Il join avviene in memori
 4. Lemmatizza ogni chiave multiparola con il motore stesso (bootstrap: prima si costruisce il lessico morfologico, poi si usa per il trie).
 5. Calcola le statistiche del tagger dal treebank (conteggi, smoothing additivo per i trigrammi, ripiego su bigrammi).
 6. Scrive i file e un `manifest.json` con versioni delle fonti, data, numero di schema, conteggi (forme, lemmi, pittogrammi, chiavi senza pittogramma, pittogrammi senza chiave italiana).
-7. Stampa un **rapporto di copertura**: quante parole chiave ARASAAC italiane non hanno un lemma in Morph-it! (vanno in `forms_extra.tsv` o sono multiparola).
+7. Stampa un **rapporto di copertura**: quante parole chiave ARASAAC italiane non hanno un lemma in Morph-it! (le parole di una parola con una chiave ARASAAC sono coperte dalla fase 3, punto 2; in `forms_extra.tsv` vanno le eccezioni e le forme coniugate dei verbi).
 
 I passi 4 e 5 (trie delle multiparola, statistiche del tagger) non fanno parte di M2: dipendono dal motore e dal treebank e arrivano con M4–M6 e M5.
 
@@ -524,7 +525,7 @@ Colonne: forma, categoria, lemma, pittogrammi accettati (uno o più id separati 
 
 In base a come sono fatti questi sistemi, i guadagni maggiori arrivano di solito in quest'ordine. Va verificato sui nostri dati, ma è l'ordine con cui attaccare l'elenco degli errori:
 
-1. **Lacune di lessico**: forme e lemmi mancanti in `forms_extra.tsv` (lessico scolastico, nomi propri frequenti nelle storie).
+1. **Lacune di lessico**: forme e lemmi mancanti in `forms_extra.tsv` (lessico scolastico, forme coniugate di verbi rari; le parole con una chiave ARASAAC sono già coperte dalla lettura da chiave, fase 3).
 2. **Sensi preferiti**: `lemma_picto.tsv` per i lemmi in cui ARASAAC propone più pittogrammi e il primo non è quello scolastico.
 3. **Prior delle forme ambigue** frequenti (era, sale, porta, riso, ancora, piano, ora, fine).
 4. **Pesi delle regole** di contesto, tarati con una ricerca a griglia sul corpus (pochi parametri, si fa in minuti).
@@ -703,7 +704,7 @@ Dodici milestone in ordine di dipendenza. Ognuna si chiude solo quando il criter
     - *Accettazione*: caricamento < 300 ms; tutte le etichette mappate; rapporto delle chiavi ARASAAC senza lemma.
 4. **M3 — Prototipo editor.** ProseMirror con simboli finti (un'immagine fissa per parola) e le due soluzioni di resa A e B.
     - *Accettazione*: tutte le prove della sezione Editor superate da una delle due soluzioni, su un PC Windows della scuola.
-5. **M4 — Motore, fasi 1–3 e 8.** Normalizzazione, tokenizzazione, letture, scelta del pittogramma senza contesto (prima lettura).
+5. **M4 — Motore, fasi 1–3 e 8.** Normalizzazione, tokenizzazione, letture (compresa la lettura da chiave ARASAAC per le parole sconosciute a Morph-it!), scelta del pittogramma senza contesto (prima lettura).
     - *Accettazione*: test dorati di tokenizzazione ed elisione verdi; ogni parola del lessico scolastico di base riceve un pittogramma.
 6. **M5 — Disambiguazione.** Statistiche del tagger dal treebank, Viterbi, forward-backward, regole di contesto, confidenza.
     - *Accettazione*: test dorati 1, 2, 9, 10, 17, 18, 19 verdi.
