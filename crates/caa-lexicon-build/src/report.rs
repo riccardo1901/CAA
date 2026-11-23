@@ -28,8 +28,13 @@ pub struct TypeCoverage {
 #[derive(Debug, Default)]
 pub struct Coverage {
     pub by_type: BTreeMap<u8, TypeCoverage>,
-    /// Parole chiave con cifre (numeri, orari): non sono parole del lessico, escluse dal conto.
+    /// Parole chiave distinte con cifre (numeri, orari; anche di più parole): non sono parole del
+    /// lessico, escluse dal conto.
     pub with_digits: usize,
+    /// Chiavi distinte di una sola parola (senza cifre). Una chiave con due tipi conta una volta.
+    pub keys_total: usize,
+    /// …di cui trovate (come forma, come lemma o come infinito riflessivo).
+    pub keys_found: usize,
     /// Parole chiave di una parola senza forma né lemma: chiave, tipi, primi 5 id.
     pub without_lemma: Vec<(String, BTreeSet<u8>, Vec<u32>)>,
     pub multiword_total: usize,
@@ -70,9 +75,11 @@ pub fn coverage(morph: &MorphLexicon<Vec<u8>>, pictograms: &[Pictogram]) -> Cove
     let mut cov = Coverage::default();
     let mut missing: BTreeMap<String, (BTreeSet<u8>, Vec<u32>)> = BTreeMap::new();
     let mut multi_seen: BTreeSet<String> = BTreeSet::new();
+    let mut digit_keys: BTreeSet<&str> = BTreeSet::new();
+    let mut distinct: BTreeMap<&str, bool> = BTreeMap::new();
     for ((key, kind), ids) in &groups {
         if key.chars().any(|c| c.is_ascii_digit()) {
-            cov.with_digits += 1;
+            digit_keys.insert(key);
             continue;
         }
         let parts = pieces(key);
@@ -106,6 +113,7 @@ pub fn coverage(morph: &MorphLexicon<Vec<u8>>, pictograms: &[Pictogram]) -> Cove
         let reflexive = !found
             && reflexive_base(key)
                 .is_some_and(|base| morph.lookup(&base).iter().any(is_infinitive_verb));
+        distinct.insert(key, found || reflexive);
         if reflexive {
             t.found += 1;
             t.reflexive += 1;
@@ -128,6 +136,9 @@ pub fn coverage(morph: &MorphLexicon<Vec<u8>>, pictograms: &[Pictogram]) -> Cove
             m.1.truncate(5);
         }
     }
+    cov.with_digits = digit_keys.len();
+    cov.keys_total = distinct.len();
+    cov.keys_found = distinct.values().filter(|ok| **ok).count();
     cov.without_lemma = missing
         .into_iter()
         .map(|(k, (t, ids))| (k, t, ids))
@@ -242,13 +253,11 @@ pub fn render_markdown(
         w,
         "## Copertura: parole chiave ARASAAC con un lemma in Morph-it!\n"
     );
-    let _ = writeln!(w, "Parole chiave di una sola parola, distinte, senza cifre ({} chiavi con cifre escluse). \"Trovata\" = compare come forma o come lemma, oppure è un infinito riflessivo scomponibile in verbo base + clitico (`lavarsi`).\n", cov.with_digits);
+    let _ = writeln!(w, "Parole chiave di una sola parola, senza cifre ({} chiavi con cifre, di una o più parole, sono escluse). \"Trovata\" = compare come forma o come lemma, oppure è un infinito riflessivo scomponibile in verbo base + clitico (`lavarsi`). Una chiave con due tipi compare in entrambe le righe; il totale conta le chiavi distinte.\n", cov.with_digits);
     let _ = writeln!(w, "| Tipo | Significato | Chiavi | Trovate | % | Con infinito verbale | di cui riflessivi | Con lettura di nome |");
     let _ = writeln!(w, "| --- | --- | --- | --- | --- | --- | --- | --- |");
-    let (mut tk, mut tf) = (0, 0);
+    let (tk, tf) = (cov.keys_total, cov.keys_found);
     for (t, c) in &cov.by_type {
-        tk += c.keys;
-        tf += c.found;
         let _ = writeln!(
             w,
             "| {t} | {} | {} | {} | {} | {} | {} | {} |",
@@ -381,6 +390,21 @@ mod tests {
         assert_eq!(unknown.get("mangiarsi qui"), Some(&vec!["qui"]));
         assert!(!unknown.contains_key("direttore d'orchestra"));
         assert!(!unknown.contains_key("un po'"));
+    }
+
+    #[test]
+    fn il_totale_conta_le_chiavi_distinte_anche_se_hanno_due_tipi() {
+        // Regressione (revisione M0-M2): una chiave con due tipi era contata due volte nel totale,
+        // quindi trovate + senza lemma non faceva il totale.
+        let m = morph("casa\tcasa\tNOUN-F:s\n");
+        let p = pictograms(
+            r#"[{"_id":1,"keywords":[{"type":2,"keyword":"casa"},{"type":4,"keyword":"casa"},{"type":0,"keyword":"zampogna"},{"type":2,"keyword":"zampogna"},{"type":2,"keyword":"mandola"}]}]"#,
+        );
+        let c = coverage(&m, &p);
+        assert_eq!((c.keys_total, c.keys_found), (3, 1));
+        assert_eq!(c.keys_total, c.keys_found + c.without_lemma.len());
+        // Le righe per tipo contano la chiave in ciascuno dei suoi tipi.
+        assert_eq!(c.by_type.values().map(|t| t.keys).sum::<usize>(), 5);
     }
 
     #[test]

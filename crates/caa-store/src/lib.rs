@@ -45,9 +45,11 @@ pub struct Lexicon {
 fn map(path: &Path) -> Result<Mmap, LoadError> {
     let io = |e| LoadError::Io(path.to_path_buf(), e);
     let file = File::open(path).map_err(io)?;
-    // SAFETY: i file del lessico sono installati in sola lettura e il programma non li modifica
-    // mentre sono mappati; se un altro processo li troncasse, la lettura potrebbe fallire ma i
-    // lettori di `caa-engine` controllano comunque ogni intervallo prima di usarlo.
+    // SAFETY: i file del lessico sono installati in sola lettura e il programma non li modifica.
+    // Il rischio di `mmap` è un file troncato da un altro processo mentre è mappato: su Linux e
+    // macOS la lettura darebbe SIGBUS (i controlli sugli intervalli dei lettori non bastano), su
+    // Windows la scrittura fallirebbe. `caa-lexicon-build` scrive in modo atomico (file
+    // temporaneo e rinomina), quindi un file già mappato non viene mai troncato sul posto.
     unsafe { Mmap::map(&file) }.map_err(io)
 }
 

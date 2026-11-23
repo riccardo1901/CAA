@@ -134,19 +134,35 @@ impl<D: AsRef<[u8]>> MorphLexicon<D> {
             (a as usize, b as usize)
         };
         let f = feats.as_ref();
-        let offsets_len = (n_lemmas + 1) * 4;
-        if f.len() < HEADER_SIZE + offsets_len {
+        // Aritmetica con controllo: su 32 bit (WebAssembly) un'intestazione ostile non deve
+        // "avvolgere" i calcoli e superare i controlli di lunghezza.
+        let corrupt = || LexiconError::Corrupt(FILE);
+        let offsets_len = n_lemmas
+            .checked_add(1)
+            .and_then(|n| n.checked_mul(4))
+            .ok_or_else(corrupt)?;
+        let blob_start = HEADER_SIZE.checked_add(offsets_len).ok_or_else(corrupt)?;
+        if f.len() < blob_start {
             return Err(LexiconError::Truncated(FILE));
         }
-        let blob_len = rd_u32(f, HEADER_SIZE + n_lemmas * 4) as usize;
-        let blob_start = HEADER_SIZE + offsets_len;
-        let readings_start = blob_start + blob_len;
-        if f.len() != readings_start + n_readings * READING_SIZE {
-            return Err(LexiconError::Corrupt(FILE));
+        let blob_len = rd_u32(f, blob_start - 4) as usize;
+        let readings_start = blob_start.checked_add(blob_len).ok_or_else(corrupt)?;
+        let total = n_readings
+            .checked_mul(READING_SIZE)
+            .and_then(|r| readings_start.checked_add(r))
+            .ok_or_else(corrupt)?;
+        if f.len() != total {
+            return Err(corrupt());
         }
+        // `fst::Map::new` non controlla l'integrità: un byte alterato supererebbe l'apertura e
+        // manderebbe in panic la ricerca. `verify` controlla la somma di controllo scritta da fst.
+        let forms = fst::Map::new(forms)?;
+        forms.as_fst().verify()?;
+        let lemmas = fst::Map::new(lemmas)?;
+        lemmas.as_fst().verify()?;
         Ok(MorphLexicon {
-            forms: fst::Map::new(forms)?,
-            lemmas: fst::Map::new(lemmas)?,
+            forms,
+            lemmas,
             feats,
             n_lemmas,
             n_readings,
@@ -162,8 +178,14 @@ impl<D: AsRef<[u8]>> MorphLexicon<D> {
             return Vec::new();
         };
         let (offset, count) = unpack_span(v);
-        let start = self.readings_start + offset * READING_SIZE;
-        let Some(bytes) = self.feats.as_ref().get(start..start + count * READING_SIZE) else {
+        let range = offset
+            .checked_mul(READING_SIZE)
+            .and_then(|o| self.readings_start.checked_add(o))
+            .and_then(|start| {
+                let end = start.checked_add(count.checked_mul(READING_SIZE)?)?;
+                Some(start..end)
+            });
+        let Some(bytes) = range.and_then(|r| self.feats.as_ref().get(r)) else {
             return Vec::new();
         };
         bytes
@@ -280,10 +302,15 @@ impl<D: AsRef<[u8]>> PictoIndex<D> {
             let (a, b) = check_header(data.as_ref(), MAGIC_PICTO, FILE)?;
             (a as usize, b as usize)
         };
+        let corrupt = || LexiconError::Corrupt(FILE);
         let fst_start = HEADER_SIZE;
-        let records_start = fst_start + fst_len;
-        if data.as_ref().len() != records_start + n_records * PICTO_RECORD_SIZE {
-            return Err(LexiconError::Corrupt(FILE));
+        let records_start = fst_start.checked_add(fst_len).ok_or_else(corrupt)?;
+        let total = n_records
+            .checked_mul(PICTO_RECORD_SIZE)
+            .and_then(|r| records_start.checked_add(r))
+            .ok_or_else(corrupt)?;
+        if data.as_ref().len() != total {
+            return Err(corrupt());
         }
         let data = Arc::new(data);
         let keys = fst::Map::new(Section {
@@ -291,6 +318,7 @@ impl<D: AsRef<[u8]>> PictoIndex<D> {
             start: fst_start,
             end: records_start,
         })?;
+        keys.as_fst().verify()?; // vedi MorphLexicon::new
         Ok(PictoIndex {
             keys,
             data,
@@ -305,11 +333,14 @@ impl<D: AsRef<[u8]>> PictoIndex<D> {
             return Vec::new();
         };
         let (offset, count) = unpack_span(v);
-        let start = self.records_start + offset * PICTO_RECORD_SIZE;
-        let Some(bytes) = (*self.data)
-            .as_ref()
-            .get(start..start + count * PICTO_RECORD_SIZE)
-        else {
+        let range = offset
+            .checked_mul(PICTO_RECORD_SIZE)
+            .and_then(|o| self.records_start.checked_add(o))
+            .and_then(|start| {
+                let end = start.checked_add(count.checked_mul(PICTO_RECORD_SIZE)?)?;
+                Some(start..end)
+            });
+        let Some(bytes) = range.and_then(|r| (*self.data).as_ref().get(r)) else {
             return Vec::new();
         };
         bytes

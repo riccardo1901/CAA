@@ -1,0 +1,7 @@
+# Fine riga uniforme (LF) anche sul checkout Windows; i file binari non si toccano.
+* text=auto eol=lf
+*.webp binary
+*.png binary
+*.ico binary
+*.icns binary
+*.zip binary

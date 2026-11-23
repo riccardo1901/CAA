@@ -1,7 +1,7 @@
 // Scarica Morph-it! e lo converte da ISO-8859-15 a UTF-8.
 // Uscita: data/raw/morphit/morph-it.utf8.txt, readme e licenze (fuori da git).
 import { execFileSync } from "node:child_process";
-import { readdir, readFile, writeFile, copyFile } from "node:fs/promises";
+import { readdir, readFile, writeFile, copyFile, rm } from "node:fs/promises";
 import path from "node:path";
 import { MORPHIT_DIR, URLS, ensureDir } from "./lib.mjs";
 
@@ -12,8 +12,10 @@ const tgz = path.join(MORPHIT_DIR, "morph-it.tgz");
 execFileSync("curl", ["-fsSL", "--retry", "5", "--retry-delay", "3", "-o", tgz, URLS.morphit]);
 
 const extracted = path.join(MORPHIT_DIR, "extracted");
+await rm(extracted, { recursive: true, force: true }); // niente residui di versioni precedenti
 await ensureDir(extracted);
-execFileSync("tar", ["-xzf", tgz, "-C", extracted]); // tar è presente anche su Windows 10/11
+// Percorsi relativi con `cwd`: il tar GNU di Git Bash leggerebbe "C:\..." come un host remoto.
+execFileSync("tar", ["-xzf", "morph-it.tgz", "-C", "extracted"], { cwd: MORPHIT_DIR }); // tar c'è anche su Windows 10/11
 
 const dir = path.join(extracted, "current_version");
 const files = await readdir(dir);

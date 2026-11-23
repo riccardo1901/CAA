@@ -119,7 +119,15 @@ pub fn index_entries(pictograms: &[Pictogram]) -> BTreeMap<String, Vec<PictoEntr
                     n_keys,
                 },
             );
-            if let Some(pl) = k.plural.as_ref().filter(|pl| **pl != k.key) {
+            // Per le frasi ARASAAC indica spesso solo il plurale della testa ("mettere un cartello"
+            // → "cartelli"): registrarlo come chiave autonoma farebbe vincere il pittogramma
+            // sbagliato. Il plurale vale solo se ha le stesse parole della chiave.
+            let same_words = |pl: &str| pl.split(' ').count() == k.key.split(' ').count();
+            if let Some(pl) = k
+                .plural
+                .as_ref()
+                .filter(|pl| **pl != k.key && same_words(pl))
+            {
                 let entry = PictoEntry {
                     id: p.id,
                     keyword_type: k.kind,
@@ -190,6 +198,30 @@ mod tests {
         ));
         let ids: Vec<u32> = m["porta"].iter().map(|e| e.id).collect();
         assert_eq!(ids, vec![5, 30]);
+    }
+
+    #[test]
+    fn il_plurale_di_una_frase_non_diventa_una_chiave_di_una_parola() {
+        // Regressione (revisione M0-M2): ARASAAC indica come plurale solo la testa della frase
+        // ("mettere un cartello" → "cartelli"). Registrarlo come chiave autonoma faceva vincere
+        // il pittogramma sbagliato per "cartelli" ("meno chiavi = più specifico").
+        let m = index_entries(&pics(
+            r#"[{"_id":8065,"keywords":[{"type":2,"keyword":"cartello"},{"type":2,"keyword":"insegna"}]},
+                {"_id":33958,"keywords":[{"type":3,"keyword":"mettere un cartello","plural":"cartelli"}]},
+                {"_id":1,"keywords":[{"type":2,"keyword":"cartello","plural":"cartelli"}]},
+                {"_id":2,"keywords":[{"type":2,"keyword":"tartaruga marina","plural":"tartarughe marine"}]},
+                {"_id":3,"keywords":[{"type":2,"keyword":"lettore dvd","plural":"lettori"}]}]"#,
+        ));
+        let ids: Vec<u32> = m["cartelli"].iter().map(|e| e.id).collect();
+        assert_eq!(
+            ids,
+            vec![1],
+            "solo il pittogramma di una parola con plurale di una parola"
+        );
+        assert!(!m.contains_key("lettori"));
+        // Una frase con un plurale della stessa lunghezza resta valida.
+        assert!(m["tartarughe marine"][0].has_flag(picto_flags::PLURAL_FORM));
+        assert!(m["tartarughe marine"][0].has_flag(picto_flags::MULTIWORD));
     }
 
     #[test]

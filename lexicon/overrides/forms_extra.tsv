@@ -199,10 +199,6 @@ ipovedente	ipovedente	ADJ:pos+m+s	aggettivo in -e
 ipovedente	ipovedente	ADJ:pos+f+s	aggettivo in -e
 ipovedenti	ipovedente	ADJ:pos+m+p	aggettivo in -e
 ipovedenti	ipovedente	ADJ:pos+f+p	aggettivo in -e
-trasgender	trasgender	ADJ:pos+m+s	aggettivo invariabile
-trasgender	trasgender	ADJ:pos+f+s	aggettivo invariabile
-trasgender	trasgender	ADJ:pos+m+p	aggettivo invariabile
-trasgender	trasgender	ADJ:pos+f+p	aggettivo invariabile
 lilla	lilla	ADJ:pos+m+s	aggettivo invariabile
 lilla	lilla	ADJ:pos+f+s	aggettivo invariabile
 lilla	lilla	ADJ:pos+m+p	aggettivo invariabile
@@ -264,3 +260,15 @@ igienizzante	igienizzante	ADJ:pos+m+s	aggettivo in -e; frequente come parte di c
 igienizzante	igienizzante	ADJ:pos+f+s	aggettivo in -e; frequente come parte di chiavi multiparola
 igienizzanti	igienizzante	ADJ:pos+m+p	aggettivo in -e; frequente come parte di chiavi multiparola
 igienizzanti	igienizzante	ADJ:pos+f+p	aggettivo in -e; frequente come parte di chiavi multiparola
+transgender	transgender	ADJ:pos+m+s	aggettivo invariabile; la chiave ARASAAC ha il refuso "trasgender"
+transgender	transgender	ADJ:pos+f+s	aggettivo invariabile; la chiave ARASAAC ha il refuso "trasgender"
+transgender	transgender	ADJ:pos+m+p	aggettivo invariabile; la chiave ARASAAC ha il refuso "trasgender"
+transgender	transgender	ADJ:pos+f+p	aggettivo invariabile; la chiave ARASAAC ha il refuso "trasgender"
+cheesecake	cheesecake	NOUN-F:s	nome; "la cheesecake" è l'uso prevalente; invariabile
+cheesecake	cheesecake	NOUN-F:p	nome; "la cheesecake" è l'uso prevalente; invariabile
+lilla	lilla	NOUN-M:s	nome: il colore ("il lilla"); invariabile
+lilla	lilla	NOUN-M:p	nome: il colore ("il lilla"); invariabile
+malva	malva	NOUN-M:s	nome: il colore ("il malva"); invariabile
+malva	malva	NOUN-M:p	nome: il colore ("il malva"); invariabile
+malva	malva	NOUN-F:s	nome: la pianta
+malve	malva	NOUN-F:p	nome: la pianta

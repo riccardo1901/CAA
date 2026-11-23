@@ -68,7 +68,13 @@ fn write(path: &Path, bytes: &[u8]) -> Result<(), String> {
     if let Some(dir) = path.parent() {
         fs::create_dir_all(dir).map_err(|e| io_err(dir, e))?;
     }
-    fs::write(path, bytes).map_err(|e| io_err(path, e))
+    // Scrittura atomica: file temporaneo e poi rinomina. Chi ha il vecchio file mappato in memoria
+    // (l'app in sviluppo) non lo vede mai troncato a metà.
+    let mut tmp = path.as_os_str().to_owned();
+    tmp.push(".tmp");
+    let tmp = PathBuf::from(tmp);
+    fs::write(&tmp, bytes).map_err(|e| io_err(&tmp, e))?;
+    fs::rename(&tmp, path).map_err(|e| io_err(path, e))
 }
 
 fn sha256_hex(bytes: &[u8]) -> String {

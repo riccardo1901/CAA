@@ -431,7 +431,7 @@ Prodotti da `caa-lexicon-build`, caricati con mmap all'avvio, versionati con un 
 
 I file restano separati per licenza (vedi Fonti dati). Il join avviene in memoria tramite la stringa del lemma normalizzata.
 
-**Formato (M2).** Ogni ricerca passa da un automa `fst` che restituisce la posizione di un record a lunghezza fissa; i file si leggono direttamente dalla memoria mappata, senza ricostruire strutture all'avvio (caricamento misurato: 0,02–0,06 ms). Il lettore sta in `caa-engine` e lavora su byte già caricati, l'apertura dei file con `mmap` sta in `caa-store`. Gli `.bin` iniziano con un'intestazione (magic, numero di schema) e il lettore rifiuta file troncati, incoerenti o di schema diverso.
+**Formato (M2).** Ogni ricerca passa da un automa `fst` che restituisce la posizione di un record a lunghezza fissa; i file si leggono direttamente dalla memoria mappata, senza ricostruire strutture all'avvio (caricamento misurato: 0,3–0,5 ms, compreso il controllo di integrità degli automi). Il lettore sta in `caa-engine` e lavora su byte già caricati, l'apertura dei file con `mmap` sta in `caa-store`. Gli `.bin` iniziano con un'intestazione (magic, numero di schema) e il lettore rifiuta file troncati, incoerenti o di schema diverso; gli automi `fst` si verificano con la loro somma di controllo all'apertura.
 
 **Normalizzazione delle chiavi** (identica alla build e a runtime, unica funzione condivisa): minuscolo, NFC, apostrofi uniformati, spazi singoli. Gli accenti **restano** ("pera" e "perà" non devono collassare), ma esiste una seconda chiave senza accenti usata solo come ripiego per i refusi (la funzione `fold_accents` è in `caa-engine`; l'indice dedicato si costruisce in M4–M5, quando serve).
 

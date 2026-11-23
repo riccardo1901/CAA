@@ -184,6 +184,38 @@ fn la_build_e_deterministica() {
     }
 }
 
+fn files_under(dir: &Path, out: &mut Vec<PathBuf>) {
+    for e in fs::read_dir(dir).unwrap().flatten() {
+        let p = e.path();
+        if p.is_dir() {
+            files_under(&p, out);
+        } else {
+            out.push(p);
+        }
+    }
+}
+
+#[test]
+fn la_build_si_puo_ripetere_sulla_stessa_cartella_senza_residui() {
+    // I file si scrivono in modo atomico (temporaneo + rinomina): nessun ".tmp" resta, e una
+    // seconda build sopra la prima dà gli stessi byte.
+    let tmp = tempfile::tempdir().unwrap();
+    run(&config(tmp.path())).unwrap();
+    let first = fs::read(tmp.path().join("morphit/morph_feats.bin")).unwrap();
+    run(&config(tmp.path())).unwrap();
+    assert_eq!(
+        first,
+        fs::read(tmp.path().join("morphit/morph_feats.bin")).unwrap()
+    );
+    let mut files = Vec::new();
+    files_under(tmp.path(), &mut files);
+    let leftovers: Vec<_> = files
+        .iter()
+        .filter(|p| p.extension().is_some_and(|e| e == "tmp"))
+        .collect();
+    assert!(leftovers.is_empty(), "{leftovers:?}");
+}
+
 #[test]
 fn etichetta_non_mappata_ferma_la_build() {
     let pictograms = [];
@@ -288,7 +320,61 @@ fn lettori_rifiutano_file_corrotti() {
     assert_eq!((found, expected), (99, 1));
     // Automa non valido.
     assert!(matches!(
-        MorphLexicon::new(vec![1, 2, 3], lem, feats),
+        MorphLexicon::new(vec![1, 2, 3], lem.clone(), feats.clone()),
         Err(LexiconError::Fst(_))
     ));
+
+    // Regressione (revisione M0-M2): un byte alterato dentro un automa ben formato superava i
+    // controlli di intestazione e poi mandava in panic la ricerca. La somma di controllo lo rifiuta.
+    for i in [fst.len() / 3, fst.len() / 2, fst.len() - 20] {
+        let mut bad = fst.clone();
+        bad[i] ^= 0xFF;
+        assert!(
+            matches!(
+                MorphLexicon::new(bad, lem.clone(), feats.clone()),
+                Err(LexiconError::Fst(_))
+            ),
+            "morph.fst byte {i}"
+        );
+    }
+    let mut bad_lem = lem.clone();
+    let mid = bad_lem.len() / 2;
+    bad_lem[mid] ^= 0xFF;
+    assert!(
+        matches!(
+            MorphLexicon::new(fst.clone(), bad_lem, feats.clone()),
+            Err(LexiconError::Fst(_))
+        ),
+        "lemmas.fst"
+    );
+    let fst_len = u32::from_le_bytes(picto[12..16].try_into().unwrap()) as usize;
+    for i in [16 + fst_len / 3, 16 + fst_len / 2, 16 + fst_len - 20] {
+        let mut bad = picto.clone();
+        bad[i] ^= 0xFF;
+        assert!(
+            matches!(PictoIndex::new(bad), Err(LexiconError::Fst(_))),
+            "picto_index.bin byte {i}"
+        );
+    }
+}
+
+#[test]
+fn intestazioni_con_conteggi_enormi_sono_errori_non_panic() {
+    // Intestazione valida con conteggi assurdi e file minuscolo: errore, mai panic.
+    let mut feats = Vec::new();
+    feats.extend_from_slice(b"CAAF");
+    feats.extend_from_slice(&1u32.to_le_bytes());
+    feats.extend_from_slice(&u32::MAX.to_le_bytes());
+    feats.extend_from_slice(&u32::MAX.to_le_bytes());
+    feats.extend_from_slice(&[0; 8]);
+    let tmp = tempfile::tempdir().unwrap();
+    run(&config(tmp.path())).unwrap();
+    let r = |p: &str| fs::read(tmp.path().join(p)).unwrap();
+    assert!(MorphLexicon::new(r("morphit/morph.fst"), r("morphit/lemmas.fst"), feats).is_err());
+    let mut picto = Vec::new();
+    picto.extend_from_slice(b"CAAP");
+    picto.extend_from_slice(&1u32.to_le_bytes());
+    picto.extend_from_slice(&u32::MAX.to_le_bytes());
+    picto.extend_from_slice(&u32::MAX.to_le_bytes());
+    assert!(PictoIndex::new(picto).is_err());
 }
