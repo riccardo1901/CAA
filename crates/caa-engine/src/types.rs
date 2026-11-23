@@ -144,6 +144,26 @@ impl Enclitic {
     pub fn as_str(self) -> &'static str {
         ENCLITICS[self.0 as usize - 1]
     }
+
+    /// I clitici che lo compongono, in forma canonica ("melo" → mi + lo, "gliela" → gli + la).
+    pub fn pieces(self) -> Vec<&'static str> {
+        let s = self.as_str();
+        for (prefix, canonical) in [
+            ("glie", "gli"),
+            ("me", "mi"),
+            ("te", "ti"),
+            ("ce", "ci"),
+            ("ve", "vi"),
+            ("se", "si"),
+        ] {
+            if let Some(rest) = s.strip_prefix(prefix) {
+                if let Some(second) = ENCLITICS.iter().find(|e| **e == rest) {
+                    return vec![canonical, second];
+                }
+            }
+        }
+        vec![s]
+    }
 }
 
 /// Tratti morfologici di una lettura.

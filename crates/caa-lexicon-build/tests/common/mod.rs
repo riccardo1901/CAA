@@ -50,6 +50,11 @@ così\tcosì\tADV
 già\tgià\tADV
 caffè\tcaffè\tNOUN-M:s
 caffè\tcaffè\tNOUN-M:p
+lavare\tlavare\tVER:inf+pres
+dicendo\tdire\tVER:ger+pres
+prendi\tprendere\tVER:impr+pres+2+s
+giova\tgiovare\tVER:impr+pres+2+s
+giovane\tgiovane\tADJ:pos+m+s
 ";
 
 pub const ARASAAC: &str = r#"[

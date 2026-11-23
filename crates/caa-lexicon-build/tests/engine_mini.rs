@@ -322,3 +322,51 @@ fn offset_utf16_con_emoji_e_accenti() {
     assert_eq!(word(&t, "perché").span_utf16, (before, before + 6));
     assert_eq!(before, 9);
 }
+
+// --- Fase 4: clitici attaccati al verbo -------------------------------------------------
+
+fn enclitic(t: &Token) -> Vec<(String, &'static str, ReadingSource)> {
+    t.readings
+        .iter()
+        .filter_map(|r| {
+            r.feats
+                .enclitic
+                .map(|e| (r.lemma.clone(), e.as_str(), r.source))
+        })
+        .collect()
+}
+
+#[test]
+fn verbo_con_due_clitici_si_scompone() {
+    let t = run("Portamelo");
+    let found = enclitic(&t[0]);
+    assert_eq!(
+        found,
+        vec![("portare".into(), "melo", ReadingSource::Enclitic)]
+    );
+    assert_eq!(t[0].analysis.as_ref().unwrap().cat, Cat::Verb);
+    // Gli intervalli non cambiano: resta un token solo.
+    assert_eq!((t.len(), t[0].span_utf16), (1, (0, 9)));
+}
+
+#[test]
+fn infinito_e_gerundio_con_clitico() {
+    let t = run("lavarsi dicendolo prendilo");
+    let get = |i: usize| {
+        enclitic(&t[i])
+            .pop()
+            .unwrap_or_else(|| panic!("token {i}: {:?}", t[i]))
+    };
+    assert_eq!(get(0), ("lavare".into(), "si", ReadingSource::Enclitic));
+    assert_eq!(get(1), ("dire".into(), "lo", ReadingSource::Enclitic));
+    assert_eq!(get(2), ("prendere".into(), "lo", ReadingSource::Enclitic));
+}
+
+#[test]
+fn non_si_scompone_una_parola_che_non_e_un_verbo_con_clitico() {
+    // "giovane" = giova (imperativo di giovare) + ne? No: è un aggettivo di Morph-it!.
+    for w in ["giovane", "pane", "pasta", "scuola", "maestre"] {
+        let t = run(w);
+        assert!(enclitic(&t[0]).is_empty(), "{w}");
+    }
+}

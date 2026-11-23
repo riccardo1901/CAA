@@ -4,6 +4,7 @@
 //! compilato e la conversione degli offset in unità UTF-16. Le fasi del motore arrivano
 //! nelle milestone successive (M4 e seguenti).
 
+pub mod clitics;
 pub mod curated;
 pub mod engine;
 pub mod golden;

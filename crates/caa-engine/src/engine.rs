@@ -97,6 +97,8 @@ pub enum ReadingSource {
     Capital,
     /// Parola sconosciuta a Morph-it! ma chiave ARASAAC: categoria dal tipo della parola chiave.
     ArasaacKey,
+    /// Verbo con clitici attaccati, scomposto dal motore ("portamelo").
+    Enclitic,
     /// Una sola forma del lessico a distanza 1.
     Typo,
     /// Indovinata dal suffisso.
@@ -809,6 +811,55 @@ impl<D: AsRef<[u8]>> Engine<D> {
             .collect()
     }
 
+    /// Fase 4: verbo con clitici attaccati che Morph-it! non ha ("portamelo", "dillo"). Non si
+    /// scompone una parola che è già un verbo con clitico in Morph-it! né una parola funzionale
+    /// ("dalla" non è dare + la).
+    fn enclitic_readings(&self, key: &str, existing: &[Analysis]) -> Vec<Analysis> {
+        if key.chars().count() < 4
+            || existing.iter().any(|a| {
+                a.feats.enclitic.is_some()
+                    || matches!(
+                        a.cat,
+                        Cat::Art
+                            | Cat::ArtAdp
+                            | Cat::Adp
+                            | Cat::Pron
+                            | Cat::Clitic
+                            | Cat::Conj
+                            | Cat::Det
+                    )
+            })
+        {
+            return Vec::new();
+        }
+        let verbs = |form: &str| -> Vec<crate::clitics::HostReading> {
+            self.morph
+                .lookup(form)
+                .into_iter()
+                .filter(|r| matches!(r.cat, Cat::Verb | Cat::Aux | Cat::Modal))
+                .filter(|r| r.feats.enclitic.is_none())
+                .map(|r| crate::clitics::HostReading {
+                    lemma: self.morph.lemma(r.lemma_id).unwrap_or("").to_string(),
+                    cat: r.cat,
+                    feats: r.feats,
+                })
+                .collect()
+        };
+        // Un imperativo ricostruito ("giova" + ne) è troppo facile da confondere con una parola
+        // vera ("giovane"): vale solo per forme sconosciute a Morph-it!, tranne gli imperativi
+        // tronchi (fallo, dammi), che hanno forma propria.
+        let known = !existing.is_empty();
+        crate::clitics::split_enclitics(key, &verbs)
+            .into_iter()
+            .filter(|s| {
+                !known
+                    || s.feats.mood != Some(Mood::Impr)
+                    || crate::clitics::TRUNCATED_IMPERATIVES.contains(&s.host.as_str())
+            })
+            .map(|s| analysis(&s.lemma, s.cat, s.feats, ReadingSource::Enclitic))
+            .collect()
+    }
+
     /// Chiave ARASAAC esatta (SPEC.md, fase 3, punto 2).
     fn arasaac_readings(&self, key: &str) -> Vec<Analysis> {
         let entries = self.picto.lookup(key);
@@ -1064,6 +1115,8 @@ impl<D: AsRef<[u8]>> Engine<D> {
             Some(a) => vec![a],
             None => self.lexicon_readings(key),
         };
+        let split = self.enclitic_readings(key, &readings);
+        readings.extend(split);
         let lexical = !readings.is_empty();
         if p.capitalized && (!lexical || !p.sentence_start) {
             // Maiuscola: nome proprio (anche a inizio frase se la parola è sconosciuta).
