@@ -15,7 +15,7 @@ Costruiamo un programma gratuito, installato sui PC della scuola, con cui i doce
 
 **Cosa facciamo diversamente.** Apri, scrivi, i simboli si flettono da soli, correggi con un clic, stampi. Un solo schermo. I documenti di riferimento stanno in una biblioteca condivisa sul server della scuola; ognuno ne fa una copia e la adatta ai propri studenti.
 
-**Simboli.** Pittogrammi ARASAAC (Governo d'Aragona, licenza CC BY-NC-SA): circa 13.000 simboli, con le parole italiane già associate. Il programma è e resta **non commerciale**: nessuna vendita, nessuna pubblicità.
+**Simboli.** Pittogrammi ARASAAC (Governo d'Aragona, licenza CC BY-NC-SA): circa 14.000 simboli (13.924 a novembre 2026), con le parole italiane già associate. Il programma è e resta **non commerciale**: nessuna vendita, nessuna pubblicità.
 
 ## Principi di progetto
 
@@ -122,23 +122,23 @@ Tre fonti, tenute in **file separati** e unite solo a runtime tramite la stringa
 
 | Fonte | Cosa fornisce | Licenza | File compilato |
 | --- | --- | --- | --- |
-| ARASAAC | Circa 13.000 pittogrammi, parole chiave italiane per pittogramma, categoria della parola chiave | CC BY-NC-SA 4.0 ([Global Symbols](https://globalsymbols.com/symbolsets/arasaac/symbols/14323?locale=tr)) | `picto_index.bin` + cartella immagini |
+| ARASAAC | 13.924 pittogrammi (novembre 2026), parole chiave italiane per pittogramma, categoria della parola chiave | CC BY-NC-SA 4.0 ([Global Symbols](https://globalsymbols.com/symbolsets/arasaac/symbols/14323?locale=tr)) | `picto_index.bin` + cartella immagini |
 | Morph-it! | Forme flesse → lemma + tratti morfologici | CC BY-SA 2.0 oppure LGPL, a scelta ([readme](https://app.unpkg.com/italian-verbs-dict@3.4.0/files/dist/readme-morph-it.txt)) | `morph.fst` + `morph_feats.bin` |
 | Correzioni curate (nostre) | Forme mancanti, lessico scolastico, preferenze lemma→pittogramma, regole su parole funzionali | Nostra scelta (consigliata CC BY-SA, per restituire alla comunità) | `overrides/*.tsv` versionati in git |
 
 ### ARASAAC
 
-- Ogni pittogramma ha un id numerico e, per lingua, una lista di parole chiave. Ogni parola chiave porta una **categoria numerica**: nei dati osservati il tipo 2 corrisponde ai nomi e il tipo 3 ai verbi ([bildquelle](https://github.com/Lautstark/bildquelle)). La mappatura completa (nomi propri, aggettivi e avverbi, contenuti sociali, varie) va verificata sui dati scaricati prima di usarla nel punteggio.
+- Ogni pittogramma ha un id numerico e, per lingua, una lista di parole chiave (124 pittogrammi non ne hanno in italiano). Ogni parola chiave porta una **categoria numerica**, verificata su esempi reali in M1 ([bildquelle](https://github.com/Lautstark/bildquelle) citava solo i tipi 2 e 3): 1 = nomi propri e luoghi, 2 = nomi comuni, 3 = verbi (anche perifrasi come "fare il bagno"), 4 = aggettivi, numeri e avverbi, 5 = frasi, esclamazioni e cartelli, 6 = orari, mesi, pulsanti e parole funzionali isolate; 615 parole chiave non hanno tipo e non sono affidabili per il punteggio. Una parola chiave può avere un campo `plural` (7.079 casi: "ape" → "api"); 52 volte coincide con la parola stessa. Dettagli e conteggi in `docs/RAPPORTO-M1.md`.
 - Molte parole chiave sono **multiparola** ("ferro da stiro", "scuola media"): diventano voci del dizionario delle espressioni (fase 6 del motore).
-- Le immagini si scaricano per id dal server statico; un dataset pubblico usa lo schema `static.arasaac.org/pictograms/<id>/<id>_<risoluzione>.png` ([Propicto](https://huggingface.co/datasets/Propicto/propicto-orfeo/blob/ac2b428b88a77b1aa2257cc3a5209b63883de1c5/README.md)). Endpoint esatti e risoluzioni disponibili vanno verificati sulla documentazione sviluppatori di ARASAAC al momento dello script.
-- **Risoluzione consigliata:** 500 px, convertiti in WebP alla build. Basta per la stampa a dimensione "molto grande" e tiene l'installazione su qualche centinaio di MB (da misurare).
+- Le immagini si scaricano per id dal server statico; un dataset pubblico usa lo schema `static.arasaac.org/pictograms/<id>/<id>_<risoluzione>.png` ([Propicto](https://huggingface.co/datasets/Propicto/propicto-orfeo/blob/ac2b428b88a77b1aa2257cc3a5209b63883de1c5/README.md)). Verificati in M1: le parole chiave si scaricano da `https://api.arasaac.org/v1/pictograms/all/it` e le immagini sono disponibili a 300, 500 e 2500 px.
+- **Risoluzione consigliata:** 500 px, convertiti in WebP alla build. Basta per la stampa a dimensione "molto grande" e tiene l'installazione su qualche centinaio di MB (misurati: 239 MB per 13.924 immagini).
 - **Attribuzione obbligatoria** nel programma (schermata Informazioni) e in fondo a ogni stampa o PDF: pittogrammi di Sergio Palao, proprietà del Governo d'Aragona, ARASAAC, licenza CC BY-NC-SA.
 
 ### Morph-it!
 
 - Lessico di forme flesse con lemma e tratti: una riga per forma, nel formato `forma → lemma → tratti`, per esempio `caschi casco NOUN-M:p` e `abominevole abominevole ADJ:pos+m+s` ([LREC, DFKI](https://www-live.dfki.de/fileadmin/user_upload/import/6263_LREC-Merge-Res-IT-TD.pdf); [Corpora-List](https://listserv.linguistlist.org/pipermail/corpora/2004-November/005439.html)).
-- Già alla versione 0.11 conteneva circa 569.000 voci e 28.500 lemmi; le versioni successive superano i 35.000 lemmi.
-- **Lacune note, dichiarate dagli autori:** vocabolario quotidiano incompleto, nomi propri, prestiti, diminutivi e molte forme verbali con clitici attaccati ([UniBo](https://cris.unibo.it/handle/11585/15321)). Il motore deve quindi analizzare i clitici da sé (fase 4) e lo strato di correzioni deve coprire il lessico scolastico mancante.
+- La versione 048 (usata in M1) ha 505.074 righe, circa 404.700 forme e 34.600 lemmi (dopo la normalizzazione delle chiavi) e 664 etichette distinte; il file è in codifica ISO-8859-15 e va convertito in UTF-8. Due righe sono separate da spazi invece che da tabulazioni: il lettore le ripara. Il sito di Unibo rifiuta ogni User-Agent diverso da quello di curl, quindi lo script di scarico usa `curl`.
+- **Lacune note, dichiarate dagli autori:** vocabolario quotidiano incompleto, nomi propri, prestiti, diminutivi e molte forme verbali con clitici attaccati ([UniBo](https://cris.unibo.it/handle/11585/15321)). Il motore deve quindi analizzare i clitici da sé (fase 4) e lo strato di correzioni deve coprire il lessico scolastico mancante. La versione 048 contiene però già alcune forme con clitici attaccati (`dammi` = dare + mi, `lavarsi` = lavare + si), conservate come clitico nelle letture.
 - Le congiunzioni coordinanti e subordinanti non sono distinte: per noi è irrilevante.
 
 ### Correzioni curate
@@ -258,11 +258,12 @@ Per ogni token parola si cercano **tutte** le analisi nel lessico (`morph.fst` +
 **Mappatura dei tratti.** Le etichette di Morph-it! (oltre 600 combinazioni, come `VER:ind+pres+1+p`, `NOUN-F:p`, `VER:impr+pres+2+s`, `WH-CHE`; [R0mb0](https://github.com/R0mb0/Morph-it_Lexicon_Processor_Exporter), [ACL](https://aclanthology.org/2015.mtsummit-papers.12.pdf)) si convertono alla build in una struttura interna:
 
 ```rust
-pub enum Cat { Noun, Propn, Verb, Aux, Modal, Adj, Adv, Art, Adp, ArtAdp, Pron, Clitic, Det, Conj, Num, Intj, Punct }
-pub struct Feats { gender: Option<G>, number: Option<N>, mood: Option<Mood>, tense: Option<Tense>, person: Option<u8> }
+pub enum Cat { Noun, Propn, Verb, Aux, Modal, Adj, Adv, Art, Adp, ArtAdp, Pron, Clitic, Det, Conj, Num, Intj, Punct, Sym }
+pub struct Feats { gender: Option<G>, number: Option<N>, mood: Option<Mood>, tense: Option<Tense>, person: Option<u8>,
+                   degree: Option<Degree>, enclitic: Option<Enclitic>, verb_kind: VerbKind }
 ```
 
-Il primo compito su questi dati è **elencare tutte le etichette distinte** presenti nel file e scrivere la tabella di conversione completa: nessuna etichetta deve finire in un ramo "altro" non gestito.
+Il primo compito su questi dati è **elencare tutte le etichette distinte** presenti nel file e scrivere la tabella di conversione completa: nessuna etichetta deve finire in un ramo "altro" non gestito. Fatto in M2: le 664 etichette sono tutte mappate (`sym` raccoglie abbreviazioni, emoticon e simboli; `verb_kind` distingue i causativi e gli aspettuali CAU e ASP; `degree` il grado dell'aggettivo; `enclitic` i 41 clitici attaccati al verbo). La tabella è in `crates/caa-lexicon-build/src/labels.rs`, le scelte in `docs/RAPPORTO-M2.md`.
 
 **Parole sconosciute** (non in lessico):
 
@@ -420,16 +421,18 @@ Prodotti da `caa-lexicon-build`, caricati con mmap all'avvio, versionati con un 
 | File | Contenuto | Struttura | Licenza di derivazione |
 | --- | --- | --- | --- |
 | `morph.fst` | forma → indice nella tabella letture | `fst::Map` | Morph-it! (BY-SA / LGPL) |
-| `morph_feats.bin` | tabella letture: lemma id, categoria, tratti | array compatto (rkyv o bincode) | Morph-it! |
+| `morph_feats.bin` | testo dei lemmi e tabella letture (lemma id, categoria, tratti) | record da 12 byte letti direttamente dal file mappato | Morph-it! |
 | `lemmas.fst` | stringhe dei lemmi ↔ id | `fst::Map` | Morph-it! |
-| `picto_index.bin` | chiave normalizzata → lista di (id pittogramma, categoria, è prima chiave, numero chiavi, è plurale) | hash map serializzata | ARASAAC (BY-NC-SA) |
-| `mwe.trie` | sequenze di lemmi → pittogrammi | trie serializzato | ARASAAC |
-| `tagger.bin` | prior di lettura e trigrammi di categoria | tabelle di log-probabilità | treebank (licenza da verificare) |
+| `picto_index.bin` | chiave normalizzata → lista di (id pittogramma, tipo ARASAAC, flag: prima chiave, plurale derivato, multiparola, plurale invariabile; numero chiavi) | `fst` incorporato + record da 8 byte | ARASAAC (BY-NC-SA) |
+| `mwe.trie` | sequenze di lemmi → pittogrammi (costruito in M4–M6: serve il motore per lemmatizzare) | trie serializzato | ARASAAC |
+| `tagger.bin` | prior di lettura e trigrammi di categoria (costruito in M5) | tabelle di log-probabilità | treebank (licenza da verificare) |
 | `overrides/` | TSV curati | testo | nostra |
 
 I file restano separati per licenza (vedi Fonti dati). Il join avviene in memoria tramite la stringa del lemma normalizzata.
 
-**Normalizzazione delle chiavi** (identica alla build e a runtime, unica funzione condivisa): minuscolo, NFC, apostrofi uniformati, spazi singoli. Gli accenti **restano** ("pera" e "perà" non devono collassare), ma esiste una seconda chiave senza accenti usata solo come ripiego per i refusi.
+**Formato (M2).** Ogni ricerca passa da un automa `fst` che restituisce la posizione di un record a lunghezza fissa; i file si leggono direttamente dalla memoria mappata, senza ricostruire strutture all'avvio (caricamento misurato: 0,02–0,06 ms). Il lettore sta in `caa-engine` e lavora su byte già caricati, l'apertura dei file con `mmap` sta in `caa-store`. Gli `.bin` iniziano con un'intestazione (magic, numero di schema) e il lettore rifiuta file troncati, incoerenti o di schema diverso.
+
+**Normalizzazione delle chiavi** (identica alla build e a runtime, unica funzione condivisa): minuscolo, NFC, apostrofi uniformati, spazi singoli. Gli accenti **restano** ("pera" e "perà" non devono collassare), ma esiste una seconda chiave senza accenti usata solo come ripiego per i refusi (la funzione `fold_accents` è in `caa-engine`; l'indice dedicato si costruisce in M4–M5, quando serve).
 
 ### Build del lessico (`caa-lexicon-build`)
 
@@ -440,6 +443,8 @@ I file restano separati per licenza (vedi Fonti dati). Il join avviene in memori
 5. Calcola le statistiche del tagger dal treebank (conteggi, smoothing additivo per i trigrammi, ripiego su bigrammi).
 6. Scrive i file e un `manifest.json` con versioni delle fonti, data, numero di schema, conteggi (forme, lemmi, pittogrammi, chiavi senza pittogramma, pittogrammi senza chiave italiana).
 7. Stampa un **rapporto di copertura**: quante parole chiave ARASAAC italiane non hanno un lemma in Morph-it! (vanno in `forms_extra.tsv` o sono multiparola).
+
+I passi 4 e 5 (trie delle multiparola, statistiche del tagger) non fanno parte di M2: dipendono dal motore e dal treebank e arrivano con M4–M6 e M5.
 
 ### Prestazioni e incrementalità
 
@@ -479,7 +484,7 @@ Il motore si migliora solo misurando: ogni modifica alle regole o ai pesi si acc
 | 19 | Mangio ancora un po' di pane. | ancora = avverbio · "un po'" non spezzato · pane |
 | 20 | Devo studiare la storia. | dovere + studiare (due simboli) · storia |
 
-I casi con una multiparola (5, 12) dipendono da cosa contiene davvero ARASAAC in italiano: il test va scritto dopo aver controllato l'indice.
+I casi con una multiparola (5, 12) dipendono da cosa contiene davvero ARASAAC in italiano: il test va scritto dopo aver controllato l'indice. Controllato in M1: ARASAAC ha "far colazione" (non "fare colazione") e Morph-it! porta `far` a `fare`, quindi la chiave va lemmatizzata come [fare, colazione].
 
 **2. Corpus reale (metriche).** 20–40 testi veri della scuola: storie, testi semplificati, consegne. Idealmente gli stessi già adattati con SymWriter, così il confronto è diretto.
 
@@ -694,7 +699,7 @@ Dodici milestone in ordine di dipendenza. Ognuna si chiude solo quando il criter
     - *Accettazione*: `cargo test` e `npm run build` verdi; l'app si apre con una finestra vuota.
 2. **M1 — Acquisizione dati.** Script che scaricano le parole chiave italiane e le immagini ARASAAC e Morph-it!, con verifica degli endpoint reali. Conversione immagini in WebP 500 px.
     - *Accettazione*: dati in `data/raw/` (fuori da git), rapporto con conteggi; elenco delle etichette Morph-it! distinte; mappatura reale delle categorie ARASAAC verificata su esempi.
-3. **M2 — Build del lessico.** `caa-lexicon-build` produce i file della sezione Strutture dati, con rapporto di copertura.
+3. **M2 — Build del lessico.** `caa-lexicon-build` produce i file della sezione Strutture dati, con rapporto di copertura (senza `mwe.trie` e `tagger.bin`, che arrivano con M4–M6 e M5).
     - *Accettazione*: caricamento < 300 ms; tutte le etichette mappate; rapporto delle chiavi ARASAAC senza lemma.
 4. **M3 — Prototipo editor.** ProseMirror con simboli finti (un'immagine fissa per parola) e le due soluzioni di resa A e B.
     - *Accettazione*: tutte le prove della sezione Editor superate da una delle due soluzioni, su un PC Windows della scuola.

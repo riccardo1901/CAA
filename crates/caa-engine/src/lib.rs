@@ -1,6 +1,12 @@
 //! `caa-engine`: libreria pura. Nessun I/O, nessuna rete, nessuna dipendenza dall'interfaccia.
 //!
-//! In M0 contiene solo lo scheletro e la conversione degli offset in unità UTF-16.
+//! Contiene la normalizzazione delle chiavi, i tipi linguistici, la lettura del lessico
+//! compilato e la conversione degli offset in unità UTF-16. Le fasi del motore arrivano
+//! nelle milestone successive (M4 e seguenti).
+
+pub mod lexicon;
+pub mod norm;
+pub mod types;
 
 /// Intervallo di un token nel paragrafo, in unità UTF-16 (come in JavaScript).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

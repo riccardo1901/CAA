@@ -1,9 +1,17 @@
 [package]
 name = "caa-lexicon-build"
+description = "Costruisce il lessico compilato da ARASAAC, Morph-it! e correzioni curate"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 publish.workspace = true
 
 [dependencies]
+caa-engine = { path = "../caa-engine" }
+fst = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
 
+[dev-dependencies]
+tempfile = "3"

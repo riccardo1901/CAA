@@ -33,7 +33,7 @@ Programma desktop (Tauri 2) per docenti: scrivono un testo italiano e vedono sop
 
 ## Comandi
 
-Struttura: `crates/` (motore, build del lessico, valutazione, archivio), `src-tauri/` (app), `ui/` (frontend Vite + TypeScript).
+Struttura: `crates/` (motore, build del lessico, valutazione, archivio), `src-tauri/` (app), `ui/` (frontend Vite + TypeScript), `scripts/` (scarico dei dati), `lexicon/overrides/` (correzioni curate in TSV, versionate), `docs/` (rapporti di milestone e idee).
 
 ```bash
 # Test Rust (motore, lessico, valutazione, archivio; esclude l'app Tauri)
@@ -56,8 +56,14 @@ npx tauri build --no-bundle
 # Valutazione del motore sul corpus (scheletro: la logica arriva in M7)
 cargo run -p caa-eval
 
-# Build del lessico (scheletro: la logica arriva in M2)
-cargo run -p caa-lexicon-build
+# Build del lessico: data/raw + lexicon/overrides -> data/build (fuori da git, ~15 s)
+cargo run --release -p caa-lexicon-build
+#   rapporto di copertura:  data/build/report/report.md
+#   chiavi senza lemma:     data/build/report/keys_without_lemma.tsv
+#   multiparola con parole sconosciute: data/build/report/multiword_unknown_words.tsv
+
+# Misura del caricamento del lessico (criterio di M2: < 300 ms)
+cargo run --release -p caa-store --example load_lexicon -- data/build
 
 # Acquisizione dati (M1): tutto finisce in data/raw/, fuori da git. Gli script sono riprendibili.
 node scripts/fetch-arasaac-keywords.mjs   # parole chiave italiane ARASAAC (api.arasaac.org)

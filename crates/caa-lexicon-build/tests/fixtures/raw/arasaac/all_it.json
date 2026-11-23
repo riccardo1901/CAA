@@ -1,0 +1,13 @@
+[
+ {"_id":2239,"keywords":[{"type":2,"keyword":"ape","plural":"api"}]},
+ {"_id":3329,"keywords":[{"type":2,"keyword":"occhiali"}]},
+ {"_id":2349,"keywords":[{"type":3,"keyword":"mangiare"},{"type":3,"keyword":"mangiare cibo"}]},
+ {"_id":2271,"keywords":[{"type":3,"keyword":"lavarsi"}]},
+ {"_id":32294,"keywords":[{"type":2,"keyword":"scuola media"}]},
+ {"_id":7,"keywords":[]},
+ {"_id":8,"keywords":[{"type":2,"keyword":"  "},{"type":2,"keyword":"Città"}]},
+ {"_id":9,"keywords":[{"keyword":"forbici","plural":"forbici"}]},
+ {"_id":10,"keywords":[{"type":2,"keyword":"ape","plural":null}]},
+ {"_id":11,"keywords":[{"type":4,"keyword":"zampogna"}]},
+ {"_id":12,"keywords":[{"type":6,"keyword":"le 6 e un quarto"}]}
+]
