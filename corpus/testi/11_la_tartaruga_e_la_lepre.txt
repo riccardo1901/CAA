@@ -1,0 +1,8 @@
+# genere: favola
+# gruppo: sviluppo
+# origine: scritto per il progetto (sintetico)
+Una lepre si vantava di essere la più veloce del bosco. Una tartaruga, stufa di sentirla, le propose una gara.
+La lepre scoppiò a ridere ma accettò. Gli animali si radunarono per vedere la corsa.
+Al via la lepre partì come un lampo e lasciò indietro la tartaruga. Poi, sicura di vincere, si fermò a riposare sotto un albero e si addormentò.
+La tartaruga camminava piano, ma non si fermava mai. Passo dopo passo superò la lepre addormentata e arrivò al traguardo.
+Quando la lepre si svegliò, era troppo tardi. La tartaruga aveva vinto!

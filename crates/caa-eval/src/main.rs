@@ -7,6 +7,9 @@
 //! caa-eval tagger    [--lexicon DIR] [--conllu FILE]   scelta di categoria e lemma contro un treebank
 //! caa-eval analisi   [--lexicon DIR] [--analisi FILE]  test dorati di analisi (categoria e lemma)
 //! caa-eval strutture [--lexicon DIR] [--strutture FILE]  test dorati di struttura (gruppi, segni)
+//! caa-eval corpus    [--corpus DIR] [--gruppo sviluppo|prova] [--esempi N]  metriche sul corpus annotato
+//! caa-eval prepara FILE.txt                          bozza TSV di un testo da correggere a mano
+//! caa-eval candidati PAROLA                          pittogrammi dell'indice per una parola
 //! caa-eval tara      [--lexicon DIR] [--conllu FILE]   taratura dei pesi e della confidenza (usa solo il file di sviluppo)
 //! caa-eval mostra FRASE [--lexicon DIR]                cosa decide il motore su una frase
 //! ```
@@ -32,6 +35,9 @@ Comandi:\n\
   tagger     categoria e lemma scelti dal motore contro un treebank (opzione --conllu FILE)\n\
   analisi    test dorati di analisi: categoria e lemma scelti (opzione --analisi FILE)\n\
   strutture  test dorati di struttura: parole nascoste, segni, espressioni (opzione --strutture FILE)\n\
+  corpus     metriche e errori per causa sul corpus annotato (opzioni --corpus, --gruppo, --esempi)\n\
+  prepara    bozza TSV di un testo da correggere a mano\n\
+  candidati  pittogrammi dell'indice per una parola\n\
   tara       cerca i pesi migliori e la temperatura della confidenza (opzione --conllu FILE)\n\
   mostra     lettura, categoria e pittogramma di ogni parola di una frase\n\
 \n\
@@ -50,15 +56,21 @@ fn main() -> ExitCode {
     let mut base = PathBuf::from("lexicon/lessico_base.tsv");
     let mut conllu = PathBuf::from("data/raw/treebank/isdt/it_isdt-ud-dev.conllu");
     let mut sentence = String::new();
-    if command == "mostra" {
+    if matches!(command.as_str(), "mostra" | "prepara" | "candidati") {
         sentence = args.next().unwrap_or_default();
     }
+    let mut corpus_dir = PathBuf::from("corpus/annotati");
+    let mut group = PathBuf::from("tutti");
+    let mut examples = PathBuf::from("3");
     while let Some(a) = args.next() {
         let target = match a.as_str() {
             "--lexicon" => &mut lexicon,
             "--golden" => &mut golden,
             "--analisi" => &mut analysis,
             "--strutture" => &mut structures,
+            "--corpus" => &mut corpus_dir,
+            "--gruppo" => &mut group,
+            "--esempi" => &mut examples,
             "--base" => &mut base,
             "--conllu" => &mut conllu,
             other => {
@@ -313,6 +325,101 @@ fn main() -> ExitCode {
                 println!("  {l}");
             }
             println!("Temperatura scelta: {t}");
+            ExitCode::SUCCESS
+        }
+        "prepara" => {
+            // caa-eval prepara FILE.txt: bozza TSV del motore da correggere a mano. Le righe
+            // `# genere: …` del file diventano l'intestazione.
+            let path = PathBuf::from(&sentence);
+            let text = match read(&path) {
+                Ok(t) => t,
+                Err(e) => return fail(&e),
+            };
+            let name = path
+                .file_stem()
+                .and_then(|n| n.to_str())
+                .unwrap_or("testo")
+                .to_string();
+            let header: Vec<(String, String)> = text
+                .lines()
+                .filter_map(|l| l.strip_prefix("# "))
+                .filter_map(|l| l.split_once(": "))
+                .map(|(k, v)| (k.to_string(), v.to_string()))
+                .collect();
+            let header: Vec<(&str, &str)> = header
+                .iter()
+                .map(|(k, v)| (k.as_str(), v.as_str()))
+                .collect();
+            print!(
+                "{}",
+                caa_eval::corpus::draft(&engine, &name, &header, &text)
+            );
+            ExitCode::SUCCESS
+        }
+        "candidati" => {
+            // caa-eval candidati PAROLA: i pittogrammi dell'indice per la parola e per il suo lemma.
+            let key = caa_engine::norm::normalize_key(&sentence);
+            let mut keys = vec![key.clone()];
+            for r in engine.morph().lookup(&key) {
+                if let Some(l) = engine.morph().lemma(r.lemma_id) {
+                    if !keys.iter().any(|k| k == l) {
+                        keys.push(l.to_string());
+                    }
+                }
+            }
+            for k in keys {
+                let entries = engine.picto_index().lookup(&k);
+                println!(
+                    "{k}: {}",
+                    if entries.is_empty() {
+                        "nessun pittogramma".to_string()
+                    } else {
+                        String::new()
+                    }
+                );
+                for e in entries {
+                    println!(
+                        "  id {:<6} tipi {:08b} flag {:03b} parole chiave {}",
+                        e.id, e.keyword_types, e.flags, e.n_keys
+                    );
+                }
+            }
+            ExitCode::SUCCESS
+        }
+        "corpus" => {
+            let mut files: Vec<PathBuf> = match std::fs::read_dir(&corpus_dir) {
+                Ok(d) => d
+                    .flatten()
+                    .map(|e| e.path())
+                    .filter(|p| p.extension().is_some_and(|x| x == "tsv"))
+                    .collect(),
+                Err(e) => return fail(&format!("{}: {e}", corpus_dir.display())),
+            };
+            files.sort();
+            let mut texts = Vec::new();
+            for f in &files {
+                let parsed = read(f)
+                    .map_err(|e| vec![e])
+                    .and_then(|t| caa_eval::corpus::parse_text(&t));
+                match parsed {
+                    Ok(t) => texts.push(t),
+                    Err(e) => return fail(&format!("{}:\n  {}", f.display(), e.join("\n  "))),
+                }
+            }
+            let n_examples: usize = examples.to_string_lossy().parse().unwrap_or(3);
+            let wanted = group.to_string_lossy().to_string();
+            let labels: Vec<&str> = if wanted == "tutti" {
+                vec!["sviluppo", "prova"]
+            } else {
+                vec![wanted.as_str()]
+            };
+            for label in labels {
+                let selected: Vec<&caa_eval::corpus::GoldText> =
+                    texts.iter().filter(|t| t.group == label).collect();
+                let m = caa_eval::corpus::evaluate(&engine, &selected);
+                print!("{}", caa_eval::corpus::render(label, &m, n_examples));
+                println!();
+            }
             ExitCode::SUCCESS
         }
         "mostra" => {

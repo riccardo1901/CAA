@@ -9,3 +9,6 @@ publish.workspace = true
 [dependencies]
 caa-engine = { path = "../caa-engine" }
 caa-store = { path = "../caa-store" }
+
+[dev-dependencies]
+caa-lexicon-build = { path = "../caa-lexicon-build" }

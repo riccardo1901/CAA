@@ -2,6 +2,8 @@
 //! tokenizzazione, la copertura delle parole di base (parole piene con almeno un pittogramma) e la
 //! velocità. Le metriche sul corpus (correzioni per 100 parole, accuratezza…) arrivano in M7.
 
+pub mod corpus;
+
 use std::collections::BTreeMap;
 use std::time::Instant;
 

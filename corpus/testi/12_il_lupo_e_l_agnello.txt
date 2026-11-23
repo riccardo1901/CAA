@@ -1,0 +1,8 @@
+# genere: favola
+# gruppo: sviluppo
+# origine: scritto per il progetto (sintetico)
+Un agnello beveva a un ruscello. Più in alto, un lupo affamato lo vide e volle trovare una scusa per mangiarlo.
+"Come osi sporcare la mia acqua?" ringhiò il lupo. "Non è possibile", rispose l'agnello. "Io bevo più in basso di te".
+Il lupo non si arrese. "L'anno scorso hai parlato male di me!" "Allora non ero ancora nato", disse l'agnello tremando.
+"Se non sei stato tu, è stato tuo padre!" gridò il lupo, e saltò addosso all'agnello.
+Chi vuole fare del male trova sempre una scusa.

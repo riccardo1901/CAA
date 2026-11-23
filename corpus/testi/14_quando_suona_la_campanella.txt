@@ -1,0 +1,8 @@
+# genere: storia_sociale
+# gruppo: sviluppo
+# origine: scritto per il progetto (sintetico)
+A scuola c'è una campanella. Quando suona, vuol dire che è l'ora di entrare in classe.
+Io mi fermo e smetto di giocare. Metto a posto il pallone e cammino con calma verso la mia fila.
+Aspetto con i miei compagni davanti alla porta. La maestra ci saluta e noi rispondiamo: "Buongiorno!".
+Poi entro in classe, appendo lo zaino e mi siedo al mio posto.
+Quando faccio così, la maestra è contenta e anche io mi sento tranquillo.
