@@ -67,6 +67,9 @@ lavato\tlavare\tVER:part+past+s+m
 lavo\tlavare\tVER:ind+pres+1+s
 mangerò\tmangiare\tVER:ind+fut+1+s
 andato\tandare\tVER:part+past+s+m
+nella\tnella\tARTPRE-F:s
+nelle\tnella\tARTPRE-F:p
+al\tal\tARTPRE-M:s
 ferro\tferro\tNOUN-M:s
 ferri\tferro\tNOUN-M:p
 stiro\tstiro\tNOUN-M:s

@@ -362,6 +362,20 @@ const ELISION_TABLE: [(&str, &str, Cat); 18] = [
     ("sant'", "santo", Cat::Adj),
 ];
 
+/// Preposizione semplice di una preposizione articolata, dal lemma di Morph-it! ("nella" → "in",
+/// "dall'" → "da", "col" → "con").
+fn articulated_base(lemma: &str) -> Option<&'static str> {
+    Some(match lemma {
+        "al" | "alla" | "all'" => "a",
+        "col" => "con",
+        "dal" | "dalla" | "dall'" => "da",
+        "del" | "della" | "dell'" => "di",
+        "nel" | "nella" | "nell'" => "in",
+        "sul" | "sulla" | "sull'" => "su",
+        _ => return None,
+    })
+}
+
 /// "lavare" → "lavarsi" (infinito senza -e più "si"; "condurre" → "condursi").
 pub fn pronominal_lemma(lemma: &str) -> Option<String> {
     let lemma = normalize_key(lemma);
@@ -1182,12 +1196,14 @@ impl<D: AsRef<[u8]>> Engine<D> {
             .lookup(key)
             .into_iter()
             .map(|r| {
-                analysis(
-                    self.morph.lemma(r.lemma_id).unwrap_or(""),
-                    r.cat,
-                    r.feats,
-                    ReadingSource::Lexicon,
-                )
+                let lemma = self.morph.lemma(r.lemma_id).unwrap_or("");
+                // Preposizione articolata: il lemma è la preposizione ("nella" → "in").
+                let lemma = if r.cat == Cat::ArtAdp {
+                    articulated_base(lemma).unwrap_or(lemma)
+                } else {
+                    lemma
+                };
+                analysis(lemma, r.cat, r.feats, ReadingSource::Lexicon)
             })
             .collect()
     }

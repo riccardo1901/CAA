@@ -476,3 +476,14 @@ fn plurale_solo_se_il_pittogramma_e_del_singolare() {
     // Un plurale che non ha un pittogramma né singolare né plurale: niente segno.
     assert_eq!(mods(&run("labbra")[0]), 0);
 }
+
+#[test]
+fn preposizione_articolata_mostra_la_preposizione() {
+    // SPEC.md, fase 10: "nella" mostra "in"; il lemma e' la preposizione semplice.
+    for (text, lemma) in [("nella", "in"), ("nelle", "in"), ("al", "a")] {
+        let t = run(text);
+        let a = t[0].analysis.as_ref().unwrap();
+        assert_eq!((a.cat, a.lemma.as_str()), (Cat::ArtAdp, lemma), "{text}");
+    }
+    assert_eq!(run("nella")[0].picto.map(|p| p.id), Some(121));
+}
