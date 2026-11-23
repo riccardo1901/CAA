@@ -1,0 +1,134 @@
+# testo: 11_la_tartaruga_e_la_lepre
+# genere: favola
+# gruppo: sviluppo
+# origine: scritto per il progetto (sintetico)
+
+# frase: Una lepre si vantava di essere la più veloce del bosco.
+Una	ART	una	8474	-	Full
+lepre	NOUN	lepre	17265	-	Full
+si	CLITIC	si	-	-	Hidden
+vantava	VERB	vantare	31408	PAST	Full
+di	ADP	di	7074	-	Full
+essere	VERB	essere	5581|5465|5858|36480	-	Full
+la	ART	la	8476	-	Full
+più	ADV	più	26913|5508	-	Full
+veloce	ADJ	veloce	5306|37850	-	Full
+del	ARTADP	di	11712	-	Full
+bosco	NOUN	bosco	2666|32462	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Una tartaruga, stufa di sentirla, le propose una gara.
+Una	ART	una	8474	-	Full
+tartaruga	NOUN	tartaruga	2596|26503	-	Full
+,	PUNCT	,	-	-	TextOnly
+stufa	ADJ	stufo	2245|35531|6873	-	Full
+di	ADP	di	7074	-	Full
+sentirla	VERB	sentire	6572|28659	-	Full
+,	PUNCT	,	-	-	TextOnly
+le	CLITIC	le	6481|7029|7028	-	Full
+propose	VERB	proporre	11576|39150	PAST	Full
+una	ART	una	8474	-	Full
+gara	NOUN	gara	37313|11205|37424	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: La lepre scoppiò a ridere ma accettò.
+La	ART	la	8476	-	Full
+lepre	NOUN	lepre	17265	-	Full
+scoppiò	VERB	scoppiare	-	PAST	TextOnly
+a	ADP	a	7041	-	Full
+ridere	VERB	ridere	13354|30393	-	Full
+ma	CONJ	ma	11377	-	Full
+accettò	VERB	accettare	25757|25752|37609	PAST	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Gli animali si radunarono per vedere la corsa.
+Gli	ART	il	8477	-	Full
+animali	NOUN	animale	6901|8025	PLURAL	Full
+si	CLITIC	si	-	-	Hidden
+radunarono	VERB	radunare	-	PAST	TextOnly
+per	ADP	per	7194	-	Full
+vedere	VERB	vedere	2474|6564|28673	-	Full
+la	ART	la	8476	-	Full
+corsa	NOUN	corsa	11205|37424	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Al via la lepre partì come un lampo e lasciò indietro la tartaruga.
+Al	ARTADP	a	11709	-	Full
+via	NOUN	via	-	-	TextOnly
+la	ART	la	8476	-	Full
+lepre	NOUN	lepre	17265	-	Full
+partì	VERB	partire	-	PAST	TextOnly
+come	ADV	come	12313	-	Full
+un	ART	un	8474	-	Full
+lampo	NOUN	lampo	2819	-	Full
+e	CONJ	e	11399	-	Full
+lasciò	VERB	lasciare	11748|6215	PAST	Full
+indietro	ADV	indietro	-	-	TextOnly
+la	ART	la	8476	-	Full
+tartaruga	NOUN	tartaruga	2596|26503	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Poi, sicura di vincere, si fermò a riposare sotto un albero e si addormentò.
+Poi	ADV	poi	-	-	TextOnly
+,	PUNCT	,	-	-	TextOnly
+sicura	ADJ	sicuro	-	-	TextOnly
+di	ADP	di	7074	-	Full
+vincere	VERB	vincere	7218|10155|36541|38986	-	Full
+,	PUNCT	,	-	-	TextOnly
+si	CLITIC	si	-	-	Hidden
+fermò	VERB	fermare	37185	PAST	Full
+a	ADP	a	7041	-	Full
+riposare	VERB	riposare	3299|16643|28649|31937	-	Full
+sotto	ADP	sotto	5437|7047	-	Full
+un	ART	un	8474	-	Full
+albero	NOUN	albero	2256|3057	-	Full
+e	CONJ	e	11399	-	Full
+si	CLITIC	si	-	-	Hidden
+addormentò	VERB	addormentare	36485|36486|2369|6479|28623	PAST	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: La tartaruga camminava piano, ma non si fermava mai.
+La	ART	la	8476	-	Full
+tartaruga	NOUN	tartaruga	2596|26503	-	Full
+camminava	VERB	camminare	3251|6044|32214|32908	PAST	Full
+piano	ADV	piano	4676	-	Full
+,	PUNCT	,	-	-	TextOnly
+ma	CONJ	ma	11377	-	Full
+non	ADV	non	5526	-	Full
+si	CLITIC	si	-	-	Hidden
+fermava	VERB	fermare	37185	PAST	Full
+mai	ADV	mai	5527	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Passo dopo passo superò la lepre addormentata e arrivò al traguardo.
+Passo	NOUN	passo	35811	-	Full
+dopo	ADP	dopo	13080|7818	-	Full
+passo	NOUN	passo	35811	-	Full
+superò	VERB	superare	34844	PAST	Full
+la	ART	la	8476	-	Full
+lepre	NOUN	lepre	17265	-	Full
+addormentata	ADJ	addormentato	36485|36486	-	Full
+e	CONJ	e	11399	-	Full
+arrivò	VERB	arrivare	11708|13356|16805|16807	PAST	Full
+al	ARTADP	a	11709	-	Full
+traguardo	NOUN	traguardo	16817	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Quando la lepre si svegliò, era troppo tardi.
+Quando	CONJ	quando	24053	-	Full
+la	ART	la	8476	-	Full
+lepre	NOUN	lepre	17265	-	Full
+si	CLITIC	si	-	-	Hidden
+svegliò	VERB	svegliare	8988|8989|25209|28625|31857	PAST	Full
+,	PUNCT	,	-	-	TextOnly
+era	VERB	essere	5581|5465|5858|36480	PAST	Full
+troppo	ADV	troppo	39188	-	Full
+tardi	ADV	tardi	37780	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: La tartaruga aveva vinto!
+La	ART	la	8476	-	Full
+tartaruga	NOUN	tartaruga	2596|26503	-	Full
+aveva	AUX	avere	-	-	Hidden
+vinto	VERB	vincere	7218|10155|36541|38986	PAST	Full
+!	PUNCT	!	-	-	TextOnly

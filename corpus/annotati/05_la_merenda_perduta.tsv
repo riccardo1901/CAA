@@ -1,0 +1,142 @@
+# testo: 05_la_merenda_perduta
+# genere: storia
+# gruppo: sviluppo
+# origine: scritto per il progetto (sintetico)
+
+# frase: Pietro aveva una merenda speciale: un panino con la cioccolata.
+Pietro	PROPN	pietro	-	-	TextOnly
+aveva	VERB	avere	7271	PAST	Full
+una	ART	una	8474	-	Full
+merenda	NOUN	merenda	4695	-	Full
+speciale	ADJ	speciale	-	-	TextOnly
+:	PUNCT	:	-	-	TextOnly
+un	ART	un	8474	-	Full
+panino	NOUN	panino	2281	-	Full
+con	ADP	con	7064	-	Full
+la	ART	la	8476	-	Full
+cioccolata	NOUN	cioccolata	7763|2334|25940	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: L'ha messo nello zaino e ha salutato la mamma.
+L'	CLITIC	lo	-	-	TextOnly
+ha	AUX	avere	-	-	Hidden
+messo	VERB	mettere	8166|6989|32757	PAST	Full
+nello	ARTADP	in	7034	-	Full
+zaino	NOUN	zaino	2475	-	Full
+e	CONJ	e	11399|3026	-	Full
+ha	AUX	avere	-	-	Hidden
+salutato	VERB	salutare	6009|6522|34567|37807	PAST	Full
+la	ART	la	8476	-	Full
+mamma	NOUN	mamma	2458|31148	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: A scuola, però, non ha trovato il panino.
+A	ADP	a	7041|7034|3021	-	Full
+scuola	NOUN	scuola	3082|6454	-	Full
+,	PUNCT	,	-	-	TextOnly
+però	ADV	però	11377	-	Full
+,	PUNCT	,	-	-	TextOnly
+non	ADV	non	5526|5525	-	Full
+ha	AUX	avere	-	-	Hidden
+trovato	VERB	trovare	24741|24742|37246	PAST	Full
+il	ART	il	8476	-	Full
+panino	NOUN	panino	2281	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Ha cercato nello zaino, sotto il banco e perfino nell'armadio.
+Ha	AUX	avere	-	-	Hidden
+cercato	VERB	cercare	6946|6947|21466|32156|37238	PAST	Full
+nello	ARTADP	in	7034	-	Full
+zaino	NOUN	zaino	2475	-	Full
+,	PUNCT	,	-	-	TextOnly
+sotto	ADP	sotto	5437|7047|5355	-	Full
+il	ART	il	8476	-	Full
+banco	NOUN	banco	36285	-	Full
+e	CONJ	e	11399|3026	-	Full
+perfino	ADV	perfino	-	-	TextOnly
+nell'	ARTADP	in	7034	-	Full
+armadio	NOUN	armadio	2258|6909	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Niente!
+Niente	PRON	niente	29839|32522	-	Full
+!	PUNCT	!	-	-	TextOnly
+
+# frase: Pietro era triste e aveva fame.
+Pietro	PROPN	pietro	-	-	TextOnly
+era	VERB	essere	5581|5465|5466|5858|36480	PAST	Full
+triste	ADJ	triste	2606|7286|11959|31939|35545	-	Full
+e	CONJ	e	11399|3026	-	Full
+aveva	VERB	avere	7272|35559|35579	PAST	Full
+fame	NOUN	fame	-	-	Hidden
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Il suo amico Davide gli ha detto: "Dividiamo la mia merenda".
+Il	ART	il	8476	-	Full
+suo	DET	suo	12272	-	Full
+amico	NOUN	amico	8487|25790	-	Full
+Davide	PROPN	davide	-	-	TextOnly
+gli	CLITIC	gli	6481|31670	-	Full
+ha	AUX	avere	-	-	Hidden
+detto	VERB	dire	9692|9693|28663	PAST	Full
+:	PUNCT	:	-	-	TextOnly
+"	PUNCT	"	-	-	TextOnly
+Dividiamo	VERB	dividere	27069|27070	-	Full
+la	ART	la	8476	-	Full
+mia	DET	mio	12264	-	Full
+merenda	NOUN	merenda	4695	-	Full
+"	PUNCT	"	-	-	TextOnly
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Hanno mangiato una mela a metà.
+Hanno	AUX	avere	-	-	Hidden
+mangiato	VERB	mangiare	2349|6456|28641	PAST	Full
+una	ART	una	8474	-	Full
+mela	NOUN	mela	2462|13644|13645	-	Full
+a	ADP	a	7041|3021	-	Full
+metà	NOUN	metà	19570|5516	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Più tardi la maestra ha trovato il panino dietro la lavagna.
+Più	ADV	più	32749	-	Full
+tardi	ADV	tardi	-	-	Hidden
+la	ART	la	8476	-	Full
+maestra	NOUN	maestra	2456|6555|28003	-	Full
+ha	AUX	avere	-	-	Hidden
+trovato	VERB	trovare	24741|24742|37246	PAST	Full
+il	ART	il	8476	-	Full
+panino	NOUN	panino	2281	-	Full
+dietro	ADP	dietro	5443|7818	-	Full
+la	ART	la	8476	-	Full
+lavagna	NOUN	lavagna	2526	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Era caduto dallo zaino durante la mattina.
+Era	AUX	essere	-	-	Hidden
+caduto	VERB	cadere	2675|39440	PAST	Full
+dallo	ARTADP	da	11712	-	Full
+zaino	NOUN	zaino	2475	-	Full
+durante	ADP	durante	7081|24737	-	Full
+la	ART	la	8476	-	Full
+mattina	NOUN	mattina	25704|32848	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Pietro ha ringraziato Davide e gli ha regalato metà del panino.
+Pietro	PROPN	pietro	-	-	TextOnly
+ha	AUX	avere	-	-	Hidden
+ringraziato	VERB	ringraziare	38783	PAST	Full
+Davide	PROPN	davide	-	-	TextOnly
+e	CONJ	e	11399|3026	-	Full
+gli	CLITIC	gli	6481|31670	-	Full
+ha	AUX	avere	-	-	Hidden
+regalato	VERB	regalare	16025|16877|16879|16881	PAST	Full
+metà	NOUN	metà	19570|5516	-	Full
+del	ARTADP	di	11712	-	Full
+panino	NOUN	panino	2281	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Che buona merenda!
+Che	DET	che	22624	-	Full
+buona	ADJ	buono	32340	-	Full
+merenda	NOUN	merenda	4695	-	Full
+!	PUNCT	!	-	-	TextOnly

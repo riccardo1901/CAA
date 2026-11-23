@@ -1,0 +1,157 @@
+# testo: 06_al_mercato_con_la_nonna
+# genere: storia
+# gruppo: prova
+# origine: scritto per il progetto (sintetico)
+
+# frase: Il sabato mattina vado al mercato con la nonna.
+Il	ART	il	8476	-	Full
+sabato	NOUN	sabato	6605|37725	-	Full
+mattina	NOUN	mattina	25704|32848	-	Full
+vado	VERB	andare	2432|8142|31758|35093	-	Full
+al	ARTADP	a	11709	-	Full
+mercato	NOUN	mercato	32942	-	Full
+con	ADP	con	7064	-	Full
+la	ART	la	8476	-	Full
+nonna	NOUN	nonna	2243|10194|23710|23709	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Lei porta una grande borsa di stoffa e io spingo il carrello.
+Lei	PRON	lei	7028|7029	-	Full
+porta	VERB	portare	6139|6553|37223|8982|8983	-	Full
+una	ART	una	8474	-	Full
+grande	ADJ	grande	4658	-	Full
+borsa	NOUN	borsa	39829|27620	-	Full
+di	ADP	di	7074	-	Full
+stoffa	NOUN	stoffa	3402	-	Full
+e	CONJ	e	11399|3026	-	Full
+io	PRON	io	2617|6632|7309|7310|31807	-	Full
+spingo	VERB	spingere	4638|6485|16355|39442	-	Full
+il	ART	il	8476	-	Full
+carrello	NOUN	carrello	6962|5948|30618	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Ci sono tante bancarelle.
+Ci	CLITIC	ci	-	-	TextOnly
+sono	VERB	essere	5581|5465|5466|5858|36480	-	Full
+tante	DET	tanto	7168|25492	-	Full
+bancarelle	NOUN	bancarella	37527|38443	PLURAL	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Il fruttivendolo vende le arance, le pere e le fragole.
+Il	ART	il	8476	-	Full
+fruttivendolo	NOUN	fruttivendolo	11269|6509	-	Full
+vende	VERB	vendere	6652	-	Full
+le	ART	la	8477	-	Full
+arance	NOUN	arancia	2483	PLURAL	Full
+,	PUNCT	,	-	-	TextOnly
+le	ART	la	8477	-	Full
+pere	NOUN	pera	2561	PLURAL	Full
+e	CONJ	e	11399|3026	-	Full
+le	ART	la	8477	-	Full
+fragole	NOUN	fragola	2400	PLURAL	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: La nonna sceglie due chili di mele e un cavolo.
+La	ART	la	8476	-	Full
+nonna	NOUN	nonna	2243|10194|23710|23709	-	Full
+sceglie	VERB	scegliere	11694|30510	-	Full
+due	NUM	due	2628|4890|7027|35679	-	Full
+chili	NOUN	chilo	7138|39481	PLURAL	Full
+di	ADP	di	7074	-	Full
+mele	NOUN	mela	2462|13644|13645	PLURAL	Full
+e	CONJ	e	11399|3026	-	Full
+un	ART	un	8474	-	Full
+cavolo	NOUN	cavolo	2708	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Poi compriamo il pesce fresco.
+Poi	ADV	poi	13080|32749	-	Full
+compriamo	VERB	comprare	6457|39753|8985|8986|28665	-	Full
+il	ART	il	8476	-	Full
+pesce	NOUN	pesce	2520	-	Full
+fresco	ADJ	fresco	-	-	TextOnly
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Il pescivendolo ci dà un sacchetto con tre sogliole.
+Il	ART	il	8476	-	Full
+pescivendolo	NOUN	pescivendolo	11336|6591	-	Full
+ci	CLITIC	ci	7183|7184|7185|7186|32306	-	Full
+dà	VERB	dare	17038|17040|28431	-	Full
+un	ART	un	8474	-	Full
+sacchetto	NOUN	sacchetto	23849|27616	-	Full
+con	ADP	con	7064	-	Full
+tre	NUM	tre	2629|4891|7283|35681	-	Full
+sogliole	NOUN	sogliola	21884|21957	PLURAL	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Io guardo i pesci con gli occhi grandi e la bocca aperta.
+Io	PRON	io	2617|6632|7309|7310|31807	-	Full
+guardo	VERB	guardare	2474|6564|28673|16907	-	Full
+i	ART	il	8477|3030	-	Full
+pesci	NOUN	pesce	7199	-	Full
+con	ADP	con	7064	-	Full
+gli	ART	il	8477	-	Full
+occhi	NOUN	occhio	2876	-	Full
+grandi	ADJ	grande	4658	-	Full
+e	CONJ	e	11399|3026	-	Full
+la	ART	la	8476	-	Full
+bocca	NOUN	bocca	2663	-	Full
+aperta	ADJ	aperto	-	-	TextOnly
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Al banco dei formaggi la nonna assaggia un pezzetto di pecorino.
+Al	ARTADP	a	11709	-	Full
+banco	NOUN	banco	34298	-	Full
+dei	ARTADP	di	11712	-	Full
+formaggi	NOUN	formaggio	2541|4881|25363|29144	PLURAL	Full
+la	ART	la	8476	-	Full
+nonna	NOUN	nonna	2243|10194|23710|23709	-	Full
+assaggia	VERB	assaggiare	2418|7124|31861	-	Full
+un	ART	un	8474	-	Full
+pezzetto	NOUN	pezzetto	27093	-	Full
+di	ADP	di	7074	-	Full
+pecorino	NOUN	pecorino	35761	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Dice che è troppo salato, e allora ne prende uno più dolce.
+Dice	VERB	dire	9692|9693|28663	-	Full
+che	CONJ	che	11351	-	Full
+è	VERB	essere	5581|5465|5466|5858|36480	-	Full
+troppo	ADV	troppo	39188	-	Full
+salato	ADJ	salato	4739|32152|32524|37759	-	Full
+,	PUNCT	,	-	-	TextOnly
+e	CONJ	e	11399|3026	-	Full
+allora	ADV	allora	-	-	TextOnly
+ne	CLITIC	ne	-	-	TextOnly
+prende	VERB	prendere	10148|4606|32773	-	Full
+uno	PRON	uno	2627|4889|8474	-	Full
+più	ADV	più	5508|3220|26913	-	Full
+dolce	ADJ	dolce	4636|10201|31837|32440	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Quando torniamo a casa, la borsa è pesante e piena.
+Quando	CONJ	quando	24053	-	Full
+torniamo	VERB	tornare	29714	-	Full
+a	ADP	a	7041|7034|3021	-	Full
+casa	NOUN	casa	2317|6964	-	Full
+,	PUNCT	,	-	-	TextOnly
+la	ART	la	8476	-	Full
+borsa	NOUN	borsa	39829|27620	-	Full
+è	VERB	essere	5581|5465|5466|5858|36480	-	Full
+pesante	ADJ	pesante	27025	-	Full
+e	CONJ	e	11399|3026	-	Full
+piena	ADJ	pieno	26176|31190	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Io aiuto la nonna a mettere la spesa in frigorifero.
+Io	PRON	io	2617|6632|7309|7310|31807	-	Full
+aiuto	VERB	aiutare	32648|4570	-	Full
+la	ART	la	8476	-	Full
+nonna	NOUN	nonna	2243|10194|23710|23709	-	Full
+a	ADP	a	7041|3021	-	Full
+mettere	VERB	mettere	6989|8166|32757|38708	-	Full
+la	ART	la	8476	-	Full
+spesa	NOUN	spesa	9058	-	Full
+in	ADP	in	7034	-	Full
+frigorifero	NOUN	frigorifero	3272|4876	-	Full
+.	PUNCT	.	-	-	TextOnly

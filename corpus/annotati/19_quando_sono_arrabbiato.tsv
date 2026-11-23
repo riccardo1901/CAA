@@ -1,0 +1,121 @@
+# testo: 19_quando_sono_arrabbiato
+# genere: storia_sociale
+# gruppo: prova
+# origine: scritto per il progetto (sintetico)
+
+# frase: Qualche volta mi arrabbio.
+Qualche	DET	qualche	27564|27385	-	Full
+volta	NOUN	volta	-	-	Hidden
+mi	CLITIC	mi	-	-	Hidden
+arrabbio	VERB	arrabbiare	37420	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Sento il cuore che batte forte e le guance che diventano calde.
+Sento	VERB	sentire	37719|30194|30195|30196|30197|30198	-	Full
+il	ART	il	8476	-	Full
+cuore	NOUN	cuore	2715|4613	-	Full
+che	PRON	che	11351	-	Full
+batte	VERB	battere	-	-	TextOnly
+forte	ADV	forte	25121	-	Full
+e	CONJ	e	3026	-	Full
+le	ART	la	8477	-	Full
+guance	NOUN	guancia	2919	PLURAL	Full
+che	PRON	che	11351	-	Full
+diventano	VERB	diventare	-	-	TextOnly
+calde	ADJ	caldo	35561|28655|26716|35597|4583	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Succede a tutti.
+Succede	VERB	succedere	-	-	TextOnly
+a	ADP	a	3021|7041	-	Full
+tutti	PRON	tutto	36081	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Quando sono arrabbiato non urlo e non do calci.
+Quando	CONJ	quando	24053	-	Full
+sono	VERB	essere	5581|36480	-	Full
+arrabbiato	ADJ	arrabbiato	21820|2374|31884|35539|35567	-	Full
+non	ADV	non	5526|5525	-	Full
+urlo	VERB	urlare	4686|7120|31125|31127|6552|36137	-	Full
+e	CONJ	e	3026	-	Full
+non	ADV	non	5526|5525	-	Full
+do	VERB	dare	39082|15463|16845|34349|34488|34489	-	Full
+calci	NOUN	calcio	-	-	Hidden
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Mi fermo e faccio tre respiri lunghi.
+Mi	CLITIC	mi	-	-	Hidden
+fermo	VERB	fermare	37185	-	Full
+e	CONJ	e	3026	-	Full
+faccio	VERB	fare	11749|32751	-	Full
+tre	NUM	tre	2629	-	Full
+respiri	NOUN	respiro	34377|34409|34508	PLURAL	Full
+lunghi	ADJ	lungo	37678|4675	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Posso andare in un angolo tranquillo e abbracciare il mio peluche.
+Posso	MODAL	potere	11750|35949	-	Full
+andare	VERB	andare	2432|3251|6044|8142|31758|35093	-	Full
+in	ADP	in	7034	-	Full
+un	ART	un	8474	-	Full
+angolo	NOUN	angolo	39269	-	Full
+tranquillo	ADJ	tranquillo	-	-	Hidden
+e	CONJ	e	3026	-	Full
+abbracciare	VERB	abbracciare	34369|6023	-	Full
+il	ART	il	8476	-	Full
+mio	DET	mio	12264	-	Full
+peluche	NOUN	peluche	4945	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Se voglio, posso disegnare o chiedere aiuto alla maestra.
+Se	CONJ	se	28359	-	Full
+voglio	VERB	volere	5441|31141	-	Full
+,	PUNCT	,	-	-	TextOnly
+posso	MODAL	potere	11750|35949	-	Full
+disegnare	VERB	disegnare	8088|21800	-	Full
+o	CONJ	o	3037|11317	-	Full
+chiedere	VERB	chiedere	4570	-	Full
+aiuto	NOUN	aiuto	-	-	Hidden
+alla	ARTADP	a	3021|11709	-	Full
+maestra	NOUN	maestra	2456|6555|28003	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Dopo un po' la rabbia passa e mi sento meglio.
+Dopo	ADP	dopo	13080|32749	-	Full
+un	ART	un	8474	-	Full
+po'	ADV	poco	37661|5546	-	Full
+la	ART	la	8476	-	Full
+rabbia	NOUN	rabbia	35567|2374|21820|31884|35539	-	Full
+passa	VERB	passare	-	-	TextOnly
+e	CONJ	e	3026	-	Full
+mi	CLITIC	mi	-	-	Hidden
+sento	VERB	sentire	37719|30194|30195|30196|30197|30198	-	Full
+meglio	ADV	meglio	5397|39515	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Allora posso spiegare cosa è successo con parole gentili.
+Allora	ADV	allora	-	-	TextOnly
+posso	MODAL	potere	11750|35949	-	Full
+spiegare	VERB	spiegare	8579|16705|35669	-	Full
+cosa	PRON	cosa	22620	-	Full
+è	AUX	essere	-	-	Hidden
+successo	VERB	succedere	-	PAST	TextOnly
+con	ADP	con	7064	-	Full
+parole	NOUN	parola	9837	PLURAL	Full
+gentili	ADJ	gentile	33994	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: La maestra e i miei amici capiscono e sono fieri di me.
+La	ART	la	8476	-	Full
+maestra	NOUN	maestra	2456|6555|28003	-	Full
+e	CONJ	e	3026	-	Full
+i	ART	il	8477|3030	-	Full
+miei	DET	mio	12266	-	Full
+amici	NOUN	amico	2255|25792	-	Full
+capiscono	VERB	capire	6019	-	Full
+e	CONJ	e	3026	-	Full
+sono	VERB	essere	5581|36480	-	Full
+fieri	ADJ	fiero	31408	-	Full
+di	ADP	di	7074	-	Full
+me	PRON	me	2617|6632|7309|7310|31807	-	Full
+.	PUNCT	.	-	-	TextOnly

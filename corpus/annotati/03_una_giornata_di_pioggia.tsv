@@ -1,0 +1,142 @@
+# testo: 03_una_giornata_di_pioggia
+# genere: storia
+# gruppo: sviluppo
+# origine: scritto per il progetto (sintetico)
+
+# frase: Stamattina pioveva a dirotto.
+Stamattina	ADV	stamattina	25704|32848	-	Full
+pioveva	VERB	piovere	7148	PAST	Full
+a	ADP	a	3021	-	Full
+dirotto	ADV	dirotto	-	-	TextOnly
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Tommaso ha guardato fuori dalla finestra e ha sospirato: niente cortile, niente pallone.
+Tommaso	PROPN	tommaso	-	-	TextOnly
+ha	AUX	avere	-	-	Hidden
+guardato	VERB	guardare	37487	PAST	Full
+fuori	ADV	fuori	-	-	Hidden
+dalla	ARTADP	da	11712	-	Full
+finestra	NOUN	finestra	2611|24465|32918	-	Full
+e	CONJ	e	3026	-	Full
+ha	AUX	avere	-	-	Hidden
+sospirato	VERB	sospirare	-	PAST	TextOnly
+:	PUNCT	:	-	-	TextOnly
+niente	DET	niente	29839	-	Full
+cortile	NOUN	cortile	6204	-	Full
+,	PUNCT	,	-	-	TextOnly
+niente	DET	niente	29839	-	Full
+pallone	NOUN	pallone	2269	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: La mamma gli ha dato lo stivale giallo e l'impermeabile.
+La	ART	il	8476	-	Full
+mamma	NOUN	mamma	2458|31148	-	Full
+gli	CLITIC	gli	6481|31670	-	Full
+ha	AUX	avere	-	-	Hidden
+dato	VERB	dare	28431|17038|17040	PAST	Full
+lo	ART	il	8476	-	Full
+stivale	NOUN	stivale	8299	-	Full
+giallo	ADJ	giallo	2648	-	Full
+e	CONJ	e	3026	-	Full
+l'	ART	il	8476	-	Full
+impermeabile	NOUN	impermeabile	4927|8122	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Insieme sono usciti con l'ombrello e hanno camminato fino alla scuola.
+Insieme	ADV	insieme	-	-	TextOnly
+sono	AUX	essere	-	-	Hidden
+usciti	VERB	uscire	2806|6606|28689	PAST	Full
+con	ADP	con	7064	-	Full
+l'	ART	il	8476	-	Full
+ombrello	NOUN	ombrello	2500|37456	-	Full
+e	CONJ	e	3026	-	Full
+hanno	AUX	avere	-	-	Hidden
+camminato	VERB	camminare	3251|6044|32214|32908|29951	PAST	Full
+fino	ADV	fino	7771	-	Full
+alla	ARTADP	a	-	-	Hidden
+scuola	NOUN	scuola	3082|6454	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Per strada Tommaso ha visto una lumaca sul muro e dei bambini che saltavano nelle pozzanghere.
+Per	ADP	per	7194	-	Full
+strada	NOUN	strada	2302|5946	-	Full
+Tommaso	PROPN	tommaso	-	-	TextOnly
+ha	AUX	avere	-	-	Hidden
+visto	VERB	vedere	2474|6564|28673	PAST	Full
+una	ART	un	8474	-	Full
+lumaca	NOUN	lumaca	2685|8061|25827	-	Full
+sul	ARTADP	su	5451	-	Full
+muro	NOUN	muro	8266|39074	-	Full
+e	CONJ	e	3026	-	Full
+dei	ARTADP	di	8475	-	Full
+bambini	NOUN	bambino	31462|6975|7178|36560	-	Full
+che	PRON	che	11351	-	Full
+saltavano	VERB	saltare	2804|6607|28447|39052	PAST	Full
+nelle	ARTADP	in	7034	-	Full
+pozzanghere	NOUN	pozzanghera	25936	PLURAL	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Anche lui ha provato, ma si è bagnato i calzini!
+Anche	ADV	anche	-	-	TextOnly
+lui	PRON	lui	6480|31670	-	Full
+ha	AUX	avere	-	-	Hidden
+provato	VERB	provare	26144	PAST	Full
+,	PUNCT	,	-	-	TextOnly
+ma	CONJ	ma	11377	-	Full
+si	CLITIC	si	-	-	Hidden
+è	AUX	essere	-	-	Hidden
+bagnato	VERB	bagnarsi	6149|36559|37364	PAST	Full
+i	ART	il	3030	-	Full
+calzini	NOUN	calzino	2298	-	Full
+!	PUNCT	!	-	-	TextOnly
+
+# frase: In classe la maestra ha acceso la luce e ha raccontato una storia.
+In	ADP	in	7034	-	Full
+classe	NOUN	classe	9814|9815|15734|33072|39686	-	Full
+la	ART	il	8476	-	Full
+maestra	NOUN	maestra	2456|6555|28003	-	Full
+ha	AUX	avere	-	-	Hidden
+acceso	VERB	accendere	8103	PAST	Full
+la	ART	il	-	-	Hidden
+luce	NOUN	luce	-	-	Hidden
+e	CONJ	e	3026	-	Full
+ha	AUX	avere	-	-	Hidden
+raccontato	VERB	raccontare	38631	PAST	Full
+una	ART	un	-	-	Hidden
+storia	NOUN	storia	-	-	Hidden
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Fuori il vento muoveva i rami e il cielo era grigio.
+Fuori	ADV	fuori	5475	-	Full
+il	ART	il	8476	-	Full
+vento	NOUN	vento	7259|23731	-	Full
+muoveva	VERB	muovere	7167|27371	PAST	Full
+i	ART	il	3030	-	Full
+rami	NOUN	ramo	7224	PLURAL	Full
+e	CONJ	e	3026	-	Full
+il	ART	il	8476	-	Full
+cielo	NOUN	cielo	38270	-	Full
+era	VERB	essere	5581|5465|5858	PAST	Full
+grigio	ADJ	grigio	3340	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: All'uscita non pioveva più.
+All'	ARTADP	a	11709	-	Full
+uscita	NOUN	uscita	26411|26412|27248|29620|29621|29622	-	Full
+non	ADV	non	5526|5525	-	Full
+pioveva	VERB	piovere	7148	PAST	Full
+più	ADV	più	-	-	TextOnly
+.	PUNCT	.	-	-	TextOnly
+
+# frase: In cielo c'era un grande arcobaleno con sette colori.
+In	ADP	in	7034	-	Full
+cielo	NOUN	cielo	38270	-	Full
+c'	CLITIC	ci	-	-	Hidden
+era	VERB	essere	5581|5465|5858	PAST	Full
+un	ART	un	8474	-	Full
+grande	ADJ	grande	4658	-	Full
+arcobaleno	NOUN	arcobaleno	2986	-	Full
+con	ADP	con	7064	-	Full
+sette	NUM	sette	2633|4895|7248|35685	-	Full
+colori	NOUN	colore	5968	PLURAL	Full
+.	PUNCT	.	-	-	TextOnly

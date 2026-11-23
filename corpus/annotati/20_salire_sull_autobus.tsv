@@ -1,0 +1,128 @@
+# testo: 20_salire_sull_autobus
+# genere: storia_sociale
+# gruppo: sviluppo
+# origine: scritto per il progetto (sintetico)
+
+# frase: Quando devo andare lontano, prendo l'autobus con la mamma.
+Quando	CONJ	quando	24053	-	Full
+devo	MODAL	dovere	15523	-	Full
+andare	VERB	andare	2432|3251|6044|8142|31758|35093	-	Full
+lontano	ADV	lontano	30385|36759	-	Full
+,	PUNCT	,	-	-	TextOnly
+prendo	VERB	prendere	28171	-	Full
+l'	ART	il	-	-	Hidden
+autobus	NOUN	autobus	-	-	Hidden
+con	ADP	con	7064	-	Full
+la	ART	la	8476	-	Full
+mamma	NOUN	mamma	2458|31148	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: L'autobus si ferma alla fermata e aspetta i passeggeri.
+L'	ART	il	8476	-	Full
+autobus	NOUN	autobus	2263|26654|2262|38090	-	Full
+si	CLITIC	si	-	-	Hidden
+ferma	VERB	fermare	37185	-	Full
+alla	ARTADP	a	3021|11709	-	Full
+fermata	NOUN	fermata	2499	-	Full
+e	CONJ	e	3026	-	Full
+aspetta	VERB	aspettare	8109|16697|27547|28677|39062|25077|25078	-	Full
+i	ART	il	8477|3030	-	Full
+passeggeri	NOUN	passeggero	16105|16107|28181	PLURAL	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Prima faccio scendere le persone che vogliono uscire.
+Prima	ADV	prima	10210|4726|13028	-	Full
+faccio	VERB	fare	-	-	TextOnly
+scendere	VERB	scendere	2654|6053|8035|24723|34807|37244|36842|36843|36844|36879	-	Full
+le	ART	la	8477	-	Full
+persone	NOUN	persona	7116|7117|7203|38444|39622	-	Full
+che	PRON	che	11351	-	Full
+vogliono	MODAL	volere	5441|31141	-	Full
+uscire	VERB	uscire	2806|6606|27067|28689	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Poi salgo con calma e non spingo nessuno.
+Poi	ADV	poi	13080|32749	-	Full
+salgo	VERB	salire	2795|6617|8226|36593|36594|36595|36968|28171	-	Full
+con	ADP	con	7064	-	Full
+calma	NOUN	calma	37828|38050	-	Full
+e	CONJ	e	3026	-	Full
+non	ADV	non	5526|5525	-	Full
+spingo	VERB	spingere	15375|16655|39441	-	Full
+nessuno	PRON	nessuno	11314|26941|5800	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: La mamma paga il biglietto.
+La	ART	la	8476	-	Full
+mamma	NOUN	mamma	2458|31148	-	Full
+paga	VERB	pagare	29070|6457|9014|39710	-	Full
+il	ART	il	8476	-	Full
+biglietto	NOUN	biglietto	29208|38374	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Io mi siedo sul sedile e tengo lo zaino sulle ginocchia.
+Io	PRON	io	2617|6632|7309|7310|31807	-	Full
+mi	CLITIC	mi	-	-	Hidden
+siedo	VERB	sedere	2801|6611|30826|35029|35033	-	Full
+sul	ARTADP	su	5451	-	Full
+sedile	NOUN	sedile	19520	-	Full
+e	CONJ	e	3026	-	Full
+tengo	VERB	tenere	39414	-	Full
+lo	ART	il	8476	-	Full
+zaino	NOUN	zaino	2475|4696|34743	-	Full
+sulle	ARTADP	su	5451	-	Full
+ginocchia	NOUN	ginocchio	2810	PLURAL	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Se non ci sono posti liberi, mi tengo forte alla sbarra.
+Se	CONJ	se	28359	-	Full
+non	ADV	non	5526|5525	-	Full
+ci	CLITIC	ci	-	-	Hidden
+sono	VERB	essere	9001|5581	-	Full
+posti	NOUN	posto	19520	PLURAL	Full
+liberi	ADJ	libero	-	-	TextOnly
+,	PUNCT	,	-	-	TextOnly
+mi	CLITIC	mi	-	-	Hidden
+tengo	VERB	tenere	39414	-	Full
+forte	ADV	forte	25121|4655|10204	-	Full
+alla	ARTADP	a	3021|11709	-	Full
+sbarra	NOUN	sbarra	-	-	TextOnly
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Guardo fuori dal finestrino e non urlo.
+Guardo	VERB	guardare	37487	-	Full
+fuori	ADV	fuori	-	-	Hidden
+dal	ARTADP	da	7074|11712	-	Full
+finestrino	NOUN	finestrino	2611|24465	-	Full
+e	CONJ	e	3026	-	Full
+non	ADV	non	5526|5525	-	Full
+urlo	VERB	urlare	4686|7120|31125|31127|6552|36137	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Quando arriva la mia fermata, mi alzo e scendo con la mamma.
+Quando	CONJ	quando	24053	-	Full
+arriva	VERB	arrivare	11708|13356|16805|16807	-	Full
+la	ART	la	8476	-	Full
+mia	DET	mio	12264	-	Full
+fermata	NOUN	fermata	2499	-	Full
+,	PUNCT	,	-	-	TextOnly
+mi	CLITIC	mi	-	-	Hidden
+alzo	VERB	alzare	4677|6548|34523	-	Full
+e	CONJ	e	3026	-	Full
+scendo	VERB	scendere	2654|6053|8035|24723|34807|37244|36842|36843|36844|36879	-	Full
+con	ADP	con	7064	-	Full
+la	ART	la	8476	-	Full
+mamma	NOUN	mamma	2458|31148	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Sono stato bravo e il viaggio è andato bene.
+Sono	AUX	essere	-	-	Hidden
+stato	VERB	essere	5581|36480	PAST	Full
+bravo	ADJ	bravo	4581|32432	-	Full
+e	CONJ	e	3026	-	Full
+il	ART	il	8476	-	Full
+viaggio	NOUN	viaggio	32508|11393	-	Full
+è	AUX	essere	-	-	Hidden
+andato	VERB	andare	29634|29635	PAST	Full
+bene	ADV	bene	-	-	Hidden
+.	PUNCT	.	-	-	TextOnly

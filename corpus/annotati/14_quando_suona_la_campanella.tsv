@@ -1,0 +1,115 @@
+# testo: 14_quando_suona_la_campanella
+# genere: storia_sociale
+# gruppo: sviluppo
+# origine: scritto per il progetto (sintetico)
+
+# frase: A scuola c'è una campanella.
+A	ADP	a	3021	-	Full
+scuola	NOUN	scuola	3082|6454|32446	-	Full
+c'	CLITIC	ci	-	-	TextOnly
+è	VERB	essere	5581	-	Full
+una	ART	una	8474	-	Full
+campanella	NOUN	campanella	5938	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Quando suona, vuol dire che è l'ora di entrare in classe.
+Quando	CONJ	quando	22621	-	Full
+suona	VERB	suonare	7255	-	Full
+,	PUNCT	,	-	-	TextOnly
+vuol	MODAL	volere	31141	-	Full
+dire	VERB	dire	9692|9693|28663	-	Full
+che	CONJ	che	11351	-	Full
+è	VERB	essere	5581	-	Full
+l'	ART	il	8476	-	Full
+ora	NOUN	ora	7129	-	Full
+di	ADP	di	7074	-	Full
+entrare	VERB	entrare	2742|6491|28687|26811	-	Full
+in	ADP	in	7034	-	Full
+classe	NOUN	classe	9814|9815|33072|39686|15734|5913	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Io mi fermo e smetto di giocare.
+Io	PRON	io	31807|2617|6632|7309|7310	-	Full
+mi	CLITIC	mi	-	-	Hidden
+fermo	VERB	fermare	37185	-	Full
+e	CONJ	e	3026	-	Full
+smetto	VERB	smettere	28429|27393	-	Full
+di	ADP	di	7074	-	Full
+giocare	VERB	giocare	2439|6537|23392|36884	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Metto a posto il pallone e cammino con calma verso la mia fila.
+Metto	VERB	mettere	5514|8680	-	Full
+a	ADP	a	3021	-	Hidden
+posto	NOUN	posto	-	-	Hidden
+il	ART	il	8476	-	Full
+pallone	NOUN	pallone	2269|3241	-	Full
+e	CONJ	e	3026	-	Full
+cammino	VERB	camminare	3251|6044|32214|32908	-	Full
+con	ADP	con	7064	-	Full
+calma	NOUN	calma	37828|38050	-	Full
+verso	ADP	verso	7125	-	Full
+la	ART	la	8476	-	Full
+mia	DET	mio	12264	-	Full
+fila	NOUN	fila	7102|31803|35123|38596|39148|37764	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Aspetto con i miei compagni davanti alla porta.
+Aspetto	VERB	aspettare	8109|16697|27547|28677|39049	-	Full
+con	ADP	con	7064	-	Full
+i	ART	il	8477	-	Full
+miei	DET	mio	12266	-	Full
+compagni	NOUN	compagno	7062|7063|37658	-	Full
+davanti	ADV	davanti	7044	-	Full
+alla	ARTADP	a	-	-	Hidden
+porta	NOUN	porta	3244|38750	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: La maestra ci saluta e noi rispondiamo: "Buongiorno!".
+La	ART	la	8476	-	Full
+maestra	NOUN	maestra	2456|6555|28003	-	Full
+ci	CLITIC	ci	7183|7184|7185|7186|32306	-	Full
+saluta	VERB	salutare	37807|6009|6522|34567	-	Full
+e	CONJ	e	3026	-	Full
+noi	PRON	noi	31672|31674|7183|7184|7185|7186|32306	-	Full
+rispondiamo	VERB	rispondere	9030|9031|28433	-	Full
+:	PUNCT	:	-	-	TextOnly
+"	PUNCT	"	-	-	TextOnly
+Buongiorno	INTJ	buongiorno	6944|38568|38567	-	Full
+!	PUNCT	!	-	-	TextOnly
+"	PUNCT	"	-	-	TextOnly
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Poi entro in classe, appendo lo zaino e mi siedo al mio posto.
+Poi	ADV	poi	-	-	TextOnly
+entro	VERB	entrare	2742|6491|28687|26811	-	Full
+in	ADP	in	7034	-	Full
+classe	NOUN	classe	9814|9815|33072|39686|15734|5913	-	Full
+,	PUNCT	,	-	-	TextOnly
+appendo	VERB	appendere	37896	-	Full
+lo	ART	il	-	-	Hidden
+zaino	NOUN	zaino	-	-	Hidden
+e	CONJ	e	3026	-	Full
+mi	CLITIC	mi	-	-	Hidden
+siedo	VERB	sedere	2801|6611|35033|30826	-	Full
+al	ARTADP	a	11709	-	Full
+mio	DET	mio	12264	-	Full
+posto	NOUN	posto	9819|19520	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Quando faccio così, la maestra è contenta e anche io mi sento tranquillo.
+Quando	CONJ	quando	22621	-	Full
+faccio	VERB	fare	11749|32751	-	Full
+così	ADV	così	-	-	TextOnly
+,	PUNCT	,	-	-	TextOnly
+la	ART	la	8476	-	Full
+maestra	NOUN	maestra	2456|6555|28003	-	Full
+è	VERB	essere	5581	-	Full
+contenta	ADJ	contento	28647|3245|31923|35547|9907|32123	-	Full
+e	CONJ	e	3026	-	Full
+anche	ADV	anche	11591	-	Full
+io	PRON	io	-	-	Hidden
+mi	CLITIC	mi	-	-	Hidden
+sento	VERB	sentire	-	-	TextOnly
+tranquillo	ADJ	tranquillo	38932|31310|37828|38050	-	Full
+.	PUNCT	.	-	-	TextOnly

@@ -1,0 +1,141 @@
+# testo: 15_andare_dal_dentista
+# genere: storia_sociale
+# gruppo: prova
+# origine: scritto per il progetto (sintetico)
+
+# frase: A volte vado dal dentista.
+A	ADP	a	27564|27387	-	Full
+volte	NOUN	volta	-	-	Hidden
+vado	VERB	andare	2432	-	Full
+dal	ARTADP	da	11712	-	Full
+dentista	NOUN	dentista	2733|11229|38886|39141|38834	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Il dentista è un dottore che si prende cura dei denti.
+Il	ART	il	8476	-	Full
+dentista	NOUN	dentista	2733|11229|38886|39141|38834	-	Full
+è	VERB	essere	5581	-	Full
+un	ART	un	8474	-	Full
+dottore	NOUN	dottore	38446|2467|6561|38857	-	Full
+che	PRON	che	11351	-	Full
+si	CLITIC	si	-	-	Hidden
+prende	VERB	prendere	16633|11691|11692|14662	-	Full
+cura	NOUN	cura	-	-	Hidden
+dei	ARTADP	di	11712	-	Full
+denti	NOUN	dente	2737	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Nella sala d'aspetto mi siedo e aspetto il mio turno.
+Nella	ARTADP	in	7034	-	Full
+sala	NOUN	sala	24633|24634|27473	-	Full
+d'	ADP	di	-	-	Hidden
+aspetto	NOUN	aspetto	-	-	Hidden
+mi	CLITIC	mi	-	-	Hidden
+siedo	VERB	sedere	2801|6611|35033|30826	-	Full
+e	CONJ	e	3026	-	Full
+aspetto	VERB	aspettare	8109|16697|27547|28677	-	Full
+il	ART	il	7158	-	Full
+mio	DET	mio	-	-	Hidden
+turno	NOUN	turno	-	-	Hidden
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Posso guardare un libro o giocare con la mamma.
+Posso	MODAL	potere	35949	-	Full
+guardare	VERB	guardare	2474|16907	-	Full
+un	ART	un	8474	-	Full
+libro	NOUN	libro	2450|25191	-	Full
+o	CONJ	o	3037	-	Full
+giocare	VERB	giocare	2439|6537|23392|36884	-	Full
+con	ADP	con	7064	-	Full
+la	ART	la	8476	-	Full
+mamma	NOUN	mamma	2458	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Poi il dentista mi chiama.
+Poi	ADV	poi	-	-	TextOnly
+il	ART	il	8476	-	Full
+dentista	NOUN	dentista	2733|11229|38886|39141|38834	-	Full
+mi	CLITIC	mi	31807|2617|6632	-	Full
+chiama	VERB	chiamare	32669|39519	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Mi siedo sulla poltrona grande e apro bene la bocca.
+Mi	CLITIC	mi	-	-	Hidden
+siedo	VERB	sedere	2801|6611|35033|30826	-	Full
+sulla	ARTADP	su	5451	-	Full
+poltrona	NOUN	poltrona	35173|2570|25475	-	Full
+grande	ADJ	grande	4658	-	Full
+e	CONJ	e	3026	-	Full
+apro	VERB	aprire	10137|24825	-	Full
+bene	ADV	bene	5397	-	Full
+la	ART	la	8476	-	Full
+bocca	NOUN	bocca	2663	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Il dentista guarda i miei denti con una lucina.
+Il	ART	il	8476	-	Full
+dentista	NOUN	dentista	2733|11229|38886|39141|38834	-	Full
+guarda	VERB	guardare	2474|16907	-	Full
+i	ART	il	8477	-	Full
+miei	DET	mio	12266	-	Full
+denti	NOUN	dente	2737	-	Full
+con	ADP	con	7064	-	Full
+una	ART	una	8474	-	Full
+lucina	NOUN	lucina	35225|8619	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Può fare un po' di rumore, ma non fa male.
+Può	MODAL	potere	35949	-	Full
+fare	VERB	fare	11749|32751	-	Full
+un	ART	un	8474	-	Full
+po'	PRON	po'	5546	-	Full
+di	ADP	di	7074	-	Full
+rumore	NOUN	rumore	36165	-	Full
+,	PUNCT	,	-	-	TextOnly
+ma	CONJ	ma	11377	-	Full
+non	ADV	non	5526	-	Full
+fa	VERB	fare	30620	-	Full
+male	ADV	male	-	-	Hidden
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Se ho paura, posso respirare piano e stringere la mano della mamma.
+Se	CONJ	se	28359	-	Full
+ho	VERB	avere	35571|39668	-	Full
+paura	NOUN	paura	-	-	Hidden
+,	PUNCT	,	-	-	TextOnly
+posso	MODAL	potere	35949	-	Full
+respirare	VERB	respirare	34377|34409|34508	-	Full
+piano	ADV	piano	4676	-	Full
+e	CONJ	e	3026	-	Full
+stringere	VERB	stringere	13024|37858	-	Full
+la	ART	la	8476	-	Full
+mano	NOUN	mano	2928	-	Full
+della	ARTADP	di	11712	-	Full
+mamma	NOUN	mamma	2458	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Alla fine il dentista dice: "Bravo!".
+Alla	ARTADP	a	11709	-	Full
+fine	NOUN	fine	5358|28429	-	Full
+il	ART	il	8476	-	Full
+dentista	NOUN	dentista	2733|11229|38886|39141|38834	-	Full
+dice	VERB	dire	9692|9693|28663	-	Full
+:	PUNCT	:	-	-	TextOnly
+"	PUNCT	"	-	-	TextOnly
+Bravo	INTJ	bravo	11599|38564	-	Full
+!	PUNCT	!	-	-	TextOnly
+"	PUNCT	"	-	-	TextOnly
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Io sono contento perché ho i denti puliti e sani.
+Io	PRON	io	31807|2617|6632	-	Full
+sono	VERB	essere	5581	-	Full
+contento	ADJ	contento	3245|9907|31923|32123|35547	-	Full
+perché	CONJ	perché	11348	-	Full
+ho	VERB	avere	7271	-	Full
+i	ART	il	8477	-	Full
+denti	NOUN	dente	2737	-	Full
+puliti	ADJ	pulito	26172|4680	-	Full
+e	CONJ	e	3026	-	Full
+sani	ADJ	sano	12293|37797	-	Full
+.	PUNCT	.	-	-	TextOnly

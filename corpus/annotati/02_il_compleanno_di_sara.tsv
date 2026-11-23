@@ -1,0 +1,147 @@
+# testo: 02_il_compleanno_di_sara
+# genere: storia
+# gruppo: prova
+# origine: scritto per il progetto (sintetico)
+
+# frase: Oggi Sara compie sette anni.
+Oggi	ADV	oggi	7131|38276	-	Full
+Sara	PROPN	sara	-	-	TextOnly
+compie	VERB	compiere	26784	-	Full
+sette	NUM	sette	2633|4895|7248|35685	-	Full
+anni	NOUN	anno	6903	PLURAL	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Si è svegliata presto e ha trovato un pacco sul tavolo della cucina.
+Si	CLITIC	si	-	-	Hidden
+è	AUX	essere	-	-	Hidden
+svegliata	VERB	svegliarsi	8988|8989|25209|28625|31857	PAST	Full
+presto	ADV	presto	-	-	TextOnly
+e	CONJ	e	3026	-	Full
+ha	AUX	avere	-	-	Hidden
+trovato	VERB	trovare	24741|24742|24773|24774	PAST	Full
+un	ART	un	8474	-	Full
+pacco	NOUN	pacco	38946	-	Full
+sul	ARTADP	su	5451	-	Full
+tavolo	NOUN	tavolo	3129|6562	-	Full
+della	ARTADP	di	11712	-	Full
+cucina	NOUN	cucina	33070	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Il papà ha acceso le candeline sulla torta al cioccolato.
+Il	ART	il	8476	-	Full
+papà	NOUN	papà	2497|31146	-	Full
+ha	AUX	avere	-	-	Hidden
+acceso	VERB	accendere	6486|4639	PAST	Full
+le	ART	il	8477	-	Full
+candeline	NOUN	candelina	6242|37302	PLURAL	Full
+sulla	ARTADP	su	5451	-	Full
+torta	NOUN	torta	29226	-	Full
+al	ARTADP	a	-	-	Hidden
+cioccolato	NOUN	cioccolato	-	-	Hidden
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Sara ha chiuso gli occhi, ha espresso un desiderio e ha soffiato forte.
+Sara	PROPN	sara	-	-	TextOnly
+ha	AUX	avere	-	-	Hidden
+chiuso	VERB	chiudere	10146	PAST	Full
+gli	ART	il	-	-	Hidden
+occhi	NOUN	occhio	-	-	Hidden
+,	PUNCT	,	-	-	TextOnly
+ha	AUX	avere	-	-	Hidden
+espresso	VERB	esprimere	-	PAST	TextOnly
+un	ART	un	8474	-	Full
+desiderio	NOUN	desiderio	36518	-	Full
+e	CONJ	e	3026	-	Full
+ha	AUX	avere	-	-	Hidden
+soffiato	VERB	soffiare	34506|10179|16895|7258	PAST	Full
+forte	ADV	forte	-	-	TextOnly
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Nel pomeriggio sono arrivati gli amici con i regali.
+Nel	ARTADP	in	7034	-	Full
+pomeriggio	NOUN	pomeriggio	7268|32850	-	Full
+sono	AUX	essere	-	-	Hidden
+arrivati	VERB	arrivare	11708|13356|16805|16807	PAST	Full
+gli	ART	il	8477	-	Full
+amici	NOUN	amico	2255|25792	-	Full
+con	ADP	con	7064	-	Full
+i	ART	il	3030	-	Full
+regali	NOUN	regalo	3149|25381	PLURAL	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Luca le ha dato un libro di favole, Anna una bambola con il vestito blu.
+Luca	PROPN	luca	-	-	TextOnly
+le	CLITIC	le	7028|7029	-	Full
+ha	AUX	avere	-	-	Hidden
+dato	VERB	dare	28431|17038|17040	PAST	Full
+un	ART	un	8474	-	Full
+libro	NOUN	libro	2364	-	Full
+di	ADP	di	-	-	Hidden
+favole	NOUN	favola	-	-	Hidden
+,	PUNCT	,	-	-	TextOnly
+Anna	PROPN	anna	-	-	TextOnly
+una	ART	un	8474	-	Full
+bambola	NOUN	bambola	2482|26238	-	Full
+con	ADP	con	7064	-	Full
+il	ART	il	8476	-	Full
+vestito	NOUN	vestito	2613	-	Full
+blu	ADJ	blu	4869	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Hanno giocato in giardino e hanno cantato la canzone di compleanno.
+Hanno	AUX	avere	-	-	Hidden
+giocato	VERB	giocare	2439|6537|23392	PAST	Full
+in	ADP	in	7034	-	Full
+giardino	NOUN	giardino	2434|30608|37986	-	Full
+e	CONJ	e	3026	-	Full
+hanno	AUX	avere	-	-	Hidden
+cantato	VERB	cantare	2315|6960|28657|32015	PAST	Full
+la	ART	il	8476	-	Full
+canzone	NOUN	canzone	24791|24795|38000	-	Full
+di	ADP	di	7074	-	Full
+compleanno	NOUN	compleanno	3087|26781|28491|28492|37363|16635|5997	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: La nonna ha preparato dei dolci con la marmellata.
+La	ART	il	8476	-	Full
+nonna	NOUN	nonna	2243|10194|23709|23710	-	Full
+ha	AUX	avere	-	-	Hidden
+preparato	VERB	preparare	6190	PAST	Full
+dei	ARTADP	di	8475	-	Full
+dolci	NOUN	dolce	35769	-	Full
+con	ADP	con	7064	-	Full
+la	ART	il	8476	-	Full
+marmellata	NOUN	marmellata	2470	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: La sera Sara era contenta, ma un po' stanca.
+La	ART	il	8476	-	Full
+sera	NOUN	sera	-	-	TextOnly
+Sara	PROPN	sara	-	-	TextOnly
+era	VERB	essere	5581|5465|5858	PAST	Full
+contenta	ADJ	contento	3245|28647|31923|35547|39814|9907|32123|6892	-	Full
+,	PUNCT	,	-	-	TextOnly
+ma	CONJ	ma	11377	-	Full
+un	ART	un	8474	-	Full
+po'	ADV	poco	5546	-	Full
+stanca	ADJ	stanco	28709|2314|31925|35537|6959|35573	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Si è lavata i denti, si è messa il pigiama e si è addormentata subito.
+Si	CLITIC	si	-	-	Hidden
+è	AUX	essere	-	-	Hidden
+lavata	VERB	lavarsi	2326|6971|27489|31880	PAST	Full
+i	ART	il	-	-	Hidden
+denti	NOUN	dente	-	-	Hidden
+,	PUNCT	,	-	-	TextOnly
+si	CLITIC	si	-	-	Hidden
+è	AUX	essere	-	-	Hidden
+messa	VERB	mettersi	34494|34569|32135	PAST	Full
+il	ART	il	8476	-	Full
+pigiama	NOUN	pigiama	2522	-	Full
+e	CONJ	e	3026	-	Full
+si	CLITIC	si	-	-	Hidden
+è	AUX	essere	-	-	Hidden
+addormentata	VERB	addormentarsi	2369|6479|28623	PAST	Full
+subito	ADV	subito	25736	-	Full
+.	PUNCT	.	-	-	TextOnly

@@ -1,0 +1,140 @@
+# testo: 07_il_gatto_sul_tetto
+# genere: storia
+# gruppo: sviluppo
+# origine: scritto per il progetto (sintetico)
+
+# frase: Un giorno il gatto Briciola è salito sul tetto e non è riuscito a scendere.
+Un	ART	un	8474	-	Full
+giorno	NOUN	giorno	7022|26799|37371	-	Full
+il	ART	il	8476	-	Full
+gatto	NOUN	gatto	2406|7114|9879|9881	-	Full
+Briciola	PROPN	briciola	-	-	TextOnly
+è	AUX	essere	-	-	Hidden
+salito	VERB	salire	2795|6617|8226	PAST	Full
+sul	ARTADP	su	5451|7814	-	Full
+tetto	NOUN	tetto	2584	-	Full
+e	CONJ	e	11399|3026	-	Full
+non	ADV	non	5526|5525	-	Full
+è	AUX	essere	-	-	Hidden
+riuscito	VERB	riuscire	11750|35949	PAST	Full
+a	ADP	a	7041|3021	-	Full
+scendere	VERB	scendere	2654|6053|8035|34807|37244	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Miagolava forte e tremava dalla paura.
+Miagolava	VERB	miagolare	7156	PAST	Full
+forte	ADV	forte	36165|36047	-	Full
+e	CONJ	e	11399|3026	-	Full
+tremava	VERB	tremare	7109	PAST	Full
+dalla	ARTADP	da	11712	-	Full
+paura	NOUN	paura	10261|35571|39248|39668	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Il nonno ha preso la scala e ha provato a raggiungerlo, ma la scala era troppo corta.
+Il	ART	il	8476	-	Full
+nonno	NOUN	nonno	2244|4560|23717|23718	-	Full
+ha	AUX	avere	-	-	Hidden
+preso	VERB	prendere	10148|4606|32773|39414	PAST	Full
+la	ART	la	8476	-	Full
+scala	NOUN	scala	2743	-	Full
+e	CONJ	e	11399|3026	-	Full
+ha	AUX	avere	-	-	Hidden
+provato	VERB	provare	26144	PAST	Full
+a	ADP	a	7041|3021	-	Full
+raggiungerlo	VERB	raggiungere	24208	-	Full
+,	PUNCT	,	-	-	TextOnly
+ma	CONJ	ma	11377	-	Full
+la	ART	la	8476	-	Full
+scala	NOUN	scala	2743	-	Full
+era	VERB	essere	5581|5465|5466|5858|36480	PAST	Full
+troppo	ADV	troppo	39188	-	Full
+corta	ADJ	corto	4615|26002	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Allora ha chiamato i pompieri.
+Allora	ADV	allora	-	-	TextOnly
+ha	AUX	avere	-	-	Hidden
+chiamato	VERB	chiamare	36305|36306	PAST	Full
+i	ART	il	8477|3030	-	Full
+pompieri	NOUN	pompiere	2664|6066|11193	PLURAL	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: I pompieri sono arrivati con un camion rosso e una scala lunghissima.
+I	ART	il	8477|3030	-	Full
+pompieri	NOUN	pompiere	2664|6066|11193	PLURAL	Full
+sono	AUX	essere	-	-	Hidden
+arrivati	VERB	arrivare	11708|13356|16805|16807	PAST	Full
+con	ADP	con	7064	-	Full
+un	ART	un	8474	-	Full
+camion	NOUN	camion	6956|2306|4925|6982	-	Full
+rosso	ADJ	rosso	2808	-	Full
+e	CONJ	e	11399|3026	-	Full
+una	ART	una	8474	-	Full
+scala	NOUN	scala	2743	-	Full
+lunghissima	ADJ	lungo	4675|26162	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Un pompiere è salito piano piano e ha preso il gatto tra le braccia.
+Un	ART	un	8474	-	Full
+pompiere	NOUN	pompiere	2664|6066|11193	-	Full
+è	AUX	essere	-	-	Hidden
+salito	VERB	salire	8226|2795|6617	PAST	Full
+piano	ADV	piano	4676	-	Full
+piano	ADV	piano	4676	-	Full
+e	CONJ	e	11399|3026	-	Full
+ha	AUX	avere	-	-	Hidden
+preso	VERB	prendere	10148|4606|32773|39414	PAST	Full
+il	ART	il	8476	-	Full
+gatto	NOUN	gatto	2406|7114|9879|9881	-	Full
+tra	ADP	tra	7765	-	Full
+le	ART	la	8477	-	Full
+braccia	NOUN	braccio	2669|38901	PLURAL	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Briciola ha fatto le fusa e ha leccato la mano del pompiere.
+Briciola	PROPN	briciola	-	-	TextOnly
+ha	AUX	avere	-	-	Hidden
+fatto	VERB	fare	11749|32751	PAST	Full
+le	ART	la	8477	-	Full
+fusa	NOUN	fusa	-	-	TextOnly
+e	CONJ	e	11399|3026	-	Full
+ha	AUX	avere	-	-	Hidden
+leccato	VERB	leccare	37025|37026|39016|15355|16611	PAST	Full
+la	ART	la	8476	-	Full
+mano	NOUN	mano	2928	-	Full
+del	ARTADP	di	11712	-	Full
+pompiere	NOUN	pompiere	2664|6066|11193	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Tutti i bambini del palazzo hanno applaudito.
+Tutti	DET	tutto	5596|27091|32438	-	Full
+i	ART	il	8477|3030	-	Full
+bambini	NOUN	bambino	31462|6975|7178|36560	-	Full
+del	ARTADP	di	11712	-	Full
+palazzo	NOUN	palazzo	5989	-	Full
+hanno	AUX	avere	-	-	Hidden
+applaudito	VERB	applaudire	4563|36682	PAST	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Da quel giorno il gatto non sale più sul tetto.
+Da	ADP	da	7077|7074	-	Full
+quel	DET	quello	6906	-	Full
+giorno	NOUN	giorno	7022|26799|37371	-	Full
+il	ART	il	8476	-	Full
+gatto	NOUN	gatto	2406|7114|9879|9881	-	Full
+non	ADV	non	5526|5525	-	Full
+sale	VERB	salire	2795|6617|8226	-	Full
+più	ADV	più	-	-	TextOnly
+sul	ARTADP	su	5451|7814	-	Full
+tetto	NOUN	tetto	2584	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Preferisce dormire sul divano accanto al camino.
+Preferisce	VERB	preferire	11694|30510	-	Full
+dormire	VERB	dormire	2369|6479|28623	-	Full
+sul	ARTADP	su	5451|7814	-	Full
+divano	NOUN	divano	2571|25479	-	Full
+accanto	ADV	accanto	5367	-	Full
+al	ARTADP	a	-	-	Hidden
+camino	NOUN	camino	8072	-	Full
+.	PUNCT	.	-	-	TextOnly

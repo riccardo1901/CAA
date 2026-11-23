@@ -1,0 +1,112 @@
+# testo: 18_aspettare_il_mio_turno
+# genere: storia_sociale
+# gruppo: sviluppo
+# origine: scritto per il progetto (sintetico)
+
+# frase: Nei giochi ognuno ha il suo turno.
+Nei	ARTADP	in	7034	-	Full
+giochi	NOUN	gioco	9810	PLURAL	Full
+ognuno	PRON	ognuno	-	-	TextOnly
+ha	VERB	avere	7271|32761	-	Full
+il	ART	il	8476	-	Full
+suo	DET	suo	12272	-	Full
+turno	NOUN	turno	7158|22190	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Prima gioca un bambino, poi un altro, poi un altro ancora.
+Prima	ADV	prima	10210|4726|13028	-	Full
+gioca	VERB	giocare	2439|6537|23392|35717|35723|36884|37068|37952	-	Full
+un	ART	un	8474	-	Full
+bambino	NOUN	bambino	2485|7176|10363|28287|32840|32841|32842|32843|37871	-	Full
+,	PUNCT	,	-	-	TextOnly
+poi	ADV	poi	13080|32749	-	Full
+un	ART	un	8474	-	Full
+altro	PRON	altro	17054	-	Full
+,	PUNCT	,	-	-	TextOnly
+poi	ADV	poi	13080|32749	-	Full
+un	ART	un	8474	-	Full
+altro	PRON	altro	17054	-	Full
+ancora	ADV	ancora	37162	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: A volte devo aspettare e non è facile.
+A	ADP	a	27387|27564	-	Full
+volte	NOUN	volta	-	-	Hidden
+devo	MODAL	dovere	15523	-	Full
+aspettare	VERB	aspettare	8109|16697|27547|28677|39062	-	Full
+e	CONJ	e	3026	-	Full
+non	ADV	non	5526|5525	-	Full
+è	VERB	essere	5581|36480	-	Full
+facile	ADJ	facile	4645|32302|32434	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Posso contare fino a dieci oppure guardare gli altri.
+Posso	MODAL	potere	11750|35949	-	Full
+contare	VERB	contare	2714	-	Full
+fino	ADP	fino	7771	-	Full
+a	ADP	a	-	-	Hidden
+dieci	NUM	dieci	7025|29254|35691	-	Full
+oppure	CONJ	oppure	11317|3037	-	Full
+guardare	VERB	guardare	2474|6564|28673|16907	-	Full
+gli	ART	il	8477	-	Full
+altri	PRON	altro	17056	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Se aspetto con calma, presto arriva il mio turno.
+Se	CONJ	se	28359	-	Full
+aspetto	VERB	aspettare	8109|16697|27547|28677|39062	-	Full
+con	ADP	con	7064	-	Full
+calma	NOUN	calma	37828|38050	-	Full
+,	PUNCT	,	-	-	TextOnly
+presto	ADV	presto	25736|37661	-	Full
+arriva	VERB	arrivare	11708|13356|16805|16807	-	Full
+il	ART	il	7158	-	Full
+mio	DET	mio	-	-	Hidden
+turno	NOUN	turno	-	-	Hidden
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Allora posso giocare anche io.
+Allora	ADV	allora	-	-	TextOnly
+posso	MODAL	potere	11750|35949	-	Full
+giocare	VERB	giocare	2439|6537|23392|35717|35723|36884|37068|37952	-	Full
+anche	ADV	anche	11591	-	Full
+io	PRON	io	-	-	Hidden
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Se divento nervoso, respiro piano e dico a me stesso: "Tra poco tocca a me".
+Se	CONJ	se	28359	-	Full
+divento	VERB	diventare	-	-	TextOnly
+nervoso	ADJ	nervoso	38930	-	Full
+,	PUNCT	,	-	-	TextOnly
+respiro	VERB	respirare	34377|34409|34508	-	Full
+piano	ADV	piano	4676	-	Full
+e	CONJ	e	3026	-	Full
+dico	VERB	dire	9692|9693|28663	-	Full
+a	ADP	a	3021|7041	-	Full
+me	PRON	me	2617|6632|7309|7310|31807	-	Full
+stesso	ADJ	stesso	-	-	TextOnly
+:	PUNCT	:	-	-	TextOnly
+"	PUNCT	"	-	-	TextOnly
+Tra	ADP	tra	-	-	TextOnly
+poco	ADV	poco	37661|5546	-	Full
+tocca	VERB	toccare	7158	-	Full
+a	ADP	a	-	-	Hidden
+me	PRON	me	-	-	Hidden
+"	PUNCT	"	-	-	TextOnly
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Gli amici sono contenti quando rispetto il turno e giocano volentieri con me.
+Gli	ART	il	8477	-	Full
+amici	NOUN	amico	2255|25792	-	Full
+sono	VERB	essere	5581|36480	-	Full
+contenti	ADJ	contento	3245|9907|31923|32123|35547	-	Full
+quando	CONJ	quando	24053	-	Full
+rispetto	VERB	rispettare	36720|11621	-	Full
+il	ART	il	8476	-	Full
+turno	NOUN	turno	7158|22190	-	Full
+e	CONJ	e	3026	-	Full
+giocano	VERB	giocare	2439|6537|23392|35717|35723|36884|37068|37952	-	Full
+volentieri	ADV	volentieri	-	-	TextOnly
+con	ADP	con	39801	-	Full
+me	PRON	me	-	-	Hidden
+.	PUNCT	.	-	-	TextOnly

@@ -1,0 +1,136 @@
+# testo: 17_in_mensa_a_scuola
+# genere: storia_sociale
+# gruppo: sviluppo
+# origine: scritto per il progetto (sintetico)
+
+# frase: A mezzogiorno vado in mensa con la mia classe.
+A	ADP	a	3021|7041	-	Full
+mezzogiorno	NOUN	mezzogiorno	39324	-	Full
+vado	VERB	andare	2432|3251|6044|8142|31758|35093	-	Full
+in	ADP	in	7034	-	Full
+mensa	NOUN	mensa	5970|9824	-	Full
+con	ADP	con	7064	-	Full
+la	ART	la	8476	-	Full
+mia	DET	mio	12264	-	Full
+classe	NOUN	classe	39686	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: In mensa ci sono tanti bambini e c'è un po' di rumore.
+In	ADP	in	7034	-	Full
+mensa	NOUN	mensa	5970|9824	-	Full
+ci	CLITIC	ci	-	-	Hidden
+sono	VERB	essere	9001|5581	-	Full
+tanti	DET	tanto	25492|7168	-	Full
+bambini	NOUN	bambino	31462|6975|7178|36560	-	Full
+e	CONJ	e	3026	-	Full
+c'	CLITIC	ci	-	-	Hidden
+è	VERB	essere	9001|5581	-	Full
+un	ART	un	8474	-	Full
+po'	ADV	poco	5546	-	Full
+di	ADP	di	7074	-	Full
+rumore	NOUN	rumore	36165	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Mi metto in fila e prendo il vassoio.
+Mi	CLITIC	mi	-	-	Hidden
+metto	VERB	mettere	6989|8166|32757	-	Full
+in	ADP	in	7034	-	Full
+fila	NOUN	fila	7102|31803|35123|37764|38596|38597|39146|39148	-	Full
+e	CONJ	e	3026	-	Full
+prendo	VERB	prendere	10148|32773|4606|38011	-	Full
+il	ART	il	8476	-	Full
+vassoio	NOUN	vassoio	2656|6928|39254	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Le signore della mensa mi danno il primo, il secondo e la frutta.
+Le	ART	la	8477	-	Full
+signore	NOUN	signora	4745	PLURAL	Full
+della	ARTADP	di	7074|11712	-	Full
+mensa	NOUN	mensa	5970|9824	-	Full
+mi	CLITIC	mi	31807|2617|6632|7309|7310	-	Full
+danno	VERB	dare	17038|17040|28431	-	Full
+il	ART	il	8476	-	Full
+primo	NOUN	primo	7219	-	Full
+,	PUNCT	,	-	-	TextOnly
+il	ART	il	8476	-	Full
+secondo	NOUN	secondo	7240	-	Full
+e	CONJ	e	3026	-	Full
+la	ART	la	8476	-	Full
+frutta	NOUN	frutta	4653|28339	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Mi siedo al tavolo e mangio con la forchetta e il cucchiaio.
+Mi	CLITIC	mi	-	-	Hidden
+siedo	VERB	sedere	2801|6611|30826|35029|35033	-	Full
+al	ARTADP	a	3021|11709	-	Full
+tavolo	NOUN	tavolo	3129|6562|37873	-	Full
+e	CONJ	e	3026	-	Full
+mangio	VERB	mangiare	2349|6456|28641	-	Full
+con	ADP	con	7064	-	Full
+la	ART	la	8476	-	Full
+forchetta	NOUN	forchetta	2588	-	Full
+e	CONJ	e	3026	-	Full
+il	ART	il	8476	-	Full
+cucchiaio	NOUN	cucchiaio	2362	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Se un cibo non mi piace, lo posso assaggiare piano piano.
+Se	CONJ	se	28359	-	Full
+un	ART	un	8474	-	Full
+cibo	NOUN	cibo	4610	-	Full
+non	ADV	non	38888|38890|22005|37825	-	Full
+mi	CLITIC	mi	-	-	Hidden
+piace	VERB	piacere	-	-	Hidden
+,	PUNCT	,	-	-	TextOnly
+lo	CLITIC	lo	-	-	TextOnly
+posso	MODAL	potere	11750|35949	-	Full
+assaggiare	VERB	assaggiare	31861	-	Full
+piano	ADV	piano	4676	-	Full
+piano	ADV	piano	4676	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Uso il tovagliolo e parlo con voce bassa.
+Uso	VERB	usare	15485	-	Full
+il	ART	il	8476	-	Full
+tovagliolo	NOUN	tovagliolo	2569|36303	-	Full
+e	CONJ	e	3026	-	Full
+parlo	VERB	parlare	3345|6517|36544|9692|9693|28663|32133	-	Full
+con	ADP	con	7064	-	Full
+voce	NOUN	voce	-	-	TextOnly
+bassa	ADJ	basso	-	-	TextOnly
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Quando finisco, porto il vassoio dove si mettono i piatti sporchi.
+Quando	CONJ	quando	24053	-	Full
+finisco	VERB	finire	32814|5358|28429	-	Full
+,	PUNCT	,	-	-	TextOnly
+porto	VERB	portare	6139|6553|37223|8982|7279|7280|32061	-	Full
+il	ART	il	8476	-	Full
+vassoio	NOUN	vassoio	2656|6928|39254	-	Full
+dove	ADV	dove	7764	-	Full
+si	CLITIC	si	-	-	TextOnly
+mettono	VERB	mettere	6989|8166|32757	-	Full
+i	ART	il	8477|3030	-	Full
+piatti	NOUN	piatto	39083	PLURAL	Full
+sporchi	ADJ	sporco	-	-	Hidden
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Alla fine ringrazio e torno in classe.
+Alla	ARTADP	a	3021|11709	-	Full
+fine	NOUN	fine	5358	-	Full
+ringrazio	VERB	ringraziare	38783|8128|8129|31206|36093	-	Full
+e	CONJ	e	3026	-	Full
+torno	VERB	tornare	29714	-	Full
+in	ADP	in	7034	-	Full
+classe	NOUN	classe	9814|9815|15734|33072|39686	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: La maestra è contenta se faccio così.
+La	ART	la	8476	-	Full
+maestra	NOUN	maestra	2456|6555|28003	-	Full
+è	VERB	essere	5581|36480	-	Full
+contenta	ADJ	contento	3245|9907|31923|32123|35547	-	Full
+se	CONJ	se	28359	-	Full
+faccio	VERB	fare	11749|32751	-	Full
+così	ADV	così	-	-	TextOnly
+.	PUNCT	.	-	-	TextOnly

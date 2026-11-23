@@ -1,0 +1,146 @@
+# testo: 13_il_brutto_anatroccolo
+# genere: favola
+# gruppo: prova
+# origine: scritto per il progetto (sintetico)
+
+# frase: In una fattoria una mamma anatra covava le sue uova.
+In	ADP	in	7034	-	Full
+una	ART	una	8474	-	Full
+fattoria	NOUN	fattoria	32482	-	Full
+una	ART	una	8474	-	Full
+mamma	NOUN	mamma	2458	-	Full
+anatra	NOUN	anatra	28477|2563|28479	-	Full
+covava	VERB	covare	24117	PAST	Full
+le	ART	la	8477	-	Full
+sue	DET	suo	12276	-	Full
+uova	NOUN	uovo	34039	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Un giorno si schiusero e nacquero cinque anatroccoli gialli e uno più grande, grigio e goffo.
+Un	ART	un	8474	-	Full
+giorno	NOUN	giorno	37371|26799|7022	-	Full
+si	CLITIC	si	-	-	Hidden
+schiusero	VERB	schiudere	28409	PAST	Full
+e	CONJ	e	3026	-	Full
+nacquero	VERB	nascere	34252	PAST	Full
+cinque	NUM	cinque	2631	-	Full
+anatroccoli	NOUN	anatroccolo	2563	PLURAL	Full
+gialli	ADJ	giallo	2648	-	Full
+e	CONJ	e	3026	-	Full
+uno	PRON	uno	4889|2627|7291	-	Full
+più	ADV	più	4658	-	Full
+grande	ADJ	grande	-	-	Hidden
+,	PUNCT	,	-	-	TextOnly
+grigio	ADJ	grigio	3340	-	Full
+e	CONJ	e	3026	-	Full
+goffo	ADJ	goffo	-	-	TextOnly
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Gli altri animali lo prendevano in giro: "Che brutto!
+Gli	ART	il	8477	-	Full
+altri	ADJ	altro	17056	-	Full
+animali	NOUN	animale	6901	-	Full
+lo	CLITIC	lo	8476|31670	-	Full
+prendevano	VERB	prendere	26704	PAST	Full
+in	ADP	in	-	-	Hidden
+giro	NOUN	giro	-	-	Hidden
+:	PUNCT	:	-	-	TextOnly
+"	PUNCT	"	-	-	TextOnly
+Che	ADV	che	11351	-	Full
+brutto	ADJ	brutto	4648|26090	-	Full
+!	PUNCT	!	-	-	TextOnly
+
+# frase: Non somiglia a nessuno!".
+Non	ADV	non	5526	-	Full
+somiglia	VERB	somigliare	37590	-	Full
+a	ADP	a	3021	-	Full
+nessuno	PRON	nessuno	11314|26941	-	Full
+!	PUNCT	!	-	-	TextOnly
+"	PUNCT	"	-	-	TextOnly
+.	PUNCT	.	-	-	TextOnly
+
+# frase: L'anatroccolo era triste e un mattino scappò lontano.
+L'	ART	il	8476	-	Full
+anatroccolo	NOUN	anatroccolo	2563	-	Full
+era	VERB	essere	5581	PAST	Full
+triste	ADJ	triste	2606|11959|31939|35545	-	Full
+e	CONJ	e	3026	-	Full
+un	ART	un	8474	-	Full
+mattino	NOUN	mattino	25704	-	Full
+scappò	VERB	scappare	31014|38017|31015	PAST	Full
+lontano	ADV	lontano	30385|36759	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Passò l'inverno da solo, al freddo, in una palude.
+Passò	VERB	passare	-	PAST	TextOnly
+l'	ART	il	8476	-	Full
+inverno	NOUN	inverno	5493	-	Full
+da	ADP	da	7077	-	Full
+solo	ADJ	solo	39247|7253	-	Full
+,	PUNCT	,	-	-	TextOnly
+al	ARTADP	a	11709	-	Full
+freddo	NOUN	freddo	26865|35589|35557	-	Full
+,	PUNCT	,	-	-	TextOnly
+in	ADP	in	7034	-	Full
+una	ART	una	8474	-	Full
+palude	NOUN	palude	26290	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Quando arrivò la primavera, vide dei bellissimi cigni bianchi sul lago.
+Quando	CONJ	quando	22621	-	Full
+arrivò	VERB	arrivare	11708|13356	PAST	Full
+la	ART	la	8476	-	Full
+primavera	NOUN	primavera	5553	-	Full
+,	PUNCT	,	-	-	TextOnly
+vide	VERB	vedere	2474	PAST	Full
+dei	ART	di	8475	-	Full
+bellissimi	ADJ	bello	4660|11194|26114	-	Full
+cigni	NOUN	cigno	2337	PLURAL	Full
+bianchi	ADJ	bianco	8043|2662	-	Full
+sul	ARTADP	su	5451	-	Full
+lago	NOUN	lago	6022	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Si avvicinò timidamente, ma guardò il suo riflesso nell'acqua.
+Si	CLITIC	si	-	-	Hidden
+avvicinò	VERB	avvicinare	6878|6879	PAST	Full
+timidamente	ADV	timidamente	8707|31750|37791	-	Full
+,	PUNCT	,	-	-	TextOnly
+ma	CONJ	ma	11377	-	Full
+guardò	VERB	guardare	2474|16907	PAST	Full
+il	ART	il	8476	-	Full
+suo	DET	suo	12272	-	Full
+riflesso	NOUN	riflesso	8682|8683|34551	-	Full
+nell'	ARTADP	in	7034	-	Full
+acqua	NOUN	acqua	6889	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Non era più un anatroccolo grigio: era diventato un cigno magnifico!
+Non	ADV	non	5526	-	Full
+era	VERB	essere	5581	PAST	Full
+più	ADV	più	26913|5508	-	Full
+un	ART	un	8474	-	Full
+anatroccolo	NOUN	anatroccolo	2563	-	Full
+grigio	ADJ	grigio	3340	-	Full
+:	PUNCT	:	-	-	TextOnly
+era	AUX	essere	-	-	Hidden
+diventato	VERB	diventare	-	PAST	TextOnly
+un	ART	un	8474	-	Full
+cigno	NOUN	cigno	2337	-	Full
+magnifico	ADJ	magnifico	4660|11194|26114	-	Full
+!	PUNCT	!	-	-	TextOnly
+
+# frase: I cigni lo accolsero con gioia e lui non fu più solo.
+I	ART	il	8477	-	Full
+cigni	NOUN	cigno	2337	PLURAL	Full
+lo	CLITIC	lo	8476|31670	-	Full
+accolsero	VERB	accogliere	39677	PAST	Full
+con	ADP	con	7064	-	Full
+gioia	NOUN	gioia	8582	-	Full
+e	CONJ	e	3026	-	Full
+lui	PRON	lui	31670	-	Full
+non	ADV	non	5526	-	Full
+fu	VERB	essere	5581	PAST	Full
+più	ADV	più	26913|5508	-	Full
+solo	ADJ	solo	39247|7253	-	Full
+.	PUNCT	.	-	-	TextOnly

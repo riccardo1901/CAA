@@ -1,0 +1,148 @@
+# testo: 12_il_lupo_e_l_agnello
+# genere: favola
+# gruppo: sviluppo
+# origine: scritto per il progetto (sintetico)
+
+# frase: Un agnello beveva a un ruscello.
+Un	ART	un	8474	-	Full
+agnello	NOUN	agnello	34078|2489	-	Full
+beveva	VERB	bere	2276|6061|29716	PAST	Full
+a	ADP	a	7041|7034	-	Full
+un	ART	un	8474	-	Full
+ruscello	NOUN	ruscello	23757	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Più in alto, un lupo affamato lo vide e volle trovare una scusa per mangiarlo.
+Più	ADV	più	26913|5508	-	Full
+in	ADP	in	5388	-	Full
+alto	ADJ	alto	-	-	Hidden
+,	PUNCT	,	-	-	TextOnly
+un	ART	un	8474	-	Full
+lupo	NOUN	lupo	5892|37933	-	Full
+affamato	ADJ	affamato	4962|7272|31890|35559|35579	-	Full
+lo	CLITIC	lo	6481|6480|31670	-	Full
+vide	VERB	vedere	2474|6564|28673	PAST	Full
+e	CONJ	e	11399	-	Full
+volle	MODAL	volere	31141|5441	PAST	Full
+trovare	VERB	trovare	24741|24742|24773|24774|37246	-	Full
+una	ART	una	8474	-	Full
+scusa	NOUN	scusa	-	-	TextOnly
+per	ADP	per	7194	-	Full
+mangiarlo	VERB	mangiare	2349|6456|28641	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: "Come osi sporcare la mia acqua?"
+"	PUNCT	"	-	-	TextOnly
+Come	ADV	come	22619	-	Full
+osi	VERB	osare	-	-	TextOnly
+sporcare	VERB	sporcare	39623	-	Full
+la	ART	la	8476	-	Full
+mia	DET	mio	12264	-	Full
+acqua	NOUN	acqua	6889|32464	-	Full
+?	PUNCT	?	-	-	TextOnly
+"	PUNCT	"	-	-	TextOnly
+
+# frase: ringhiò il lupo.
+ringhiò	VERB	ringhiare	-	PAST	TextOnly
+il	ART	il	8476	-	Full
+lupo	NOUN	lupo	5892|37933	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: "Non è possibile", rispose l'agnello.
+"	PUNCT	"	-	-	TextOnly
+Non	ADV	non	5526	-	Full
+è	VERB	essere	5581|5465|5858|36480	-	Full
+possibile	ADJ	possibile	-	-	TextOnly
+"	PUNCT	"	-	-	TextOnly
+,	PUNCT	,	-	-	TextOnly
+rispose	VERB	rispondere	9031|9030|28433	PAST	Full
+l'	ART	il	8476	-	Full
+agnello	NOUN	agnello	34078|2489	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: "Io bevo più in basso di te".
+"	PUNCT	"	-	-	TextOnly
+Io	PRON	io	2617|6632|7309|7310|31807	-	Full
+bevo	VERB	bere	2276|6061|29716	-	Full
+più	ADV	più	26913|5508	-	Full
+in	ADP	in	5355	-	Full
+basso	ADJ	basso	-	-	Hidden
+di	ADP	di	7074	-	Full
+te	PRON	te	6625|7290|2608|7289|31801	-	Full
+"	PUNCT	"	-	-	TextOnly
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Il lupo non si arrese.
+Il	ART	il	8476	-	Full
+lupo	NOUN	lupo	5892|37933	-	Full
+non	ADV	non	5526	-	Full
+si	CLITIC	si	-	-	Hidden
+arrese	VERB	arrendere	-	PAST	TextOnly
+.	PUNCT	.	-	-	TextOnly
+
+# frase: "L'anno scorso hai parlato male di me!"
+"	PUNCT	"	-	-	TextOnly
+L'	ART	il	8476	-	Full
+anno	NOUN	anno	39731	-	Full
+scorso	ADJ	scorso	-	-	Hidden
+hai	AUX	avere	-	-	Hidden
+parlato	VERB	parlare	3345|6517|36544|9692|9693|28663	PAST	Full
+male	ADV	male	5504	-	Full
+di	ADP	di	7074	-	Full
+me	PRON	me	2617|6632|7309|7310|31807	-	Full
+!	PUNCT	!	-	-	TextOnly
+"	PUNCT	"	-	-	TextOnly
+
+# frase: "Allora non ero ancora nato", disse l'agnello tremando.
+"	PUNCT	"	-	-	TextOnly
+Allora	ADV	allora	-	-	TextOnly
+non	ADV	non	5526	-	Full
+ero	AUX	essere	-	-	Hidden
+ancora	ADV	ancora	-	-	TextOnly
+nato	VERB	nascere	8176|28411|37980|37981	PAST	Full
+"	PUNCT	"	-	-	TextOnly
+,	PUNCT	,	-	-	TextOnly
+disse	VERB	dire	9692|9693|28663	PAST	Full
+l'	ART	il	8476	-	Full
+agnello	NOUN	agnello	34078|2489	-	Full
+tremando	VERB	tremare	7109|31886	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: "Se non sei stato tu, è stato tuo padre!"
+"	PUNCT	"	-	-	TextOnly
+Se	CONJ	se	28359	-	Full
+non	ADV	non	5526	-	Full
+sei	AUX	essere	-	-	Hidden
+stato	VERB	essere	5581|5465|5858|36480	PAST	Full
+tu	PRON	tu	6625|7290|2608|7289|31801	-	Full
+,	PUNCT	,	-	-	TextOnly
+è	AUX	essere	-	-	Hidden
+stato	VERB	essere	5581|5465|5858|36480	PAST	Full
+tuo	DET	tuo	12281	-	Full
+padre	NOUN	padre	2497|31146	-	Full
+!	PUNCT	!	-	-	TextOnly
+"	PUNCT	"	-	-	TextOnly
+
+# frase: gridò il lupo, e saltò addosso all'agnello.
+gridò	VERB	gridare	4686|6552|7120|31125|31127|36137	PAST	Full
+il	ART	il	8476	-	Full
+lupo	NOUN	lupo	5892|37933	-	Full
+,	PUNCT	,	-	-	TextOnly
+e	CONJ	e	11399	-	Full
+saltò	VERB	saltare	2804|6607|28447|39052	PAST	Full
+addosso	ADV	addosso	-	-	TextOnly
+all'	ARTADP	a	11709	-	Full
+agnello	NOUN	agnello	34078|2489	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Chi vuole fare del male trova sempre una scusa.
+Chi	PRON	chi	13358|10276	-	Full
+vuole	MODAL	volere	31141|5441	-	Full
+fare	VERB	fare	11749|32751	-	Full
+del	ARTADP	di	11712	-	Full
+male	NOUN	male	5504	-	Full
+trova	VERB	trovare	24741|24742|24773|24774|37246	-	Full
+sempre	ADV	sempre	17322	-	Full
+una	ART	una	8474	-	Full
+scusa	NOUN	scusa	-	-	TextOnly
+.	PUNCT	.	-	-	TextOnly

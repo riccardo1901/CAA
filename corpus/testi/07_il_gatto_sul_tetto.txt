@@ -1,5 +1,5 @@
 # genere: storia
-# gruppo: prova
+# gruppo: sviluppo
 # origine: scritto per il progetto (sintetico)
 Un giorno il gatto Briciola è salito sul tetto e non è riuscito a scendere. Miagolava forte e tremava dalla paura.
 Il nonno ha preso la scala e ha provato a raggiungerlo, ma la scala era troppo corta. Allora ha chiamato i pompieri.

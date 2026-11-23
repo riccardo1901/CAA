@@ -1,0 +1,160 @@
+# testo: 09_la_cicala_e_la_formica
+# genere: favola
+# gruppo: sviluppo
+# origine: scritto per il progetto (sintetico)
+
+# frase: In estate la cicala cantava tutto il giorno sotto il sole, mentre la formica lavorava senza sosta e portava in casa il grano.
+In	ADP	in	7034	-	Full
+estate	NOUN	estate	5604	-	Full
+la	ART	la	8476	-	Full
+cicala	NOUN	cicala	16613	-	Full
+cantava	VERB	cantare	2315|6960|28657|32015|37413	PAST	Full
+tutto	DET	tutto	5596|32438|27091	-	Full
+il	ART	il	8476	-	Full
+giorno	NOUN	giorno	37371|7022|26799	-	Full
+sotto	ADP	sotto	5437|7047	-	Full
+il	ART	il	8476	-	Full
+sole	NOUN	sole	2798|7252	-	Full
+,	PUNCT	,	-	-	TextOnly
+mentre	CONJ	mentre	7081|24737	-	Full
+la	ART	la	8476	-	Full
+formica	NOUN	formica	2425	-	Full
+lavorava	VERB	lavorare	6624|2599|22147|34393|37038	PAST	Full
+senza	ADP	senza	7813	-	Full
+sosta	NOUN	sosta	24503	-	Full
+e	CONJ	e	11399	-	Full
+portava	VERB	portare	6139|6553|8982|8983|37223|7279|7280|32061	PAST	Full
+in	ADP	in	7034	-	Full
+casa	NOUN	casa	2317|6964	-	Full
+il	ART	il	8476	-	Full
+grano	NOUN	grano	7285	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: "Perché non canti con me?"
+"	PUNCT	"	-	-	TextOnly
+Perché	ADV	perché	24763|36719	-	Full
+non	ADV	non	5526	-	Full
+canti	VERB	cantare	2315|6960|28657|32015|37413	-	Full
+con	ADP	con	39801	-	Full
+me	PRON	me	-	-	Hidden
+?	PUNCT	?	-	-	TextOnly
+"	PUNCT	"	-	-	TextOnly
+
+# frase: chiese la cicala.
+chiese	VERB	chiedere	9844|9847|9843|9840|36051|36159	PAST	Full
+la	ART	la	8476	-	Full
+cicala	NOUN	cicala	16613	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: "Devo preparare il cibo per l'inverno", rispose la formica.
+"	PUNCT	"	-	-	TextOnly
+Devo	MODAL	dovere	15523	-	Full
+preparare	VERB	preparare	6190	-	Full
+il	ART	il	8476	-	Full
+cibo	NOUN	cibo	4610	-	Full
+per	ADP	per	7194	-	Full
+l'	ART	il	8476	-	Full
+inverno	NOUN	inverno	5493	-	Full
+"	PUNCT	"	-	-	TextOnly
+,	PUNCT	,	-	-	TextOnly
+rispose	VERB	rispondere	9031|9030|28433	PAST	Full
+la	ART	la	8476	-	Full
+formica	NOUN	formica	2425	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: La cicala rise e continuò a cantare.
+La	ART	la	8476	-	Full
+cicala	NOUN	cicala	16613	-	Full
+rise	VERB	ridere	13354|30393	PAST	Full
+e	CONJ	e	11399	-	Full
+continuò	VERB	continuare	24998|17050	PAST	Full
+a	ADP	a	7041	-	Full
+cantare	VERB	cantare	2315|6960|28657|32015|37413	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Passarono i mesi e arrivò il freddo.
+Passarono	VERB	passare	17050|22631	PAST	Full
+i	ART	il	8477	-	Full
+mesi	NOUN	mese	7161|37724	PLURAL	Full
+e	CONJ	e	11399	-	Full
+arrivò	VERB	arrivare	11708|13356|16805|16807	PAST	Full
+il	ART	il	8476	-	Full
+freddo	NOUN	freddo	26865|35589|35557	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Il campo era coperto di neve e la cicala non aveva niente da mangiare.
+Il	ART	il	8476	-	Full
+campo	NOUN	campo	25916|2683	-	Full
+era	AUX	essere	-	-	Hidden
+coperto	VERB	coprire	26024	PAST	Full
+di	ADP	di	7074	-	Full
+neve	NOUN	neve	3135	-	Full
+e	CONJ	e	11399	-	Full
+la	ART	la	8476	-	Full
+cicala	NOUN	cicala	16613	-	Full
+non	ADV	non	5526	-	Full
+aveva	VERB	avere	7271|32761	PAST	Full
+niente	PRON	niente	29839|32522	-	Full
+da	ADP	da	7077|7212	-	Full
+mangiare	VERB	mangiare	2349|6456|28641	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Affamata e infreddolita, bussò alla porta della formica.
+Affamata	ADJ	affamato	4962|7272|31890|35559|35579|35525	-	Full
+e	CONJ	e	11399	-	Full
+infreddolita	ADJ	infreddolito	31886|35557|28653	-	Full
+,	PUNCT	,	-	-	TextOnly
+bussò	VERB	bussare	4687	PAST	Full
+alla	ARTADP	a	-	-	Hidden
+porta	NOUN	porta	-	-	Hidden
+della	ARTADP	di	11712	-	Full
+formica	NOUN	formica	2425	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: "Per favore, dammi un po' di cibo", disse piangendo.
+"	PUNCT	"	-	-	TextOnly
+Per	ADP	per	8194|8195|38907	-	Full
+favore	NOUN	favore	-	-	Hidden
+,	PUNCT	,	-	-	TextOnly
+dammi	VERB	dare	17038|17040|28431	-	Full
+un	ART	un	8474	-	Full
+po'	PRON	poco	5546|7209	-	Full
+di	ADP	di	7074	-	Full
+cibo	NOUN	cibo	4610	-	Full
+"	PUNCT	"	-	-	TextOnly
+,	PUNCT	,	-	-	TextOnly
+disse	VERB	dire	9692|9693|28663	PAST	Full
+piangendo	VERB	piangere	3239|7147|28645|32298|35881	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: La formica rispose: "Tu hai cantato d'estate, adesso balla d'inverno!".
+La	ART	la	8476	-	Full
+formica	NOUN	formica	2425	-	Full
+rispose	VERB	rispondere	9031|9030|28433	PAST	Full
+:	PUNCT	:	-	-	TextOnly
+"	PUNCT	"	-	-	TextOnly
+Tu	PRON	tu	6625|7290|2608|7289|31801	-	Full
+hai	AUX	avere	-	-	Hidden
+cantato	VERB	cantare	2315|6960|28657|32015|37413	PAST	Full
+d'	ADP	di	7074	-	Full
+estate	NOUN	estate	5604	-	Full
+,	PUNCT	,	-	-	TextOnly
+adesso	ADV	adesso	13026|32747|9848	-	Full
+balla	VERB	ballare	2652|6052|35747|31434|31435|31436|31437	-	Full
+d'	ADP	di	7074	-	Full
+inverno	NOUN	inverno	5493	-	Full
+!	PUNCT	!	-	-	TextOnly
+"	PUNCT	"	-	-	TextOnly
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Ma poi ebbe pietà e le diede qualche chicco.
+Ma	CONJ	ma	11377	-	Full
+poi	ADV	poi	-	-	TextOnly
+ebbe	VERB	avere	7271|32761	PAST	Full
+pietà	NOUN	pietà	-	-	TextOnly
+e	CONJ	e	11399	-	Full
+le	CLITIC	le	6481|7029|7028	-	Full
+diede	VERB	dare	17038|17040|28431	PAST	Full
+qualche	DET	qualche	5374	-	Full
+chicco	NOUN	chicco	7285	-	Full
+.	PUNCT	.	-	-	TextOnly

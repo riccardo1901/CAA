@@ -1,0 +1,151 @@
+# testo: 01_la_gita_al_parco
+# genere: storia
+# gruppo: sviluppo
+# origine: scritto per il progetto (sintetico)
+
+# frase: Domenica Marco e Giulia sono andati al parco con la mamma.
+Domenica	NOUN	domenica	6478|37723	-	Full
+Marco	PROPN	marco	-	-	TextOnly
+e	CONJ	e	3026	-	Full
+Giulia	PROPN	giulia	-	-	TextOnly
+sono	AUX	essere	-	-	Hidden
+andati	VERB	andare	2432|8142|31758|35093	PAST	Full
+al	ARTADP	a	11709	-	Full
+parco	NOUN	parco	2859|30609	-	Full
+con	ADP	con	7064	-	Full
+la	ART	il	8476	-	Full
+mamma	NOUN	mamma	2458|31148	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Il sole brillava e gli uccellini cantavano sugli alberi.
+Il	ART	il	8476	-	Full
+sole	NOUN	sole	2798|7252	-	Full
+brillava	VERB	brillare	-	PAST	TextOnly
+e	CONJ	e	3026	-	Full
+gli	ART	il	8477	-	Full
+uccellini	NOUN	uccellino	2490	PLURAL	Full
+cantavano	VERB	cantare	37413|2315	PAST	Full
+sugli	ARTADP	su	7814	-	Full
+alberi	NOUN	albero	2256|3057	PLURAL	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Marco ha preso il pallone rosso e ha corso sull'erba.
+Marco	PROPN	marco	-	-	TextOnly
+ha	AUX	avere	-	-	Hidden
+preso	VERB	prendere	10148|32773|35019	PAST	Full
+il	ART	il	8476	-	Full
+pallone	NOUN	pallone	2269	-	Full
+rosso	ADJ	rosso	2808	-	Full
+e	CONJ	e	3026	-	Full
+ha	AUX	avere	-	-	Hidden
+corso	VERB	correre	2719|6465|28439	PAST	Full
+sull'	ARTADP	su	7814	-	Full
+erba	NOUN	erba	3113|11214	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Giulia invece si è seduta vicino alla fontana e ha mangiato una mela.
+Giulia	PROPN	giulia	-	-	TextOnly
+invece	ADV	invece	-	-	TextOnly
+si	CLITIC	si	-	-	Hidden
+è	AUX	essere	-	-	Hidden
+seduta	VERB	sedersi	2801|6611|30826|35029|35033	PAST	Full
+vicino	ADV	vicino	5367|30383	-	Full
+alla	ARTADP	a	-	-	Hidden
+fontana	NOUN	fontana	3273|3274|37015	-	Full
+e	CONJ	e	3026	-	Full
+ha	AUX	avere	-	-	Hidden
+mangiato	VERB	mangiare	2349|6456|28641	PAST	Full
+una	ART	un	8474	-	Full
+mela	NOUN	mela	2462|13644|13645	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Dopo un po' è arrivato un cane grande e bianco.
+Dopo	ADP	dopo	13080	-	Full
+un	ART	un	8474	-	Full
+po'	ADV	poco	5546	-	Full
+è	AUX	essere	-	-	Hidden
+arrivato	VERB	arrivare	11708|13356	PAST	Full
+un	ART	un	8474	-	Full
+cane	NOUN	cane	2517|7202|38967	-	Full
+grande	ADJ	grande	4658	-	Full
+e	CONJ	e	3026	-	Full
+bianco	ADJ	bianco	2662|8043	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Aveva paura di tutti, ma Giulia gli ha dato un pezzo di pane e il cane ha scodinzolato.
+Aveva	VERB	avere	35571|39668	PAST	Full
+paura	NOUN	paura	-	-	Hidden
+di	ADP	di	7074	-	Full
+tutti	PRON	tutto	36081	-	Full
+,	PUNCT	,	-	-	TextOnly
+ma	CONJ	ma	11377	-	Full
+Giulia	PROPN	giulia	-	-	TextOnly
+gli	CLITIC	gli	6481|31670	-	Full
+ha	AUX	avere	-	-	Hidden
+dato	VERB	dare	28431|17038|17040	PAST	Full
+un	ART	un	8474	-	Full
+pezzo	NOUN	pezzo	10230	-	Full
+di	ADP	di	-	-	Hidden
+pane	NOUN	pane	-	-	Hidden
+e	CONJ	e	3026	-	Full
+il	ART	il	8476	-	Full
+cane	NOUN	cane	2517|7202|38967	-	Full
+ha	AUX	avere	-	-	Hidden
+scodinzolato	VERB	scodinzolare	-	PAST	TextOnly
+.	PUNCT	.	-	-	TextOnly
+
+# frase: A mezzogiorno la mamma ha aperto la borsa e ha tirato fuori tre panini al formaggio.
+A	ADP	a	3021	-	Full
+mezzogiorno	NOUN	mezzogiorno	39324	-	Full
+la	ART	il	8476	-	Full
+mamma	NOUN	mamma	2458|31148	-	Full
+ha	AUX	avere	-	-	Hidden
+aperto	VERB	aprire	10137|2637	PAST	Full
+la	ART	il	8476	-	Full
+borsa	NOUN	borsa	2284|27620|39829	-	Full
+e	CONJ	e	3026	-	Full
+ha	AUX	avere	-	-	Hidden
+tirato	VERB	tirare	8216	PAST	Full
+fuori	ADV	fuori	-	-	Hidden
+tre	NUM	tre	2629|4891|7283|35681	-	Full
+panini	NOUN	panino	2281	PLURAL	Full
+al	ARTADP	a	11709	-	Full
+formaggio	NOUN	formaggio	2541|4881|25363|29144	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: I bambini hanno mangiato con appetito.
+I	ART	il	3030	-	Full
+bambini	NOUN	bambino	31462|6975|7178|36560	-	Full
+hanno	AUX	avere	-	-	Hidden
+mangiato	VERB	mangiare	2349|6456|28641	PAST	Full
+con	ADP	con	7064	-	Full
+appetito	NOUN	appetito	4962	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Nel pomeriggio hanno giocato a nascondino tra i cespugli.
+Nel	ARTADP	in	7034	-	Full
+pomeriggio	NOUN	pomeriggio	7268|32850	-	Full
+hanno	AUX	avere	-	-	Hidden
+giocato	VERB	giocare	2439|6537|23392	PAST	Full
+a	ADP	a	3021	-	Full
+nascondino	NOUN	nascondino	21845	-	Full
+tra	ADP	tra	7765	-	Full
+i	ART	il	3030	-	Full
+cespugli	NOUN	cespuglio	30241	PLURAL	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Quando è tornato il freddo, sono tornati a casa stanchi e felici.
+Quando	CONJ	quando	24053|22621	-	Full
+è	AUX	essere	-	-	Hidden
+tornato	VERB	tornare	29714	PAST	Full
+il	ART	il	8476	-	Full
+freddo	NOUN	freddo	26865|35589	-	Full
+,	PUNCT	,	-	-	TextOnly
+sono	AUX	essere	-	-	Hidden
+tornati	VERB	tornare	29714	PAST	Full
+a	ADP	a	3021	-	Full
+casa	NOUN	casa	2317|6964	-	Full
+stanchi	ADJ	stanco	2314|31925|35537|6959|35573	-	Full
+e	CONJ	e	3026	-	Full
+felici	ADJ	felice	35533|9907|31849|31923|32123|35547|39814|10192|28647|6892	-	Full
+.	PUNCT	.	-	-	TextOnly

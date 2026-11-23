@@ -1,0 +1,140 @@
+# testo: 04_il_nuovo_compagno
+# genere: storia
+# gruppo: sviluppo
+# origine: scritto per il progetto (sintetico)
+
+# frase: Lunedì in classe è arrivato un bambino nuovo.
+Lunedì	NOUN	lunedì	6554|37730	-	Full
+in	ADP	in	7034	-	Full
+classe	NOUN	classe	9814|9815|15734|33072|39686	-	Full
+è	AUX	essere	-	-	Hidden
+arrivato	VERB	arrivare	11708|13356	PAST	Full
+un	ART	un	8474	-	Full
+bambino	NOUN	bambino	2485|7176|28287|32840	-	Full
+nuovo	ADJ	nuovo	4705|11316	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Si chiama Karim e viene da un paese lontano.
+Si	CLITIC	si	-	-	Hidden
+chiama	VERB	chiamarsi	27357|7061	-	Full
+Karim	PROPN	karim	-	-	TextOnly
+e	CONJ	e	3026	-	Full
+viene	VERB	venire	11708|13356	-	Full
+da	ADP	da	7077	-	Full
+un	ART	un	8474	-	Full
+paese	NOUN	paese	-	-	TextOnly
+lontano	ADJ	lontano	30385|36759	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Karim era timido e non parlava molto.
+Karim	PROPN	karim	-	-	TextOnly
+era	VERB	essere	5581|5465|5858	PAST	Full
+timido	ADJ	timido	8707|31750|37791|6922	-	Full
+e	CONJ	e	3026	-	Full
+non	ADV	non	5526|5525	-	Full
+parlava	VERB	parlare	3345|6517|36544	PAST	Full
+molto	ADV	molto	5521|25708	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: La maestra lo ha presentato a tutti e lo ha fatto sedere vicino a Elena.
+La	ART	il	8476	-	Full
+maestra	NOUN	maestra	2456|6555|28003	-	Full
+lo	CLITIC	lo	6480|31670	-	Full
+ha	AUX	avere	-	-	Hidden
+presentato	VERB	presentare	31902|11308|16823|39430	PAST	Full
+a	ADP	a	3021	-	Full
+tutti	PRON	tutto	36081	-	Full
+e	CONJ	e	3026	-	Full
+lo	CLITIC	lo	6480|31670	-	Full
+ha	AUX	avere	-	-	Hidden
+fatto	VERB	fare	11749|32751	PAST	Full
+sedere	VERB	sedere	2801|6611|30826|35029|35033	-	Full
+vicino	ADV	vicino	5367|30383	-	Full
+a	ADP	a	-	-	Hidden
+Elena	PROPN	elena	-	-	TextOnly
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Durante la ricreazione nessuno sapeva cosa dire.
+Durante	ADP	durante	7081|24737	-	Full
+la	ART	il	8476	-	Full
+ricreazione	NOUN	ricreazione	6204|27339|33064|33065	-	Full
+nessuno	PRON	nessuno	11314|26941	-	Full
+sapeva	VERB	sapere	9034|16885|26405	PAST	Full
+cosa	PRON	cosa	22620	-	Full
+dire	VERB	dire	9692|9693|28663	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Poi Elena gli ha chiesto: "Vuoi giocare con noi?".
+Poi	ADV	poi	13080|32749	-	Full
+Elena	PROPN	elena	-	-	TextOnly
+gli	CLITIC	gli	6481|31670	-	Full
+ha	AUX	avere	-	-	Hidden
+chiesto	VERB	chiedere	9840|9843|9844|9847|36051|36159	PAST	Full
+:	PUNCT	:	-	-	TextOnly
+"	PUNCT	"	-	-	TextOnly
+Vuoi	MODAL	volere	31141|5441	-	Full
+giocare	VERB	giocare	2439|6537|23392	-	Full
+con	ADP	con	7064	-	Full
+noi	PRON	noi	31672|31674|32306	-	Full
+?	PUNCT	?	-	-	TextOnly
+"	PUNCT	"	-	-	TextOnly
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Karim ha sorriso e ha detto di sì.
+Karim	PROPN	karim	-	-	TextOnly
+ha	AUX	avere	-	-	Hidden
+sorriso	VERB	sorridere	13354	PAST	Full
+e	CONJ	e	3026	-	Full
+ha	AUX	avere	-	-	Hidden
+detto	VERB	dire	31973	PAST	Full
+di	ADP	di	-	-	Hidden
+sì	ADV	sì	-	-	Hidden
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Hanno giocato a palla e Karim ha segnato un bel gol.
+Hanno	AUX	avere	-	-	Hidden
+giocato	VERB	giocare	31892|35371|35411|6537	PAST	Full
+a	ADP	a	-	-	Hidden
+palla	NOUN	palla	-	-	Hidden
+e	CONJ	e	3026	-	Full
+Karim	PROPN	karim	-	-	TextOnly
+ha	AUX	avere	-	-	Hidden
+segnato	VERB	segnare	-	PAST	TextOnly
+un	ART	un	8474	-	Full
+bel	ADJ	bello	4660|26114|11194|31851	-	Full
+gol	NOUN	gol	6007|37095	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Tutti hanno applaudito.
+Tutti	PRON	tutto	36081	-	Full
+hanno	AUX	avere	-	-	Hidden
+applaudito	VERB	applaudire	4563|36682	PAST	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Il giorno dopo Karim ha portato dei biscotti buonissimi preparati dalla sua mamma.
+Il	ART	il	8476	-	Full
+giorno	NOUN	giorno	37371|37731|26799	-	Full
+dopo	ADV	dopo	13080|32749	-	Full
+Karim	PROPN	karim	-	-	TextOnly
+ha	AUX	avere	-	-	Hidden
+portato	VERB	portare	6139|6553|7279|7280|37223	PAST	Full
+dei	ARTADP	di	8475	-	Full
+biscotti	NOUN	biscotto	2402|2995|6525|25568	-	Full
+buonissimi	ADJ	buono	32340	-	Full
+preparati	VERB	preparare	6190	-	Full
+dalla	ARTADP	da	11712	-	Full
+sua	DET	suo	12272	-	Full
+mamma	NOUN	mamma	2458|31148	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Adesso ha tanti amici e non è più solo.
+Adesso	ADV	adesso	13026|32747|9848	-	Full
+ha	VERB	avere	7271|32761	-	Full
+tanti	DET	tanto	25492|7168	-	Full
+amici	NOUN	amico	2255|25792	-	Full
+e	CONJ	e	3026	-	Full
+non	ADV	non	5526|5525	-	Full
+è	VERB	essere	5581|5465|5858	-	Full
+più	ADV	più	-	-	TextOnly
+solo	ADJ	solo	39247|7253	-	Full
+.	PUNCT	.	-	-	TextOnly
