@@ -376,6 +376,30 @@ fn articulated_base(lemma: &str) -> Option<&'static str> {
     })
 }
 
+/// Il clitico attaccato (mi/ti/ci/vi) concorda in persona e numero con la forma verbale.
+fn attached_reflexive_agrees(piece: &str, verb: &Feats) -> bool {
+    let clitic = View {
+        word: true,
+        cat: Cat::Clitic,
+        lemma: piece.to_string(),
+        feats: Feats::default(),
+        key: piece.to_string(),
+        also_adjective: false,
+    };
+    reflexive_agrees(&clitic, verb)
+}
+
+/// Il token successivo è una parola che comincia con la maiuscola (dopo ":" ricomincia una frase).
+fn starts_capitalized(text: &str, next: Option<&RawToken>) -> bool {
+    next.is_some_and(|t| {
+        t.kind == TokenKind::Word
+            && text[t.byte_start..t.byte_end]
+                .chars()
+                .next()
+                .is_some_and(char::is_uppercase)
+    })
+}
+
 /// "lavare" → "lavarsi" (infinito senza -e più "si"; "condurre" → "condursi").
 pub fn pronominal_lemma(lemma: &str) -> Option<String> {
     let lemma = normalize_key(lemma);
@@ -652,6 +676,15 @@ impl<D: AsRef<[u8]>> Engine<D> {
             .zip(&surfaces)
             .map(|(p, surface)| self.slot_for(p, surface))
             .collect();
+        // ":" seguito da una parola con la maiuscola chiude la frase anche per il tagger.
+        for i in 0..slots.len().saturating_sub(1) {
+            if surfaces[i] == ":"
+                && prepared[i + 1].capitalized
+                && prepared[i + 1].raw.kind == TokenKind::Word
+            {
+                slots[i].terminator = true;
+            }
+        }
         self.decide(&prepared, &mut slots);
         let mut tokens: Vec<Token> = prepared
             .iter()
@@ -788,6 +821,23 @@ impl<D: AsRef<[u8]>> Engine<D> {
                     }
                 }
                 let Some((rec, _)) = best else { continue };
+                // "le tre" è anche l'ora (ARASAAC), ma articolo + numero davanti a un nome
+                // ("le tre mele") non lo è: l'espressione non si forma.
+                let cat_of = |i: usize| tokens[i].analysis.as_ref().map(|a| a.cat);
+                let first_cat = units[s].as_ref().and_then(|u| cat_of(u.head));
+                let last_cat = units[s + len - 1].as_ref().and_then(|u| cat_of(u.head));
+                let after = units[s + len - 1]
+                    .as_ref()
+                    .and_then(|u| u.tokens.last())
+                    .and_then(|&i| tokens.get(i + 1))
+                    .and_then(|t| t.analysis.as_ref())
+                    .map(|a| a.cat);
+                if matches!(first_cat, Some(Cat::Art | Cat::Det))
+                    && last_cat == Some(Cat::Num)
+                    && matches!(after, Some(Cat::Noun | Cat::Adj))
+                {
+                    continue;
+                }
                 let words = crate::mwe::key_pieces(&rec.key).unwrap_or_default();
                 let group_id = tokens
                     .iter()
@@ -965,10 +1015,21 @@ impl<D: AsRef<[u8]>> Engine<D> {
         // Clitico riflessivo attaccato ("lavarsi", "lavandosi"): stesso pittogramma pronominale.
         for (i, t) in tokens.iter_mut().enumerate() {
             let Some(a) = &t.analysis else { continue };
-            let reflexive_suffix = a
-                .feats
-                .enclitic
-                .is_some_and(|e| e.pieces().first() == Some(&"si"));
+            // "si" è sempre riflessivo; mi/ti/ci/vi solo se concordano in persona e numero con
+            // l'imperativo ("lavati") o con il verbo finito che precede ("voglio lavarmi").
+            let reflexive_suffix = match a.feats.enclitic.map(|e| e.pieces()) {
+                Some(p) if p == ["si"] => true,
+                Some(p) if p.len() == 1 && matches!(p[0], "mi" | "ti" | "ci" | "vi") => {
+                    if a.feats.mood == Some(Mood::Impr) {
+                        attached_reflexive_agrees(p[0], &a.feats)
+                    } else if matches!(a.feats.mood, Some(Mood::Inf | Mood::Ger)) && i > 0 {
+                        views[i - 1].word && attached_reflexive_agrees(p[0], &views[i - 1].feats)
+                    } else {
+                        false
+                    }
+                }
+                _ => false,
+            };
             if in_group[i] || !reflexive_suffix {
                 continue;
             }
@@ -1024,10 +1085,11 @@ impl<D: AsRef<[u8]>> Engine<D> {
     /// Le letture di un token come nodi del reticolo, con il prior del treebank.
     fn nodes_for(&self, tagger: &Tagger<D>, p: &Prepared, slot: &Slot) -> Vec<Node> {
         if slot.readings.is_empty() {
-            let cat = if matches!(p.raw.kind, TokenKind::Punct | TokenKind::Symbol) {
-                Cat::Punct
-            } else {
-                Cat::Noun
+            let cat = match p.raw.kind {
+                TokenKind::Punct | TokenKind::Symbol => Cat::Punct,
+                // "3" come "tre": un numero in cifre è un numerale per il tagger.
+                TokenKind::Number => Cat::Num,
+                _ => Cat::Noun,
             };
             return vec![Node {
                 cat,
@@ -1113,7 +1175,7 @@ impl<D: AsRef<[u8]>> Engine<D> {
     fn prepare(&self, text: &str, raws: Vec<RawToken>) -> Vec<Prepared> {
         let mut out: Vec<Prepared> = Vec::with_capacity(raws.len());
         let mut at_start = true;
-        for raw in raws {
+        for (n, raw) in raws.iter().cloned().enumerate() {
             let surface = &text[raw.byte_start..raw.byte_end];
             let capitalized = surface.chars().next().is_some_and(char::is_uppercase);
             match raw.kind {
@@ -1174,7 +1236,9 @@ impl<D: AsRef<[u8]>> Engine<D> {
                     at_start = false;
                 }
                 _ => {
-                    if matches!(surface, "." | "!" | "?" | "…" | "...") {
+                    if matches!(surface, "." | "!" | "?" | "…" | "...")
+                        || (surface == ":" && starts_capitalized(text, raws.get(n + 1)))
+                    {
                         at_start = true;
                     }
                     out.push(Prepared {
@@ -1221,8 +1285,15 @@ impl<D: AsRef<[u8]>> Engine<D> {
         readings.extend(split);
         let mut out: Vec<String> = Vec::new();
         for r in &readings {
-            let reflexive = r.feats.enclitic.is_some_and(|e| e.pieces() == ["si"])
-                && matches!(r.feats.mood, Some(Mood::Inf | Mood::Ger | Mood::Part));
+            // "lavarsi" ma anche "lavati" (imperativo, ti = seconda persona): lemma pronominale.
+            let reflexive = r.feats.enclitic.is_some_and(|e| {
+                let p = e.pieces();
+                (p == ["si"] && matches!(r.feats.mood, Some(Mood::Inf | Mood::Ger | Mood::Part)))
+                    || (p.len() == 1
+                        && matches!(p[0], "mi" | "ti" | "ci" | "vi")
+                        && r.feats.mood == Some(Mood::Impr)
+                        && attached_reflexive_agrees(p[0], &r.feats))
+            });
             let lemma = if reflexive {
                 pronominal_lemma(&r.lemma).unwrap_or_else(|| normalize_key(&r.lemma))
             } else {

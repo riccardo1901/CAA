@@ -40,8 +40,27 @@ Verifiche: 174 test verdi (mini-lessico e dati veri), `fmt` e `clippy -D warning
 4. **"Essere" + participio**: la specifica decide con "participio anche aggettivo + complemento di luogo o di tempo, altrimenti il prior". Non copre "le maestre sono arrivate" (arrivato è anche aggettivo, senza complemento). Aggiunto un elenco chiuso di 34 verbi che vogliono "essere" (movimento e cambiamento di stato: andare, venire, arrivare, partire, uscire…): con questi è sempre tempo composto. Per gli altri participi, "la porta è chiusa" resta "essere" + aggettivo.
 5. **Il lemma del verbo pronominale** nel testo resta quello di Morph-it! ("lavare"); la forma "lavarsi" compare nel pittogramma e nelle chiavi delle espressioni.
 
+## Revisione con Opus (M5–M6)
+
+Un revisore indipendente ha letto tutte le modifiche da M5 a M6 e riprodotto ogni difetto sui dati veri. **Aree pulite**: lettori dei file binari (nessun panic su 20.000 file corrotti o troncati), Viterbi e forward-backward, 200.000 testi casuali con accenti, emoji e apostrofi (nessun panic, offset UTF-16 sempre coerenti, un solo capogruppo per gruppo, id mai duplicati), scomposizione dei clitici, build deterministica.
+
+**Corretti, ciascuno con il test scritto prima:**
+1. "Sono stato a casa": con "stato" e senza un secondo participio il gruppo non nasceva; ora è un tempo composto con testa "stato".
+2. "Ci abbiamo lavato la macchina": il riflessivo si riconosceva anche con "avere"; ora solo con "essere" (e con "stare" + gerundio).
+3. I numeri in cifre entravano nel tagger come nomi: "La 3 porta" dava un'altra lettura di "porta" rispetto a "La tre porta". Ora sono numerali.
+4. "le due", "le tre" (l'ora in ARASAAC) assorbivano articolo e numero davanti a un nome ("Mangio le due mele"); ora l'espressione non si forma se segue un nome. Resta per "sono le tre".
+5. Riflessivo attaccato: oltre a "si", ora anche mi/ti/ci/vi se concordano ("Lavati", "voglio lavarmi" prendono il pittogramma di "lavarsi"; "vuole lavarmi" no).
+6. `parse_conllu` andava in panic con un file troncato (intervallo senza parole); ora lo salta, come promesso nel commento.
+7. I due punti seguiti da maiuscola chiudono la frase (la specifica lo prevede): "Ecco: Pane" non fa più di "Pane" un possibile nome proprio.
+8. Dati: aggiunti in `forms_extra.tsv` "visto/vista/visti/viste" (participio di vedere: Morph-it! ha solo "vistare" e un nome) e il nome "rosa/rose".
+
+Misure dopo le correzioni: tagger sviluppo categoria **94,9%** (era 94,8%), ambigue 92,2% (era 91,9%), lemma 89,2%; prova 95,0%; dorati 48/48, analisi 48/48, strutture 20/20, copertura 96,7%.
+
+**Non corretto, segnalato:** la "seconda passata" della specifica (rileggere la frase con il bonus dei gruppi) non c'è nella forma descritta: per i gruppi verbali il bonus sta nelle regole di Viterbi (peso 0,1), per le multiparola in una regola sulla confidenza. Conseguenza: in "È stato bello" e "Sarò stato" "stato" resta il nome (lo Stato) e non il participio di essere. Si risolve meglio con il corpus scolastico di M7 e, se serve, con una seconda decodifica vera.
+
 ## Limiti noti
 
+- Un imperativo con clitico che Morph-it! conosce già come altra forma ("Lavati" = anche participio plurale) non prende il pittogramma pronominale: "Lavati le mani" mostra "lavare le mani".
 - Le multiparola prendono la sequenza più lunga anche quando il docente avrebbe preferito simboli separati; per ora si corregge con la blocklist, in M8 con il menu delle alternative.
 - Il segno PLURALE per le espressioni dipende dal fatto che la chiave ARASAAC sia al singolare o plurale derivato: una chiave plurale scritta a mano da ARASAAC ("lavarsi i denti") si considera già plurale.
 - "Hanno fatto già colazione" non forma l'espressione: l'avverbio la interrompe (la specifica salta solo gli ausiliari).

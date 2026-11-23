@@ -93,3 +93,15 @@ fn le_parole_non_contigue_non_formano_l_espressione() {
     assert!(t.iter().all(|t| t.group.is_none()));
     let _ = MweIndex::<Vec<u8>>::record_count;
 }
+
+#[test]
+fn le_tre_dell_ora_non_assorbe_un_numero_davanti_a_un_nome() {
+    // "le tre" è l'ora (ARASAAC), ma in "le tre mele" è articolo + numero + nome (revisione M5-M6).
+    let t = run("le tre mele");
+    assert!(t.iter().all(|t| t.group.is_none()), "{t:?}");
+    assert!(t.iter().all(|t| t.display != Display::Hidden));
+    // Senza un nome dopo resta l'espressione dell'ora.
+    let t = run("sono le tre");
+    assert_eq!(find(&t, "le").picto.map(|p| p.id), Some(135));
+    assert_eq!(find(&t, "tre").display, Display::Hidden);
+}

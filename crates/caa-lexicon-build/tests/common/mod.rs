@@ -67,6 +67,11 @@ lavato\tlavare\tVER:part+past+s+m
 lavo\tlavare\tVER:ind+pres+1+s
 mangerò\tmangiare\tVER:ind+fut+1+s
 andato\tandare\tVER:part+past+s+m
+lava\tlavare\tVER:impr+pres+2+s
+voglio\tvolere\tVER:ind+pres+1+s
+vuole\tvolere\tVER:ind+pres+3+s
+le\tla\tART-F:p
+mele\tmela\tNOUN-F:p
 nella\tnella\tARTPRE-F:s
 nelle\tnella\tARTPRE-F:p
 al\tal\tARTPRE-M:s
@@ -116,7 +121,8 @@ pub const ARASAAC: &str = r#"[
  {"_id":131,"keywords":[{"type":2,"keyword":"ferro da stiro","plural":"ferri da stiro"}]},
  {"_id":132,"keywords":[{"type":3,"keyword":"far colazione"}]},
  {"_id":133,"keywords":[{"type":3,"keyword":"lavarsi i denti"}]},
- {"_id":134,"keywords":[{"type":2,"keyword":"dente"}]}
+ {"_id":134,"keywords":[{"type":2,"keyword":"dente"}]},
+ {"_id":135,"keywords":[{"type":5,"keyword":"le tre"}]}
 ]"#;
 
 pub fn engine(lemma_picto: &str, blocklist: &str) -> Engine<Vec<u8>> {

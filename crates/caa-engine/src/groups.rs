@@ -181,7 +181,9 @@ pub fn verbal_groups(views: &[View]) -> Vec<VerbalGroup> {
                         .filter(|q| is_participle(q) && q.lemma != "essere")
                     {
                         Some(_) => (k, vec![i, j], k),
-                        None => (usize::MAX, vec![], j),
+                        // "Sono stato a casa": senza un secondo participio è un normale tempo
+                        // composto con testa "stato".
+                        None => (j, vec![i], j),
                     }
                 } else {
                     (j, vec![i], j)
@@ -232,7 +234,14 @@ pub fn verbal_groups(views: &[View]) -> Vec<VerbalGroup> {
         match found {
             Some((mut g, last)) => {
                 // Riflessivo subito prima: "mi sono lavato".
-                if i > 0 && !used[i - 1] && reflexive_agrees(&views[i - 1], &v.feats) {
+                // Il riflessivo nei tempi composti vuole "essere" ("ci siamo lavati"); con "avere"
+                // "ci" è un avverbio ("ci abbiamo lavato la macchina").
+                let reflexive_ok = g.kind == VerbalKind::Progressive || v.lemma == "essere";
+                if reflexive_ok
+                    && i > 0
+                    && !used[i - 1]
+                    && reflexive_agrees(&views[i - 1], &v.feats)
+                {
                     g.reflexive = Some(i - 1);
                 }
                 used[i..=last].fill(true);
@@ -462,5 +471,39 @@ mod tests {
         assert_eq!(tense_mark(&f(Mood::Sub, Tense::Impf), false), Tense3::None);
         assert_eq!(tense_mark(&f(Mood::Cond, Tense::Pres), false), Tense3::None);
         assert_eq!(tense_mark(&f(Mood::Impr, Tense::Pres), false), Tense3::None);
+    }
+
+    #[test]
+    fn sono_stato_senza_secondo_participio_e_un_tempo_composto() {
+        // "Sono stato a casa": essere + stato (participio di essere), nessun altro participio.
+        let t = [
+            fin("essere", "sono", Tense::Pres, 1),
+            part("essere", "stato"),
+            plain(Cat::Adp, "a", "a"),
+            plain(Cat::Noun, "casa", "casa"),
+        ];
+        let g = verbal_groups(&t);
+        assert_eq!(g.len(), 1);
+        assert_eq!(
+            (g[0].head, g[0].hidden.clone(), g[0].tense),
+            (1, vec![0], Tense3::Past)
+        );
+    }
+
+    #[test]
+    fn il_riflessivo_vuole_essere_non_avere() {
+        // "Ci abbiamo lavato la macchina": "ci" = lì, non riflessivo.
+        let ci = plain(Cat::Clitic, "ci", "ci");
+        let mut abbiamo = fin("avere", "abbiamo", Tense::Pres, 1);
+        abbiamo.feats.number = Some(Number::P);
+        let g = verbal_groups(&[ci.clone(), abbiamo, part("lavare", "lavato")]);
+        assert_eq!((g.len(), g[0].reflexive), (1, None));
+        // Con "essere" sì: "ci siamo lavati".
+        let mut siamo = fin("essere", "siamo", Tense::Pres, 1);
+        siamo.feats.number = Some(Number::P);
+        assert_eq!(
+            verbal_groups(&[ci, siamo, part("lavare", "lavati")])[0].reflexive,
+            Some(0)
+        );
     }
 }

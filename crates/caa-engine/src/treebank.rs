@@ -65,8 +65,9 @@ struct Word {
 
 /// Token di superficie di un intervallo (parola multipla): ADP + DET → `ArtAdp` con il lemma della
 /// preposizione; verbo + clitico → il verbo; negli altri casi la prima parola.
-fn merge_range(form: &str, words: &[Word]) -> UdToken {
-    let first = &words[0];
+fn merge_range(form: &str, words: &[Word]) -> Option<UdToken> {
+    // Un intervallo senza parole (file troncato) non è un token: si salta.
+    let first = words.first()?;
     let has_art = words
         .iter()
         .any(|w| matches!(w.cat, Some(Cat::Art | Cat::Det)));
@@ -75,11 +76,11 @@ fn merge_range(form: &str, words: &[Word]) -> UdToken {
     } else {
         (first.cat, first.lemma.clone())
     };
-    UdToken {
+    Some(UdToken {
         form: form.to_string(),
         lemma,
         cat,
-    }
+    })
 }
 
 /// Legge un file CoNLL-U. Le righe malformate si saltano (il treebank è un dato esterno).
@@ -109,7 +110,7 @@ pub fn parse_conllu(text: &str) -> Vec<Sentence> {
         let line = raw.trim_end_matches('\r');
         if line.is_empty() {
             if let Some((_, form, words)) = range.take() {
-                tokens.push(merge_range(&form, &words));
+                tokens.extend(merge_range(&form, &words));
             }
             flush(&mut id, &mut sentence_text, &mut tokens, &mut out);
         } else if let Some(c) = line.strip_prefix('#') {
@@ -146,7 +147,7 @@ pub fn parse_conllu(text: &str) -> Vec<Sentence> {
                     if n >= *last {
                         let t = merge_range(form_range, words);
                         range = None;
-                        tokens.push(t);
+                        tokens.extend(t);
                     }
                 }
                 None => tokens.push(UdToken {
@@ -158,7 +159,7 @@ pub fn parse_conllu(text: &str) -> Vec<Sentence> {
         }
     }
     if let Some((_, form, words)) = range.take() {
-        tokens.push(merge_range(&form, &words));
+        tokens.extend(merge_range(&form, &words));
     }
     flush(&mut id, &mut sentence_text, &mut tokens, &mut out);
     out
@@ -245,6 +246,19 @@ mod tests {
         assert_eq!(m("VERB", "dovere", "_", "root"), Some(Cat::Modal));
         assert_eq!(m("INTJ", "ciao", "_", "discourse"), Some(Cat::Intj));
         assert_eq!(m("X", "boh", "_", "dep"), None);
+    }
+
+    #[test]
+    fn intervallo_aperto_senza_parole_non_manda_in_panic() {
+        // File troncato: un intervallo "2-3" senza le sue parole (revisione M5-M6).
+        let t =
+            "1\tIl\til\tDET\tRD\tPronType=Art\t2\tdet\t_\t_\n2-3\tdel\t_\t_\t_\t_\t_\t_\t_\t_\n";
+        let s = parse_conllu(t);
+        assert_eq!(s.len(), 1);
+        assert_eq!(s[0].tokens.len(), 1); // l'intervallo vuoto si salta
+                                          // Anche seguito da riga vuota e da un'altra frase.
+        let t2 = format!("{t}\n{t}");
+        assert_eq!(parse_conllu(&t2).len(), 2);
     }
 
     #[test]

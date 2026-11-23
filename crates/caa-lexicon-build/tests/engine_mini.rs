@@ -487,3 +487,37 @@ fn preposizione_articolata_mostra_la_preposizione() {
     }
     assert_eq!(run("nella")[0].picto.map(|p| p.id), Some(121));
 }
+
+#[test]
+fn due_punti_seguiti_da_maiuscola_chiudono_la_frase() {
+    // SPEC.md fase 1: dopo ":" + maiuscola si ricomincia una frase, quindi "Pane" non e' un nome
+    // proprio (revisione M5-M6). A meta' frase la maiuscola aggiunge la lettura di nome proprio.
+    let dopo_due_punti = run("Ecco: Pane");
+    assert_eq!(word(&dopo_due_punti, "Pane").readings.len(), 1);
+    let a_meta = run("Ecco Pane");
+    assert!(word(&a_meta, "Pane").readings.len() > 1);
+    // Con la minuscola dopo i due punti non cambia niente.
+    assert_eq!(word(&run("Ecco: pane"), "pane").readings.len(), 1);
+}
+
+#[test]
+fn riflessivo_attaccato_di_altre_persone() {
+    // SPEC.md fase 4: clitico riflessivo della stessa persona, non solo "si" (revisione M5-M6).
+    // "lavati" (imperativo, ti = 2ª singolare) e "voglio lavarmi" (mi concorda con "voglio").
+    assert_eq!(run("Lavati")[0].picto.map(|p| p.id), Some(127));
+    assert_eq!(run("Lavati")[0].reason.picto, PictoReason::Pronominal);
+    assert_eq!(run("Voglio lavarmi")[1].picto.map(|p| p.id), Some(127));
+    // "mi" non concorda con "vuole" (3ª persona): niente "lavarsi", resta "lavare".
+    assert_eq!(run("Vuole lavarmi")[1].picto.map(|p| p.id), Some(128));
+}
+
+#[test]
+fn il_lemma_per_le_multiparola_e_pronominale_anche_per_lavati() {
+    // "Lavati le mani" deve poter trovare "lavarsi le mani", non solo "lavare le mani".
+    let e = engine("", "");
+    assert!(e.lemma_set("lavati").contains(&"lavarsi".to_string()));
+    assert!(!e.lemma_set("lavati").contains(&"lavare".to_string()));
+    assert_eq!(e.lemma_set("lavarsi"), vec!["lavarsi".to_string()]);
+    // Un imperativo con il clitico di un'altra persona ("lavami" = lava + mi) non e' riflessivo.
+    assert!(e.lemma_set("lavami").contains(&"lavare".to_string()));
+}

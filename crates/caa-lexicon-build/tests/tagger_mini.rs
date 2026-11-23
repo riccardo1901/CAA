@@ -124,3 +124,17 @@ fn le_frasi_sono_indipendenti_e_gli_intervalli_non_cambiano() {
         .collect();
     assert_eq!(porte, vec![Cat::Noun, Cat::Verb]);
 }
+
+#[test]
+fn un_numero_in_cifre_vale_come_in_lettere() {
+    // SPEC.md, fase 2: "3" e "tre" hanno lo stesso trattamento. Prima "3" entrava nel tagger come
+    // nome e cambiava la lettura di "porta" (revisione M5-M6).
+    let e = tagged();
+    let con_cifra = e.symbolize_text("La 3 porta.");
+    let con_lettere = e.symbolize_text("La tre porta.");
+    let porta = |t: &[Token]| {
+        let p = word(t, "porta");
+        (cat(p), p.confidence)
+    };
+    assert_eq!(porta(&con_cifra), porta(&con_lettere));
+}
