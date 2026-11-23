@@ -10,8 +10,10 @@ use std::fmt;
 use crate::curated::Curated;
 use crate::lexicon::{picto_flags, MorphLexicon, PictoEntry, PictoIndex};
 use crate::norm::normalize_key;
+use crate::tagger::Tagger;
 use crate::tokenize::{tokenize, RawToken, TokenKind};
 use crate::types::{Cat, Feats, Gender, Mood, Number, Tense};
+use crate::viterbi::{decode, Node, Weights};
 
 // ---------------------------------------------------------------------------------------
 // Contratto (SPEC.md, "Contratto (Rust)")
@@ -120,6 +122,8 @@ pub enum ReadingReason {
     /// Scelta provvisoria tra più letture (M4): prima quelle che portano a un pittogramma, poi
     /// una priorità fissa per categoria.
     BaselinePick,
+    /// Scelta fra più letture con il tagger sulla frase (M5).
+    Tagger,
     Capital,
     ArasaacKey,
     Typo,
@@ -171,6 +175,7 @@ impl fmt::Display for Reason {
             ReadingReason::Literal => "numero",
             ReadingReason::OnlyReading => "una sola lettura",
             ReadingReason::BaselinePick => "scelta provvisoria fra più letture",
+            ReadingReason::Tagger => "scelta del tagger sulla frase",
             ReadingReason::Capital => "maiuscola: nome proprio",
             ReadingReason::ArasaacKey => {
                 "parola non in Morph-it!, categoria dalla parola chiave ARASAAC"
@@ -499,6 +504,8 @@ pub struct Engine<D: AsRef<[u8]>> {
     morph: MorphLexicon<D>,
     picto: PictoIndex<D>,
     curated: Curated,
+    tagger: Option<Tagger<D>>,
+    weights: Weights,
 }
 
 impl<D: AsRef<[u8]>> Engine<D> {
@@ -507,7 +514,33 @@ impl<D: AsRef<[u8]>> Engine<D> {
             morph,
             picto,
             curated,
+            tagger: None,
+            weights: Weights::default(),
         }
+    }
+
+    /// Aggiunge il tagger statistico (senza, vale la scelta provvisoria di M4).
+    pub fn with_tagger(mut self, tagger: Tagger<D>) -> Self {
+        self.tagger = Some(tagger);
+        self
+    }
+
+    /// Cambia i pesi delle regole (serve alla taratura di `caa-eval`).
+    pub fn with_weights(mut self, weights: Weights) -> Self {
+        self.weights = weights;
+        self
+    }
+
+    pub fn set_weights(&mut self, weights: Weights) {
+        self.weights = weights;
+    }
+
+    pub fn weights(&self) -> &Weights {
+        &self.weights
+    }
+
+    pub fn tagger(&self) -> Option<&Tagger<D>> {
+        self.tagger.as_ref()
     }
 
     pub fn morph(&self) -> &MorphLexicon<D> {
@@ -532,11 +565,119 @@ impl<D: AsRef<[u8]>> Engine<D> {
     /// Un paragrafo → token annotati.
     pub fn symbolize(&self, req: &Request) -> Vec<Token> {
         let prepared = self.prepare(req.text, tokenize(req.text));
+        let surfaces: Vec<String> = prepared
+            .iter()
+            .map(|p| req.text[p.raw.byte_start..p.raw.byte_end].to_string())
+            .collect();
+        let mut slots: Vec<Slot> = prepared
+            .iter()
+            .zip(&surfaces)
+            .map(|(p, surface)| self.slot_for(p, surface))
+            .collect();
+        self.decide(&prepared, &mut slots);
         prepared
-            .into_iter()
-            .map(|p| {
-                let surface = req.text[p.raw.byte_start..p.raw.byte_end].to_string();
-                self.token_for(p, surface)
+            .iter()
+            .zip(slots)
+            .zip(surfaces)
+            .map(|((p, slot), surface)| self.finish(p, surface, slot))
+            .collect()
+    }
+
+    /// Fase 7: per ogni frase sceglie le letture con la decodifica; senza tagger resta la scelta
+    /// provvisoria di M4 (già calcolata in `slot_for`).
+    fn decide(&self, prepared: &[Prepared], slots: &mut [Slot]) {
+        let Some(tagger) = &self.tagger else { return };
+        let mut start = 0;
+        while start < slots.len() {
+            let mut end = start;
+            while end < slots.len() {
+                end += 1;
+                if slots[end - 1].terminator {
+                    break;
+                }
+            }
+            let range = start..end;
+            let nodes: Vec<Vec<Node>> = range
+                .clone()
+                .map(|k| self.nodes_for(tagger, &prepared[k], &slots[k]))
+                .collect();
+            let trans = |a: usize, b: usize, c: usize| tagger.transition(a, b, c);
+            let d = decode(&trans, &nodes, &self.weights);
+            for (k, (best, post)) in range.zip(d.best.into_iter().zip(d.posterior)) {
+                let slot = &mut slots[k];
+                if slot.readings.len() > 1 {
+                    slot.best = best;
+                    slot.tagged = true;
+                    // Probabilità della lettura scelta, sommando le letture che hanno stessa
+                    // categoria e lemma (differiscono solo per i tratti).
+                    let chosen = &slot.readings[best];
+                    slot.posterior = slot
+                        .readings
+                        .iter()
+                        .zip(&post)
+                        .filter(|(a, _)| a.cat == chosen.cat && a.lemma == chosen.lemma)
+                        .map(|(_, p)| *p)
+                        .sum();
+                }
+            }
+            start = end;
+        }
+    }
+
+    /// Le letture di un token come nodi del reticolo, con il prior del treebank.
+    fn nodes_for(&self, tagger: &Tagger<D>, p: &Prepared, slot: &Slot) -> Vec<Node> {
+        if slot.readings.is_empty() {
+            let cat = if matches!(p.raw.kind, TokenKind::Punct | TokenKind::Symbol) {
+                Cat::Punct
+            } else {
+                Cat::Noun
+            };
+            return vec![Node {
+                cat,
+                feats: Feats::default(),
+                lemma: String::new(),
+                prior: 0.0,
+                capital: false,
+                lower_propn: false,
+            }];
+        }
+        let priors = tagger.priors(&p.key);
+        let total: f32 = priors.iter().map(|r| r.count as f32).sum();
+        let n = slot.readings.len() as f32;
+        let capital_mid = p.capitalized && !p.sentence_start;
+        slot.readings
+            .iter()
+            .enumerate()
+            .map(|(i, a)| {
+                let lemma = normalize_key(&a.lemma);
+                let count: f32 = priors
+                    .iter()
+                    .filter(|r| r.cat == a.cat)
+                    .map(|r| r.count as f32)
+                    .sum();
+                let lemma_seen = priors.iter().any(|r| {
+                    r.cat == a.cat
+                        && r.lemma.as_deref().map(normalize_key).as_deref() == Some(&lemma)
+                });
+                // Probabilità della categoria data la forma, con smoothing additivo sulle letture
+                // possibili; una forma mai vista è uniforme sulle sue letture.
+                let mut prior = ((count + SMOOTHING) / (total + SMOOTHING * n)).ln()
+                    - self.weights.unigram * tagger.unigram(a.cat);
+                if lemma_seen {
+                    prior += LEMMA_BONUS;
+                }
+                // Spareggio a parità di categoria: come in M4, prima la lettura con pittogramma.
+                prior -= slot.rank[i] as f32 * 1e-3;
+                Node {
+                    cat: a.cat,
+                    feats: a.feats,
+                    lemma,
+                    prior,
+                    capital: capital_mid && a.source == ReadingSource::Capital,
+                    lower_propn: a.cat == Cat::Propn
+                        && a.source == ReadingSource::Lexicon
+                        && !p.capitalized,
+                }
             })
             .collect()
     }
@@ -852,11 +993,12 @@ impl<D: AsRef<[u8]>> Engine<D> {
 
     // --- Token -----------------------------------------------------------------------
 
-    fn token_for(&self, p: Prepared, surface: String) -> Token {
+    /// Fasi 1–3 e 8 di un token: letture e, per ciascuna, il pittogramma che porterebbe.
+    fn slot_for(&self, p: &Prepared, surface: &str) -> Slot {
         let span_utf16 = (p.raw.start16, p.raw.end16);
         let base = |kind, reason, display, confidence| Token {
             span_utf16,
-            surface: surface.clone(),
+            surface: surface.to_string(),
             kind,
             analysis: None,
             readings: Vec::new(),
@@ -872,13 +1014,21 @@ impl<D: AsRef<[u8]>> Engine<D> {
                 picto: PictoReason::NoSymbol,
             },
         };
+        let fixed = |token| Slot {
+            fixed: Some(token),
+            ..Slot::default()
+        };
         match p.raw.kind {
-            TokenKind::Punct | TokenKind::Symbol => base(
-                p.raw.kind,
-                ReadingReason::Punctuation,
-                Display::TextOnly,
-                1.0,
-            ),
+            TokenKind::Punct | TokenKind::Symbol => {
+                let mut slot = fixed(base(
+                    p.raw.kind,
+                    ReadingReason::Punctuation,
+                    Display::TextOnly,
+                    1.0,
+                ));
+                slot.terminator = matches!(surface, "." | "!" | "?" | "…" | "...");
+                slot
+            }
             TokenKind::Number => {
                 let a = analysis(&p.key, Cat::Num, Feats::default(), ReadingSource::Literal);
                 let choice = self.number_picto(&p.key, &a);
@@ -896,18 +1046,18 @@ impl<D: AsRef<[u8]>> Engine<D> {
                 }
                 t.readings = vec![a.clone()];
                 t.analysis = Some(a);
-                t
+                fixed(t)
             }
-            _ => self.word_token(&p, &surface, base),
+            _ => self.word_slot(p, surface, base),
         }
     }
 
-    fn word_token(
+    fn word_slot(
         &self,
         p: &Prepared,
         surface: &str,
         base: impl Fn(TokenKind, ReadingReason, Display, f32) -> Token,
-    ) -> Token {
+    ) -> Slot {
         let key = &p.key;
         // I prefissi elisi si risolvono con la tabella della specifica, non con Morph-it!.
         let mut readings = match elision_reading(key) {
@@ -944,53 +1094,119 @@ impl<D: AsRef<[u8]>> Engine<D> {
                 0.0,
             );
             t.reason.picto = PictoReason::NoSymbol;
-            return t;
+            return Slot {
+                fixed: Some(t),
+                ..Slot::default()
+            };
         }
 
         // Scelta provvisoria (M4): prima le letture che portano a un pittogramma della categoria
-        // giusta, poi senza categoria, poi nessuna; a parità, priorità fissa per categoria.
+        // giusta, poi senza categoria, poi nessuna; a parità, priorità fissa per categoria. Serve
+        // da scelta senza tagger e da spareggio fra letture della stessa categoria.
         let scored: Vec<Option<PictoChoice>> =
             readings.iter().map(|a| self.choose_picto(key, a)).collect();
         let capital_mid = p.capitalized && !p.sentence_start;
-        let best = (0..readings.len())
-            .min_by_key(|&i| {
-                // Maiuscola a metà frase: il nome proprio vince su tutto (regola provvisoria di M4,
-                // la fase 7 la tratterà come un bonus).
-                let capital_first = !(capital_mid && readings[i].source == ReadingSource::Capital);
-                let level = match &scored[i] {
-                    Some(c) if c.penalty == 0.0 => 0,
-                    Some(_) => 1,
-                    None => 2,
-                };
-                (capital_first, level, category_rank(readings[i].cat), i)
-            })
-            .unwrap_or(0);
+        let mut order: Vec<usize> = (0..readings.len()).collect();
+        order.sort_by_key(|&i| {
+            // Maiuscola a metà frase: il nome proprio vince su tutto (regola provvisoria di M4).
+            let capital_first = !(capital_mid && readings[i].source == ReadingSource::Capital);
+            let level = match &scored[i] {
+                Some(c) if c.penalty == 0.0 => 0,
+                Some(_) => 1,
+                None => 2,
+            };
+            (capital_first, level, category_rank(readings[i].cat), i)
+        });
+        let mut rank = vec![0; readings.len()];
+        for (r, &i) in order.iter().enumerate() {
+            rank[i] = r;
+        }
+        Slot {
+            best: order[0],
+            readings,
+            corrected,
+            scored,
+            rank,
+            ..Slot::default()
+        }
+    }
 
+    /// Costruisce il token finale dalla lettura scelta.
+    fn finish(&self, p: &Prepared, surface: String, slot: Slot) -> Token {
+        if let Some(t) = slot.fixed {
+            return t;
+        }
+        let Slot {
+            readings,
+            corrected,
+            scored,
+            best,
+            tagged,
+            posterior,
+            ..
+        } = slot;
         let chosen = readings[best].clone();
-        let choice = scored.into_iter().nth(best).flatten();
+        let mut alternatives = scored.into_iter().map(Some).collect::<Vec<_>>();
+        let choice = match alternatives[best].take().flatten() {
+            Some(c) => Some(c),
+            // Nessun pittogramma per la lettura scelta: si prova con le altre letture dello
+            // stesso lemma ("tanto" avverbio non ce l'ha, "tanto" aggettivo sì), con la stessa
+            // penalità di una categoria diversa (estensione rispetto a SPEC.md).
+            None => readings
+                .iter()
+                .zip(alternatives)
+                .enumerate()
+                .filter(|(i, (a, _))| *i != best && a.lemma == chosen.lemma)
+                .find_map(|(_, (_, c))| c.flatten())
+                .map(|c| PictoChoice {
+                    reason: PictoReason::IgnoringCategory,
+                    penalty: c.penalty.max(0.2),
+                    ..c
+                }),
+        };
         let reading_reason = match chosen.source {
             ReadingSource::Capital => ReadingReason::Capital,
             ReadingSource::ArasaacKey => ReadingReason::ArasaacKey,
             ReadingSource::Typo => ReadingReason::Typo,
             ReadingSource::SuffixGuess => ReadingReason::SuffixGuess,
             _ if readings.len() == 1 => ReadingReason::OnlyReading,
+            _ if tagged => ReadingReason::Tagger,
             _ => ReadingReason::BaselinePick,
         };
-        // Confidenza provvisoria (M4): la fase 7 la sostituisce con la probabilità a posteriori.
-        let mut confidence: f32 = match chosen.source {
+        // Senza tagger la confidenza è provvisoria (M4); con il tagger è la probabilità a
+        // posteriori della lettura scelta, limitata dall'affidabilità della fonte.
+        let source_cap: f32 = match chosen.source {
             ReadingSource::ArasaacKey => 0.7,
             ReadingSource::Typo => 0.4,
             ReadingSource::SuffixGuess => 0.3,
             ReadingSource::Capital if readings.len() == 1 => 0.8,
-            _ if readings.len() == 1 => 1.0,
-            _ => 0.5,
+            _ => 1.0,
         };
-        let mut t = base(
-            TokenKind::Word,
-            reading_reason,
-            Display::TextOnly,
+        let mut confidence: f32 = if tagged {
+            posterior.min(source_cap)
+        } else if readings.len() == 1 {
+            source_cap
+        } else {
+            source_cap.min(0.5)
+        };
+        let mut t = Token {
+            span_utf16: (p.raw.start16, p.raw.end16),
+            surface,
+            kind: TokenKind::Word,
+            analysis: None,
+            readings: Vec::new(),
+            corrected: None,
+            group: None,
+            picto: None,
+            modifiers: Modifiers::default(),
+            display: Display::TextOnly,
             confidence,
-        );
+            alternatives: Vec::new(),
+            reason: Reason {
+                reading: reading_reason,
+                picto: PictoReason::NoSymbol,
+            },
+        };
         if let Some(c) = choice {
             t.picto = Some(PictoRef { id: c.id });
             t.display = Display::Full;
@@ -1004,6 +1220,29 @@ impl<D: AsRef<[u8]>> Engine<D> {
         t
     }
 }
+
+/// Un token durante l'analisi: o già definitivo (punteggiatura, numeri, parole sconosciute) o
+/// con le sue letture in attesa della scelta.
+#[derive(Default)]
+struct Slot {
+    fixed: Option<Token>,
+    readings: Vec<Analysis>,
+    corrected: Option<String>,
+    scored: Vec<Option<PictoChoice>>,
+    /// Posizione di ogni lettura nell'ordine provvisorio di M4 (0 = prima).
+    rank: Vec<usize>,
+    /// Lettura scelta.
+    best: usize,
+    tagged: bool,
+    posterior: f32,
+    /// Punteggiatura che chiude la frase.
+    terminator: bool,
+}
+
+/// Smoothing additivo del prior (conteggi del treebank).
+const SMOOTHING: f32 = 0.1;
+/// Bonus per una lettura il cui lemma coincide con quello visto nel treebank.
+const LEMMA_BONUS: f32 = 0.3;
 
 #[cfg(test)]
 mod tests {

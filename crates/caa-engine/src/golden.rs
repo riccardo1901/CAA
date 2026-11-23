@@ -8,6 +8,7 @@
 
 use crate::engine::{Engine, Token};
 use crate::tokenize::TokenKind;
+use crate::types::Cat;
 
 #[derive(Debug, Clone)]
 pub struct GoldenCase {
@@ -103,6 +104,141 @@ pub fn check<D: AsRef<[u8]>>(engine: &Engine<D>, case: &GoldenCase) -> Result<()
     Ok(())
 }
 
+// ---------------------------------------------------------------------------------------
+// Test dorati di analisi (M5): categoria e lemma scelti per alcune parole di una frase
+// ---------------------------------------------------------------------------------------
+
+/// Una parola della frase con la lettura attesa.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Expect {
+    /// Forma come scritta nel testo (senza distinzione fra maiuscole e minuscole).
+    pub surface: String,
+    /// Quale occorrenza della forma (1 = la prima).
+    pub nth: usize,
+    /// Categorie accettate (più di una solo dove la distinzione è rimandata a M6, es. `VERB|AUX`).
+    pub cats: Vec<Cat>,
+    pub lemma: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct AnalysisCase {
+    pub line: usize,
+    pub sentence: String,
+    pub expects: Vec<Expect>,
+}
+
+/// Legge `analisi.tsv`: `frase<TAB>parola=CAT[|CAT][/lemma] …`; `parola#2` indica la seconda
+/// occorrenza. Righe vuote e righe che iniziano con `#` sono ignorate.
+pub fn parse_analysis(text: &str) -> Result<Vec<AnalysisCase>, Vec<String>> {
+    let mut cases = Vec::new();
+    let mut errors = Vec::new();
+    for (i, raw) in text.lines().enumerate() {
+        let line = raw.trim_end_matches('\r');
+        if line.trim().is_empty() || line.starts_with('#') {
+            continue;
+        }
+        let n = i + 1;
+        let Some((sentence, rest)) = line.split_once('\t') else {
+            errors.push(format!("riga {n}: manca la tabulazione"));
+            continue;
+        };
+        let mut expects = Vec::new();
+        for item in rest.split_whitespace() {
+            let Some((word, spec)) = item.split_once('=') else {
+                errors.push(format!("riga {n}: {item:?} non ha la forma parola=CAT"));
+                continue;
+            };
+            let (surface, nth) = match word.split_once('#') {
+                Some((w, k)) => match k.parse::<usize>() {
+                    Ok(k) if k >= 1 => (w, k),
+                    _ => {
+                        errors.push(format!("riga {n}: occorrenza non valida in {item:?}"));
+                        continue;
+                    }
+                },
+                None => (word, 1),
+            };
+            let (cats_s, lemma) = match spec.split_once('/') {
+                Some((c, l)) => (c, Some(l.to_string())),
+                None => (spec, None),
+            };
+            let cats: Option<Vec<Cat>> = cats_s.split('|').map(Cat::from_name).collect();
+            match cats {
+                Some(cats) if !cats.is_empty() => expects.push(Expect {
+                    surface: surface.to_string(),
+                    nth,
+                    cats,
+                    lemma,
+                }),
+                _ => errors.push(format!("riga {n}: categoria sconosciuta in {item:?}")),
+            }
+        }
+        if expects.is_empty() {
+            errors.push(format!("riga {n}: nessuna lettura attesa"));
+            continue;
+        }
+        cases.push(AnalysisCase {
+            line: n,
+            sentence: sentence.to_string(),
+            expects,
+        });
+    }
+    if errors.is_empty() {
+        Ok(cases)
+    } else {
+        Err(errors)
+    }
+}
+
+/// Verifica un caso di analisi; l'errore elenca tutte le parole sbagliate.
+pub fn check_analysis<D: AsRef<[u8]>>(
+    engine: &Engine<D>,
+    case: &AnalysisCase,
+) -> Result<(), String> {
+    let tokens = engine.symbolize_text(&case.sentence);
+    let mut problems = Vec::new();
+    for e in &case.expects {
+        let found = tokens
+            .iter()
+            .filter(|t| t.surface.to_lowercase() == e.surface.to_lowercase())
+            .nth(e.nth - 1);
+        let Some(a) = found.and_then(|t| t.analysis.as_ref()) else {
+            problems.push(format!(
+                "{}#{}: parola non trovata o senza lettura",
+                e.surface, e.nth
+            ));
+            continue;
+        };
+        let cat_ok = e.cats.contains(&a.cat);
+        let lemma_ok = e
+            .lemma
+            .as_ref()
+            .is_none_or(|l| a.lemma.to_lowercase() == l.to_lowercase());
+        if !cat_ok || !lemma_ok {
+            let want: Vec<&str> = e.cats.iter().map(|c| c.name()).collect();
+            problems.push(format!(
+                "{}#{}: atteso {}{}, ottenuto {}/{}",
+                e.surface,
+                e.nth,
+                want.join("|"),
+                e.lemma.as_ref().map_or(String::new(), |l| format!("/{l}")),
+                a.cat.name(),
+                a.lemma
+            ));
+        }
+    }
+    if problems.is_empty() {
+        Ok(())
+    } else {
+        Err(format!(
+            "riga {}: {:?}\n  {}",
+            case.line,
+            case.sentence,
+            problems.join("\n  ")
+        ))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -121,5 +257,27 @@ mod tests {
         let e = parse("senza tab\nfrase\tX:a\nfrase\tW:\n").unwrap_err();
         assert_eq!(e.len(), 3);
         assert!(e[0].starts_with("riga 1:") && e[2].starts_with("riga 3:"));
+    }
+
+    #[test]
+    fn legge_i_casi_di_analisi() {
+        let c =
+            parse_analysis("# x\n\nLei la porta.\tla=CLITIC porta=VERB/portare ho#2=VERB|AUX\n")
+                .unwrap();
+        assert_eq!(c.len(), 1);
+        assert_eq!(c[0].line, 3);
+        let e = &c[0].expects;
+        assert_eq!(
+            (e[0].surface.as_str(), e[0].nth, e[0].cats.clone()),
+            ("la", 1, vec![Cat::Clitic])
+        );
+        assert_eq!(e[1].lemma.as_deref(), Some("portare"));
+        assert_eq!(
+            (e[2].nth, e[2].cats.clone()),
+            (2, vec![Cat::Verb, Cat::Aux])
+        );
+        for bad in ["a\tx", "a\tx=NONE", "a\tx#0=NOUN", "solo testo", "a\t"] {
+            assert!(parse_analysis(bad).is_err(), "{bad:?}");
+        }
     }
 }

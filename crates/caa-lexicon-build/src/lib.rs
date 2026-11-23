@@ -9,3 +9,4 @@ pub mod morphit;
 pub mod overrides;
 pub mod pipeline;
 pub mod report;
+pub mod tagger_build;

@@ -1,0 +1,10 @@
+# Limiti noti del motore (M5): casi di analisi che oggi NON passano. Non fanno fallire la build;
+# si eseguono con `cargo run -q -p caa-eval -- analisi --analisi lexicon/golden/analisi_limiti.tsv`.
+# Quando un caso comincia a passare va spostato in analisi.tsv.
+#
+# Causa: il treebank (giornali e testi di legge) conosce "legge" come nome, "resto" come nome e
+# "maestra" come aggettivo, e quasi mai "nome proprio + la + verbo" (clitico dopo un nome proprio).
+# Le correzioni vere sono un corpus scolastico (M7) o prior curati (ambiguity_priors.tsv).
+La maestra legge un libro.	maestra=NOUN legge=VERB/leggere
+Quando piove resto a casa.	piove=VERB/piovere resto=VERB
+Marco la porta a scuola.	Marco=PROPN la=CLITIC porta=VERB/portare

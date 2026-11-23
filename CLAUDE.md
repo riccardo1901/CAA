@@ -28,12 +28,13 @@ Programma desktop (Tauri 2) per docenti: scrivono un testo italiano e vedono sop
 
 - I dati grezzi (ARASAAC, Morph-it!, treebank) **non vanno mai in git**: solo gli script che li scaricano, in `data/raw/` (in `.gitignore`).
 - I file compilati restano **separati per licenza** (ARASAAC = CC BY-NC-SA, Morph-it! = CC BY-SA/LGPL): non fonderli in un unico file.
+- Il treebank (ISDT, CC BY-NC-SA 3.0) alimenta `treebank/tagger.bin`, file separato; attribuzione nella schermata Informazioni.
 - Attribuzione ARASAAC obbligatoria nella schermata Informazioni e nel piè di pagina di ogni stampa e PDF.
 - Il progetto è non commerciale: niente pubblicità, niente funzioni a pagamento.
 
 ## Comandi
 
-Struttura: `crates/` (motore, build del lessico, valutazione, archivio), `src-tauri/` (app), `ui/` (frontend Vite + TypeScript), `scripts/` (scarico dei dati), `lexicon/overrides/` (correzioni curate in TSV, versionate), `lexicon/golden/` e `lexicon/lessico_base*.tsv` (casi e parole per misurare il motore), `docs/` (rapporti di milestone e idee).
+Struttura: `crates/` (motore, build del lessico, valutazione, archivio), `src-tauri/` (app), `ui/` (frontend Vite + TypeScript), `scripts/` (scarico dei dati), `lexicon/overrides/` (correzioni curate in TSV, versionate), `lexicon/golden/` (tokenizzazione, analisi, limiti noti) e `lexicon/lessico_base*.tsv` (casi e parole per misurare il motore), `docs/` (rapporti di milestone e idee).
 
 ```bash
 # Test Rust (motore, lessico, valutazione, archivio; esclude l'app Tauri)
@@ -65,6 +66,12 @@ cargo run -q -p caa-eval -- dorati                       # test dorati di tokeni
 cargo run -q -p caa-eval -- copertura                    # parole di base con pittogramma
 cargo run --release -q -p caa-eval -- velocita           # tempo per un paragrafo di ~100 parole
 cargo run -q -p caa-eval -- mostra "Metti il sale nell'acqua."   # cosa decide il motore
+
+# Disambiguazione (M5): serve data/build con treebank/tagger.bin (il treebank va scaricato prima)
+node scripts/fetch-treebank.mjs                          # ISDT e MarkIT in data/raw/treebank/ (fuori da git)
+cargo run --release -q -p caa-eval -- tagger             # categoria e lemma contro ISDT dev (--conllu FILE per test)
+cargo run --release -q -p caa-eval -- analisi            # test dorati di analisi (lexicon/golden/analisi.tsv)
+cargo run --release -q -p caa-eval -- tara               # taratura, ablazione, calibrazione (solo su dev)
 
 # Build del lessico: data/raw + lexicon/overrides -> data/build (fuori da git, ~15 s)
 cargo run --release -p caa-lexicon-build

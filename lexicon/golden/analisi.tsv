@@ -1,0 +1,66 @@
+# Test dorati di analisi (M5): categoria e lemma che il motore deve scegliere per alcune parole.
+# Formato: frase<TAB>parola=CAT[|CAT][/lemma] …   (parola#2 = seconda occorrenza; più categorie
+# separate da | dove la distinzione fra verbo pieno e ausiliare spetta a M6).
+# Categorie: NOUN PROPN VERB AUX MODAL ADJ ADV ART ADP ARTADP PRON CLITIC DET CONJ NUM INTJ PUNCT SYM.
+#
+# I casi di SPEC.md richiesti da M5 (1, 2, 9, 10, 17, 18, 19). Il PASSATO e "un po'" intero sono M6.
+Apri la porta.	Apri=VERB/aprire la=ART porta=NOUN
+Lei la porta a scuola.	la=CLITIC porta=VERB/portare scuola=NOUN
+C'era una volta un re.	C'=CLITIC era=VERB|AUX/essere volta=NOUN re=NOUN
+Ho mangiato il riso.	mangiato=VERB/mangiare riso=NOUN
+Lui sale le scale.	sale=VERB/salire scale=NOUN/scala
+Metti il sale nell'acqua.	Metti=VERB/mettere sale=NOUN
+Mangio ancora un po' di pane.	Mangio=VERB/mangiare ancora=ADV pane=NOUN
+#
+# Altri casi di SPEC.md (la parte di analisi)
+Ho riso tanto.	riso=VERB/ridere
+Devo studiare la storia.	Devo=MODAL studiare=VERB/studiare storia=NOUN
+Prendo gli occhiali.	Prendo=VERB/prendere occhiali=NOUN
+Le maestre sono arrivate.	maestre=NOUN sono=AUX|VERB arrivate=VERB/arrivare
+Dammi il libro.	libro=NOUN
+#
+# "la" articolo, clitico o nome; "porta" nome o verbo
+La porta è aperta.	La=ART porta=NOUN aperta=ADJ|VERB
+La porta del garage è rotta.	porta=NOUN garage=NOUN
+Luca porta il libro.	porta=VERB/portare libro=NOUN
+Porta il libro a scuola!	Porta=VERB/portare libro=NOUN
+Chiudi la porta.	Chiudi=VERB/chiudere la=ART porta=NOUN
+Apro la porta.	Apro=VERB/aprire porta=NOUN
+Il fiume porta acqua.	porta=VERB/portare acqua=NOUN
+La mamma ci porta al parco.	ci=CLITIC porta=VERB/portare
+Le porte sono aperte.	porte=NOUN
+Maria la saluta.	la=CLITIC saluta=VERB/salutare
+Io la vedo.	la=CLITIC vedo=VERB/vedere
+Vedo la casa.	la=ART casa=NOUN
+Lo vedo.	Lo=CLITIC vedo=VERB
+Lo zio vede il nonno.	Lo=ART zio=NOUN vede=VERB
+Lei mi guarda.	mi=CLITIC guarda=VERB/guardare
+Guarda il cielo!	Guarda=VERB/guardare cielo=NOUN
+#
+# "sale", "riso", "rosso", "pesca", "capo": stessa forma, categorie diverse
+Il sale è bianco.	sale=NOUN bianco=ADJ
+Il gatto sale sul tavolo.	sale=VERB/salire
+Metto il sale sulla pasta.	sale=NOUN
+Il rosso è un colore.	rosso=NOUN
+Ho un pesce rosso.	pesce=NOUN rosso=ADJ
+La pesca è un frutto.	pesca=NOUN
+Il capo ordina di partire.	capo=NOUN ordina=VERB/ordinare
+#
+# Verbi e modali
+Non voglio mangiare.	voglio=MODAL mangiare=VERB/mangiare
+Posso uscire adesso.	Posso=MODAL uscire=VERB/uscire
+Io amo il mare.	amo=VERB/amare mare=NOUN
+Il bambino mangia la mela.	mangia=VERB/mangiare mela=NOUN
+I bambini giocano nel giardino.	bambini=NOUN giocano=VERB/giocare
+La nonna cuce la gonna.	cuce=VERB/cucire gonna=NOUN
+Il cane abbaia forte.	cane=NOUN abbaia=VERB/abbaiare
+#
+# Congiunzioni, pronomi relativi e avverbi
+Penso che sia tardi.	che=CONJ sia=VERB|AUX
+Il libro che leggo è bello.	libro=NOUN che=PRON|CONJ leggo=VERB/leggere
+Come stai?	stai=VERB/stare
+Oggi il cielo è grigio.	Oggi=ADV cielo=NOUN grigio=ADJ
+#
+# Nomi propri e maiuscole
+Domani vado a Roma con Anna.	Roma=PROPN Anna=PROPN vado=VERB
+Giulia ha un cane.	Giulia=PROPN cane=NOUN

@@ -9,8 +9,11 @@ pub mod engine;
 pub mod golden;
 pub mod lexicon;
 pub mod norm;
+pub mod tagger;
 pub mod tokenize;
+pub mod treebank;
 pub mod types;
+pub mod viterbi;
 
 /// Intervallo di un token nel paragrafo, in unità UTF-16 (come in JavaScript).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

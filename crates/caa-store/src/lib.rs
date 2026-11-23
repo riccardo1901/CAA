@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 use caa_engine::curated::Curated;
 use caa_engine::engine::Engine;
 use caa_engine::lexicon::{LexiconError, MorphLexicon, PictoIndex};
+use caa_engine::tagger::Tagger;
 use memmap2::Mmap;
 
 /// Numero di schema del formato `.caa` (cresce a ogni modifica incompatibile).
@@ -88,7 +89,18 @@ pub fn open_engine(dir: &Path) -> Result<Engine<Mmap>, LoadError> {
     };
     let curated = Curated::parse(&read("lemma_picto.tsv")?, &read("blocklist.tsv")?)
         .map_err(LoadError::Curated)?;
-    Ok(Engine::new(lexicon.morph, lexicon.picto, curated))
+    let build_id = lexicon.morph.build_id();
+    let engine = Engine::new(lexicon.morph, lexicon.picto, curated);
+    // Il tagger (`treebank/tagger.bin`) è facoltativo; se c'è deve venire dalla stessa build.
+    let tagger_path = dir.join("treebank/tagger.bin");
+    if !tagger_path.exists() {
+        return Ok(engine);
+    }
+    let tagger = Tagger::new(map(&tagger_path)?)?;
+    if tagger.build_id() != build_id {
+        return Err(LexiconError::BuildMismatch("la cartella treebank/ e il lessico").into());
+    }
+    Ok(engine.with_tagger(tagger))
 }
 
 #[cfg(test)]

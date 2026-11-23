@@ -428,7 +428,7 @@ Prodotti da `caa-lexicon-build`, caricati con mmap all'avvio, versionati con un 
 | `lemmas.fst` | stringhe dei lemmi ↔ id | `fst::Map` | Morph-it! |
 | `picto_index.bin` | chiave normalizzata → lista di (id pittogramma, insieme dei tipi ARASAAC, flag: prima chiave, plurale derivato, multiparola, plurale invariabile, precisazione tolta; numero chiavi; singolare per i plurali derivati) | `fst` incorporato + record da 12 byte + testi dei singolari | ARASAAC (BY-NC-SA) |
 | `mwe.trie` | sequenze di lemmi → pittogrammi (costruito in M4–M6: serve il motore per lemmatizzare) | trie serializzato | ARASAAC |
-| `tagger.bin` | prior di lettura e trigrammi di categoria (costruito in M5) | tabelle di log-probabilità | treebank (licenza da verificare) |
+| `tagger.bin` | prior di lettura e trigrammi di categoria (M5): trigrammi e probabilità delle categorie in `f32`, `fst` forma → record (categoria, conteggio, lemma più frequente) | tabelle di log-probabilità + `fst` + record da 12 byte | treebank ISDT (CC BY-NC-SA 3.0), in `treebank/` |
 | `overrides/` | TSV curati | testo | nostra |
 
 I file restano separati per licenza (vedi Fonti dati). Il join avviene in memoria tramite la stringa del lemma normalizzata.
@@ -443,11 +443,11 @@ I file restano separati per licenza (vedi Fonti dati). Il join avviene in memori
 2. Aggiunge `forms_extra.tsv`.
 3. Legge il JSON delle parole chiave italiane ARASAAC; per ogni chiave registra categoria, posizione nella lista, flag plurale.
 4. Lemmatizza ogni chiave multiparola con il motore stesso (bootstrap: prima si costruisce il lessico morfologico, poi si usa per il trie).
-5. Calcola le statistiche del tagger dal treebank (conteggi, smoothing additivo per i trigrammi, ripiego su bigrammi).
+5. Calcola le statistiche del tagger dal treebank ISDT, solo la parte `train` (conteggi per forma; trigrammi con smoothing per interpolazione fra trigrammi, bigrammi e unigrammi). Facoltativo: senza treebank non si scrive `tagger.bin` e il motore usa la scelta provvisoria di M4.
 6. Scrive i file e un `manifest.json` con versioni delle fonti, data, numero di schema, conteggi (forme, lemmi, pittogrammi, chiavi senza pittogramma, pittogrammi senza chiave italiana).
 7. Stampa un **rapporto di copertura**: quante parole chiave ARASAAC italiane non hanno un lemma in Morph-it! (le parole di una parola con una chiave ARASAAC sono coperte dalla fase 3, punto 2; in `forms_extra.tsv` vanno le eccezioni e le forme coniugate dei verbi).
 
-I passi 4 e 5 (trie delle multiparola, statistiche del tagger) non fanno parte di M2: dipendono dal motore e dal treebank e arrivano con M4–M6 e M5.
+Il passo 4 (trie delle multiparola) non fa parte di M2: dipende dal motore e arriva con M4–M6. Il passo 5 (statistiche del tagger) è di M5 e c'è.
 
 ### Prestazioni e incrementalità
 
@@ -711,7 +711,7 @@ Dodici milestone in ordine di dipendenza. Ognuna si chiude solo quando il criter
 5. **M4 — Motore, fasi 1–3 e 8.** Normalizzazione, tokenizzazione, letture (compresa la lettura da chiave ARASAAC per le parole sconosciute a Morph-it!), scelta del pittogramma senza contesto (prima lettura).
     - *Accettazione*: test dorati di tokenizzazione ed elisione verdi; ogni parola del lessico scolastico di base riceve un pittogramma. *Esito* (`docs/RAPPORTO-M4.md`): 48 test dorati su 48; il lessico di base (`lexicon/lessico_base.tsv`, 516 parole piene, definito in M4) ha il 96,7% di copertura (97,7% sulle parole piene) e le 17 eccezioni, lacune di ARASAAC, sono elencate; `caa-eval` minimo (test dorati, copertura, velocità) anticipato a M4.
 6. **M5 — Disambiguazione.** Statistiche del tagger dal treebank, Viterbi, forward-backward, regole di contesto, confidenza.
-    - *Accettazione*: test dorati 1, 2, 9, 10, 17, 18, 19 verdi.
+    - *Accettazione*: test dorati 1, 2, 9, 10, 17, 18, 19 verdi. *Esito* (`docs/RAPPORTO-M5.md`): 7 su 7 (48 casi di analisi in `lexicon/golden/analisi.tsv`); categoria giusta 94,8% sul treebank di sviluppo e 94,9% sulla prova (78,0% con la scelta fissa di M4); i 3 casi che non passano sono in `analisi_limiti.tsv`.
 7. **M6 — Strutture verbali e multiparola.** Clitici, pronominali, tempi composti, perifrasi, trie delle multiparola, seconda passata.
     - *Accettazione*: tutti i 20 test dorati verdi.
 8. **M7 — Valutazione.** `caa-eval`, formato corpus, comando "Esporta come caso di test", primi 10 testi annotati.
@@ -735,13 +735,13 @@ Dodici milestone in ordine di dipendenza. Ognuna si chiude solo quando il criter
 
 ## Questioni aperte
 
-- [ ] **Treebank per le statistiche del tagger**: quale corpus italiano annotato usare e con quale licenza. Senza, il motore parte con le sole regole e i prior curati, e perde precisione sulle forme ambigue.
+- [x] **Treebank per le statistiche del tagger**: deciso in M5, **ISDT** (UD italiano, CC BY-NC-SA 3.0; MarkIT provato e scartato perché non migliora). `tagger.bin` eredita la licenza e l'attribuzione va nella schermata Informazioni. Vedi `docs/RAPPORTO-M5.md`.
 - [ ] **Segni di plurale, passato e futuro**: riprodurre esattamente la convenzione ARASAAC (da verificare su esempi scaricati) o adottare quella già in uso nella scuola.
 - [ ] **Politica predefinita delle parole funzionali**: "Completo" o "Essenziale" come default? Da decidere con il gruppo inclusione e, se possibile, con i logopedisti che seguono gli studenti.
 - [ ] **Dimensioni reali dei simboli** in stampa: da tarare con prove su carta.
 - [ ] **Cartella condivisa**: percorso, permessi (lettura per tutti, scrittura in `biblioteca\` per tutti i docenti), backup del server. Da concordare con il tecnico.
 - [ ] **Corpus**: quali 20–40 testi, chi li annota, se esistono già versioni SymWriter da confrontare.
-- [ ] **Etichette `WH` e `WH-CHE` di Morph-it!**: oggi `WH` (perché, quando, come, dove) → avverbio e `WH-CHE` (che) → congiunzione, che perde il "che" relativo e la congiunzione di "perché"; da decidere in M5, insieme all'allineamento con il treebank.
+- [x] **Etichette `WH` e `WH-CHE` di Morph-it!**: deciso in M5. Le etichette restano come sono (`WH` → avverbio, `WH-CHE` → congiunzione) e le letture mancanti si aggiungono in `forms_extra.tsv`: "che" anche pronome, "quando", "come", "perché", "qualora" anche congiunzioni.
 - [ ] **Nome del programma.**
 - [ ] **Firma del codice**: certificato sì o no.
 - [ ] **DPO**: informativa sull'uso di foto di studenti come simboli personali e sulle copie su dispositivi personali.

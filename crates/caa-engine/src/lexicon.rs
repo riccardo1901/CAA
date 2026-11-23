@@ -95,7 +95,7 @@ impl From<fst::Error> for LexiconError {
     }
 }
 
-fn rd_u32(b: &[u8], off: usize) -> u32 {
+pub(crate) fn rd_u32(b: &[u8], off: usize) -> u32 {
     u32::from_le_bytes([b[off], b[off + 1], b[off + 2], b[off + 3]])
 }
 
@@ -104,20 +104,24 @@ pub fn pack_span(offset: u64, count: u64) -> u64 {
     (offset << 16) | count
 }
 
-fn unpack_span(v: u64) -> (usize, usize) {
+pub(crate) fn unpack_span(v: u64) -> (usize, usize) {
     ((v >> 16) as usize, (v & 0xFFFF) as usize)
 }
 
 /// Contenuto dell'intestazione di un `.bin`.
-struct Header {
-    build_id: u64,
-    c1: u32,
-    c2: u32,
-    c3: u32,
+pub(crate) struct Header {
+    pub(crate) build_id: u64,
+    pub(crate) c1: u32,
+    pub(crate) c2: u32,
+    pub(crate) c3: u32,
 }
 
 /// Controlla magic e schema; restituisce identificativo di build e contatori.
-fn check_header(b: &[u8], magic: &[u8; 4], file: &'static str) -> Result<Header, LexiconError> {
+pub(crate) fn check_header(
+    b: &[u8],
+    magic: &[u8; 4],
+    file: &'static str,
+) -> Result<Header, LexiconError> {
     if b.len() < HEADER_SIZE {
         return Err(LexiconError::Truncated(file));
     }
@@ -364,10 +368,10 @@ impl PictoEntry {
 }
 
 /// Porzione di un buffer condiviso, usata per leggere l'`fst` incorporato in `picto_index.bin`.
-struct Section<D> {
-    data: Arc<D>,
-    start: usize,
-    end: usize,
+pub(crate) struct Section<D> {
+    pub(crate) data: Arc<D>,
+    pub(crate) start: usize,
+    pub(crate) end: usize,
 }
 
 impl<D: AsRef<[u8]>> AsRef<[u8]> for Section<D> {

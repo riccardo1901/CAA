@@ -272,3 +272,8 @@ malva	malva	NOUN-M:s	nome: il colore ("il malva"); invariabile
 malva	malva	NOUN-M:p	nome: il colore ("il malva"); invariabile
 malva	malva	NOUN-F:s	nome: la pianta
 malve	malva	NOUN-F:p	nome: la pianta
+che	che	PRO-WH-M-S	pronome relativo e interrogativo ("il libro che leggo"); Morph-it! ha solo la congiunzione
+quando	quando	CON	congiunzione ("quando piove"); Morph-it! ha solo l'avverbio
+come	come	CON	congiunzione ("come dicevo"); Morph-it! ha solo l'avverbio
+perché	perché	CON	congiunzione ("perché piove"); Morph-it! ha solo l'avverbio
+qualora	qualora	CON	congiunzione; Morph-it! ha solo l'avverbio

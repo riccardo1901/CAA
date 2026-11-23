@@ -24,6 +24,7 @@ use crate::arasaac;
 use crate::compile::{compile, Inputs, Stats};
 use crate::overrides::{OverrideTexts, Overrides};
 use crate::report::{self, ImageReport};
+use crate::tagger_build::build_tagger;
 
 pub struct Config {
     /// Cartella dei dati grezzi (`data/raw`).
@@ -131,6 +132,21 @@ fn link_images(from: &Path, to: &Path) -> Result<usize, String> {
     Ok(n)
 }
 
+/// Treebank di addestramento (`data/raw/treebank/isdt/it_isdt-ud-train.conllu`), se presente.
+fn build_treebank_tagger(
+    raw: &Path,
+    build_id: u64,
+) -> Result<Option<crate::tagger_build::TaggerBuild>, String> {
+    let train = raw.join("treebank/isdt/it_isdt-ud-train.conllu");
+    let text = match fs::read_to_string(&train) {
+        Ok(t) => t,
+        Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(None),
+        Err(e) => return Err(io_err(&train, e)),
+    };
+    let sentences = caa_engine::treebank::parse_conllu(&text);
+    build_tagger(&sentences, build_id).map(Some)
+}
+
 pub fn run(cfg: &Config) -> Result<Summary, String> {
     let morphit_file = cfg.raw.join("morphit/morph-it.utf8.txt");
     let arasaac_file = cfg.raw.join("arasaac/all_it.json");
@@ -198,6 +214,10 @@ pub fn run(cfg: &Config) -> Result<Summary, String> {
         return Err("i file prodotti non coincidono con i conteggi della build".into());
     }
 
+    // Tagger: statistiche dal treebank di addestramento (facoltativo: senza, il motore sceglie le
+    // letture con la regola fissa di M4).
+    let tagger = build_treebank_tagger(&cfg.raw, build_id)?;
+
     // Scrittura.
     let files: Vec<(&str, &Vec<u8>, &str)> = vec![
         (
@@ -223,6 +243,14 @@ pub fn run(cfg: &Config) -> Result<Summary, String> {
     ];
     for (name, bytes, _) in &files {
         write(&cfg.out.join(name), bytes)?;
+    }
+    let tagger_path = cfg.out.join("treebank/tagger.bin");
+    match &tagger {
+        Some(t) => write(&tagger_path, &t.bytes)?,
+        // Un tagger vecchio non deve restare accanto a un lessico nuovo.
+        None => {
+            let _ = fs::remove_file(&tagger_path);
+        }
     }
     for (name, text) in OVERRIDE_FILES.iter().zip(&texts) {
         write(&cfg.out.join("overrides").join(name), text.as_bytes())?;
@@ -296,6 +324,11 @@ pub fn run(cfg: &Config) -> Result<Summary, String> {
             "images": img.linked, "keys_without_lemma": cov.without_lemma.len(),
         },
         "files": files.iter().map(|(n, b, l)| json!({ "path": n, "bytes": b.len(), "sha256": sha256_hex(b), "license": l })).collect::<Vec<_>>(),
+        "tagger": tagger.as_ref().map(|t| json!({
+            "path": "treebank/tagger.bin", "bytes": t.bytes.len(), "sha256": sha256_hex(&t.bytes),
+            "license": "CC BY-NC-SA 3.0 (UD Italian ISDT)",
+            "sentences": t.stats.sentences, "tokens": t.stats.tokens, "forms": t.stats.forms,
+        })),
         "images": { "path": "arasaac/images", "format": "webp 500 px", "license": "CC BY-NC-SA 4.0 (ARASAAC)" },
     });
     let manifest_path = cfg.out.join("manifest.json");

@@ -99,3 +99,90 @@ fn velocita_di_un_paragrafo() {
         r.median_ms
     );
 }
+
+// --- M5: disambiguazione -------------------------------------------------------------------
+
+fn tagger_or_skip(dir: &Path) -> bool {
+    if dir.join("treebank/tagger.bin").exists() {
+        return true;
+    }
+    eprintln!("treebank/tagger.bin non presente: prova saltata");
+    false
+}
+
+#[test]
+fn dorati_di_analisi_sui_dati_veri() {
+    let Some(dir) = data_dir() else {
+        eprintln!("data/build non presente: prova saltata");
+        return;
+    };
+    if !tagger_or_skip(&dir) {
+        return;
+    }
+    let engine = open_engine(&dir).unwrap_or_else(|e| panic!("{e}"));
+    assert!(engine.tagger().is_some());
+    let r = caa_eval::run_analysis(&engine, &repo("lexicon/golden/analisi.tsv")).unwrap();
+    assert!(r.total >= 40, "solo {} casi", r.total);
+    assert!(
+        r.failures.is_empty(),
+        "{} su {} falliti:\n{}",
+        r.failures.len(),
+        r.total,
+        r.failures.join("\n")
+    );
+}
+
+#[test]
+fn i_sette_casi_richiesti_da_m5_sono_nel_file() {
+    // Apri la porta / Lei la porta a scuola / C'era una volta / Ho mangiato il riso /
+    // Lui sale le scale / Metti il sale nell'acqua / Mangio ancora un po' di pane (SPEC.md 1, 2, 9,
+    // 10, 17, 18, 19). Controlla solo il testo del file, quindi gira anche senza dati.
+    let text = repo("lexicon/golden/analisi.tsv");
+    for frase in [
+        "Apri la porta.",
+        "Lei la porta a scuola.",
+        "C'era una volta un re.",
+        "Ho mangiato il riso.",
+        "Lui sale le scale.",
+        "Metti il sale nell'acqua.",
+        "Mangio ancora un po' di pane.",
+    ] {
+        assert!(
+            text.lines().any(|l| l.starts_with(&format!("{frase}\t"))),
+            "{frase}"
+        );
+    }
+}
+
+#[test]
+fn tagger_sul_treebank_di_sviluppo() {
+    let Some(dir) = data_dir() else {
+        eprintln!("data/build non presente: prova saltata");
+        return;
+    };
+    let dev = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../data/raw/treebank/isdt/it_isdt-ud-dev.conllu");
+    if !tagger_or_skip(&dir) || !dev.exists() {
+        eprintln!("treebank non presente: prova saltata");
+        return;
+    }
+    let engine = open_engine(&dir).unwrap_or_else(|e| panic!("{e}"));
+    let sentences = caa_engine::treebank::parse_conllu(&std::fs::read_to_string(dev).unwrap());
+    let r = caa_eval::evaluate_tagger(&engine, &sentences);
+    let pct = |a: usize, b: usize| 100.0 * a as f64 / b as f64;
+    // Misurato in M5: 94,8% (era 78,0% con la scelta provvisoria di M4). Una modifica che scende
+    // sotto la soglia va scartata (CLAUDE.md).
+    assert!(
+        pct(r.correct_cat, r.evaluated) >= 94.0,
+        "categoria giusta {:.1}%",
+        pct(r.correct_cat, r.evaluated)
+    );
+    assert!(
+        pct(r.ambiguous_correct, r.ambiguous) >= 90.0,
+        "ambigue giuste {:.1}%",
+        pct(r.ambiguous_correct, r.ambiguous)
+    );
+    // Calibrazione: almeno un terzo degli errori è sottolineato, al massimo il 5% delle giuste.
+    assert!(pct(r.errors_flagged, r.errors) >= 33.0);
+    assert!(pct(r.correct_flagged, r.correct_cat) <= 5.0);
+}
