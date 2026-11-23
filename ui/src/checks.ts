@@ -72,37 +72,55 @@ export function checkWrap(view: EditorView): WrapReport {
 
 export interface HitReport {
   tested: number;
+  /** Clic sul simbolo che non arrivano all'elemento della propria parola (serve al menu di M8). */
   wrong: number;
+  /** Clic sul simbolo per cui `posAtCoords` (cursore col mouse) non cade nella parola: solo informativo. */
+  caretMisses: number;
   examples: string[];
 }
 
-/** Prova aggiuntiva: un clic sul simbolo individua la parola giusta (serve al menu alternative di M8). */
+/**
+ * Prova aggiuntiva: un clic sul simbolo individua la parola giusta (serve al menu alternative di M8).
+ * Il meccanismo è l'elemento colpito dal clic (lo span della parola, da cui `posAtDOM` dà la
+ * posizione esatta); `posAtCoords`, che sceglie dove mettere il cursore, a volte restituisce la fine
+ * di un tratto di parole formattate e viene contato a parte.
+ */
 export function checkSymbolHits(view: EditorView): HitReport {
   const sym = symSize(view);
   let tested = 0;
   let wrong = 0;
+  let caretMisses = 0;
   const examples: string[] = [];
   const check = (word: HTMLElement, x: number, y: number) => {
     tested++;
+    const target = document.elementFromPoint(x, y);
+    const owner = target instanceof HTMLElement ? target.closest<HTMLElement>(".w, .wb") ?? target.closest<HTMLElement>(".sw")?.nextElementSibling : null;
+    if (owner !== word) {
+      wrong++;
+      if (examples.length < 5) examples.push(`${word.textContent ?? ""}: il clic arriva a "${owner?.textContent ?? target?.tagName ?? "nulla"}"`);
+    }
     const from = view.posAtDOM(word, 0);
     const to = view.posAtDOM(word, word.childNodes.length);
     const hit = view.posAtCoords({ left: x, top: y });
-    if (!hit || hit.pos < from || hit.pos > to) {
-      wrong++;
-      if (examples.length < 5) examples.push(`${word.textContent ?? ""}: posizione ${hit?.pos ?? "nessuna"}, attesa ${from}-${to}`);
-    }
+    if (!hit || hit.pos < from || hit.pos > to) caretMisses++;
   };
+  // `elementFromPoint` vale solo per i punti visibili: ogni parola si porta in vista prima della prova.
+  const scroller = document.querySelector<HTMLElement>(".sheet-wrap");
+  const saved = scroller?.scrollTop ?? 0;
   for (const el of view.dom.querySelectorAll<HTMLElement>(".w:not(.wc)")) {
+    el.scrollIntoView({ block: "center" });
     const r = el.getBoundingClientRect();
     if (r.width > 0) check(el, r.left + r.width / 2, r.top + sym / 2);
   }
   for (const el of view.dom.querySelectorAll<HTMLElement>(".wb:not(.wc)")) {
+    el.scrollIntoView({ block: "center" });
     const img = el.previousElementSibling?.querySelector("img");
     if (!img) continue;
     const r = img.getBoundingClientRect();
     if (r.width > 0) check(el, r.left + r.width / 2, r.top + r.height / 2);
   }
-  return { tested, wrong, examples };
+  if (scroller) scroller.scrollTop = saved;
+  return { tested, wrong, caretMisses, examples };
 }
 
 export interface BenchReport {

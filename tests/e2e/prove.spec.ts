@@ -208,12 +208,16 @@ for (const mode of MODES) {
       await expect(page.locator(".ProseMirror")).toHaveAttribute("spellcheck", "true");
     });
 
-    test("extra · un clic sul simbolo individua la parola giusta", async ({ page }) => {
-      await open(page, mode);
-      const r = await page.evaluate(() => (window as any).caaProto.checkSymbolHits());
-      expect(r.tested).toBeGreaterThan(300);
-      expect(r.wrong, r.examples.join("; ")).toBe(0);
-    });
+    for (const [label, size] of SIZES) {
+      test(`extra · un clic sul simbolo individua la parola giusta (${label})`, async ({ page }) => {
+        await open(page, mode, size);
+        const r = await page.evaluate(() => (window as any).caaProto.checkSymbolHits());
+        expect(r.tested).toBeGreaterThan(300);
+        expect(r.wrong, r.examples.join("; ")).toBe(0);
+        // Informativo: il cursore messo col mouse sul simbolo sbaglia al più in rari casi (grassetto).
+        expect(r.caretMisses / r.tested).toBeLessThan(0.02);
+      });
+    }
 
     test("7 · digitando dal vivo le battute arrivano tutte", async ({ page }) => {
       await open(page, mode, 68, 3);

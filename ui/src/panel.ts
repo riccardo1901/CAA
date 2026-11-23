@@ -138,7 +138,7 @@ export function createPanel(view: EditorView, setSize: (px: number) => void, get
     lines.push(`4 · A capo: ${wrap.broken === 0 ? "SUPERATA" : "FALLITA"} — ${wrap.broken} parole separate dal simbolo su ${wrap.words}` + (wrap.fragments ? `; ${wrap.fragments} pezzi di parola in più (grassetto parziale)` : ""));
     if (wrap.examples.length) lines.push("   es.: " + wrap.examples.join("; "));
     const hits = checkSymbolHits(view);
-    lines.push(`Clic sul simbolo: ${hits.wrong === 0 ? "SUPERATA" : "FALLITA"} — ${hits.wrong} errori su ${hits.tested}`);
+    lines.push(`Clic sul simbolo: ${hits.wrong === 0 ? "SUPERATA" : "FALLITA"} — ${hits.wrong} errori su ${hits.tested}; cursore messo altrove: ${hits.caretMisses}`);
     if (hits.examples.length) lines.push("   es.: " + hits.examples.join("; "));
     autoOut.textContent = lines.join("\n") + "\n7 · Velocità: in corso…";
     const b = await benchmark(view);
