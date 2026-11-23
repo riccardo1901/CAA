@@ -99,3 +99,17 @@ fn una_frase_con_altri_token_si_salta_e_si_dichiara() {
     let m = run("Ho\tAUX\tavere\t-\t-\tHidden\n.\tPUNCT\t.\t-\t-\tTextOnly\n");
     assert_eq!((m.skipped_sentences, m.words), (1, 0));
 }
+
+#[test]
+fn il_lemma_pronominale_dell_annotatore_equivale_a_quello_del_motore() {
+    // L'annotatore scrive "lavarsi" per "mi lavo"; il motore tiene "lavare" (il pronominale sta
+    // nel pittogramma). Non e' un errore di lettura.
+    let engine = common::engine("", "");
+    let g = parse_text(
+        "# testo: t\n# genere: storia\n# gruppo: sviluppo\n\n# frase: Mi lavo.\nMi\tCLITIC\tmi\t-\t-\tHidden\nlavo\tVERB\tlavarsi\t127\t-\tFull\n.\tPUNCT\t.\t-\t-\tTextOnly\n",
+    )
+    .unwrap();
+    let m = evaluate(&engine, &[&g]);
+    assert_eq!((m.words, m.wrong), (2, 0), "{:?}", m.errors);
+    assert_eq!((m.lemma_ok, m.lemma_words), (1, 1));
+}

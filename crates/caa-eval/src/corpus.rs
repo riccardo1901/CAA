@@ -351,6 +351,13 @@ pub fn pct(a: usize, b: usize) -> f64 {
     }
 }
 
+/// Il lemma del motore coincide con quello annotato. Per i verbi pronominali l'annotatore scrive
+/// "lavarsi" e il motore tiene "lavare" (il pronominale sta nel pittogramma): è la stessa lettura.
+fn same_lemma(gold: &str, engine: &str) -> bool {
+    let (g, e) = (gold.to_lowercase(), engine.to_lowercase());
+    g == e || caa_engine::engine::pronominal_lemma(&e).is_some_and(|p| p == g)
+}
+
 fn same_class(a: Cat, b: Cat) -> bool {
     let verbal = |c: Cat| matches!(c, Cat::Verb | Cat::Aux | Cat::Modal);
     a == b || (verbal(a) && verbal(b))
@@ -386,7 +393,9 @@ fn judge(gold: &GoldToken, t: &Token) -> Option<(Cause, String)> {
     let engine_lemma = a.map(|a| a.lemma.to_lowercase());
     let wrong_reading = engine_cat.is_none_or(|c| !same_class(c, gold.cat))
         || (lemma_matters(gold.cat)
-            && engine_lemma.as_deref() != Some(gold.lemma.to_lowercase().as_str()));
+            && !engine_lemma
+                .as_deref()
+                .is_some_and(|l| same_lemma(&gold.lemma, l)));
     let detail_reading = || {
         format!(
             "atteso {}/{}, ottenuto {}/{}",
@@ -539,7 +548,7 @@ pub fn evaluate<D: AsRef<[u8]>>(engine: &Engine<D>, texts: &[&GoldText]) -> Metr
                 }
                 if lemma_matters(g.cat) {
                     m.lemma_words += 1;
-                    if a.is_some_and(|a| a.lemma.to_lowercase() == g.lemma.to_lowercase()) {
+                    if a.is_some_and(|a| same_lemma(&g.lemma, &a.lemma)) {
                         m.lemma_ok += 1;
                     }
                 }
