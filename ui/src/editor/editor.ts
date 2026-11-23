@@ -36,7 +36,11 @@ export function currentMode(view: EditorView): Mode {
 /** Sostituisce il documento mantenendo il plugin (nuovo stato, cronologia azzerata). */
 export function replaceDoc(view: EditorView, doc: PMNode): void {
   const mode = currentMode(view);
+  // Un nuovo stato riparte da capo anche per i plugin: si ricordano motore e politica.
+  const engine = engineKey.getState(view.state);
   view.updateState(normalizeState(EditorState.create({ doc, plugins: view.state.plugins })));
   view.dispatch(view.state.tr.setMeta(symbolKey, { mode, refresh: true }));
-  view.dispatch(view.state.tr.setMeta(engineKey, { refresh: true }));
+  view.dispatch(
+    view.state.tr.setMeta(engineKey, engine?.client ? { client: engine.client, policy: engine.policy, refresh: true } : { refresh: true }),
+  );
 }

@@ -147,3 +147,22 @@ test("dal tasto al simbolo: la parola nuova ha il simbolo in meno di 30 ms oltre
   );
   expect(ms, `tempo ${ms.toFixed(1)} ms`).toBeLessThan(30);
 });
+
+test("dopo «Testo di esempio» o «Nuovo» i simboli del motore tornano (e la politica resta)", async ({ page }) => {
+  await open(page, "Marco mangia pane");
+  await page.selectOption("select", "essential");
+  // «Testo di esempio»: sostituisce tutto il documento.
+  await page.getByRole("button", { name: "Testo di esempio" }).click();
+  await expect(page.locator(".w[style*='--img']").first()).toBeVisible();
+  await page.waitForFunction(() => (window as any).caaProto.engineStats().pending === 0);
+  expect((await stats(page)).words).toBeGreaterThan(50);
+  expect(await page.locator("select").inputValue()).toBe("essential");
+  // La politica Essenziale e' ancora quella che arriva al motore.
+  const policies = await page.evaluate(() => (window as any).__mock.calls.map((c: { policy: string }) => c.policy));
+  expect(policies[policies.length - 1]).toBe("essential");
+  // «Nuovo»: documento vuoto; scrivendo i simboli compaiono ancora.
+  await page.getByRole("button", { name: "Nuovo" }).click();
+  await page.locator(".ProseMirror").click();
+  await page.keyboard.type("casa mare");
+  await expect(page.locator(".w[style*='--img']")).toHaveCount(2);
+});
