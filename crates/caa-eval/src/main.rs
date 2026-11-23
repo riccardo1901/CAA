@@ -9,6 +9,7 @@
 //! caa-eval strutture [--lexicon DIR] [--strutture FILE]  test dorati di struttura (gruppi, segni)
 //! caa-eval corpus    [--corpus DIR] [--gruppo sviluppo|prova] [--esempi N]  metriche sul corpus annotato
 //! caa-eval prepara FILE.txt                          bozza TSV di un testo da correggere a mano
+//! caa-eval pacchetto DIR                             lessico e immagini necessarie, per provare l'app su un altro PC
 //! caa-eval candidati PAROLA                          pittogrammi dell'indice per una parola
 //! caa-eval tara      [--lexicon DIR] [--conllu FILE]   taratura dei pesi e della confidenza (usa solo il file di sviluppo)
 //! caa-eval mostra FRASE [--lexicon DIR]                cosa decide il motore su una frase
@@ -37,6 +38,7 @@ Comandi:\n\
   strutture  test dorati di struttura: parole nascoste, segni, espressioni (opzione --strutture FILE)\n\
   corpus     metriche e errori per causa sul corpus annotato (opzioni --corpus, --gruppo, --esempi)\n\
   prepara    bozza TSV di un testo da correggere a mano\n\
+  pacchetto  copia lessico e immagini necessarie in una cartella per provare l'app altrove (pacchetto DIR)\n\
   candidati  pittogrammi dell'indice per una parola\n\
   tara       cerca i pesi migliori e la temperatura della confidenza (opzione --conllu FILE)\n\
   mostra     lettura, categoria e pittogramma di ogni parola di una frase\n\
@@ -56,7 +58,10 @@ fn main() -> ExitCode {
     let mut base = PathBuf::from("lexicon/lessico_base.tsv");
     let mut conllu = PathBuf::from("data/raw/treebank/isdt/it_isdt-ud-dev.conllu");
     let mut sentence = String::new();
-    if matches!(command.as_str(), "mostra" | "prepara" | "candidati") {
+    if matches!(
+        command.as_str(),
+        "mostra" | "prepara" | "candidati" | "pacchetto"
+    ) {
         sentence = args.next().unwrap_or_default();
     }
     let mut corpus_dir = PathBuf::from("corpus/annotati");
@@ -353,6 +358,99 @@ fn main() -> ExitCode {
             print!(
                 "{}",
                 caa_eval::corpus::draft(&engine, &name, &header, &text)
+            );
+            ExitCode::SUCCESS
+        }
+        "pacchetto" => {
+            // caa-eval pacchetto --out DIR: copia il lessico compilato e le sole immagini che servono
+            // ai testi del corpus, al lessico di base e al testo di esempio (per provare l'app su un
+            // altro PC senza portare i 14.000 pittogrammi).
+            let out = PathBuf::from(&sentence);
+            let mut texts = Vec::new();
+            let mut extra: Vec<u32> = Vec::new();
+            let add_dir = |dir: &str, ext: &str, texts: &mut Vec<String>| {
+                if let Ok(d) = std::fs::read_dir(dir) {
+                    let mut files: Vec<PathBuf> = d
+                        .flatten()
+                        .map(|e| e.path())
+                        .filter(|p| p.extension().is_some_and(|x| x == ext))
+                        .collect();
+                    files.sort();
+                    for f in files {
+                        if let Ok(t) = std::fs::read_to_string(&f) {
+                            texts.push(t);
+                        }
+                    }
+                }
+            };
+            add_dir("corpus/testi", "txt", &mut texts);
+            if let Ok(t) = std::fs::read_to_string("docs/testo-esempio.txt") {
+                texts.push(t);
+            }
+            if let Ok(t) = std::fs::read_to_string(&base) {
+                if let Ok(words) = parse_base(&t) {
+                    texts.extend(words.into_iter().map(|w| w.word));
+                }
+            }
+            // Anche i pittogrammi accettati dal corpus annotato (alternative plausibili).
+            let mut tsv = Vec::new();
+            add_dir(&corpus_dir.to_string_lossy(), "tsv", &mut tsv);
+            for t in &tsv {
+                for line in t.lines().filter(|l| !l.starts_with('#')) {
+                    if let Some(col) = line.split('\t').nth(3) {
+                        extra.extend(col.split('|').filter_map(|x| x.parse::<u32>().ok()));
+                    }
+                }
+            }
+            let ids = caa_eval::picto_ids_for_texts(&engine, &texts, &extra);
+            let copy = |rel: &str| -> Result<(), String> {
+                let from = lexicon.join(rel);
+                let to = out.join(rel);
+                if !from.exists() {
+                    return Ok(());
+                }
+                if let Some(p) = to.parent() {
+                    std::fs::create_dir_all(p).map_err(|e| format!("{}: {e}", p.display()))?;
+                }
+                std::fs::copy(&from, &to)
+                    .map(|_| ())
+                    .map_err(|e| format!("{}: {e}", from.display()))
+            };
+            let mut files: Vec<String> = [
+                "manifest.json",
+                "arasaac/picto_index.bin",
+                "arasaac/mwe.bin",
+                "treebank/tagger.bin",
+            ]
+            .map(String::from)
+            .to_vec();
+            for dir in ["morphit", "overrides"] {
+                if let Ok(d) = std::fs::read_dir(lexicon.join(dir)) {
+                    files.extend(
+                        d.flatten()
+                            .map(|e| format!("{dir}/{}", e.file_name().to_string_lossy())),
+                    );
+                }
+            }
+            for f in &files {
+                if let Err(e) = copy(f) {
+                    return fail(&e);
+                }
+            }
+            let mut copied = 0;
+            for id in &ids {
+                if copy(&format!("arasaac/images/{id}.webp")).is_ok()
+                    && out.join(format!("arasaac/images/{id}.webp")).exists()
+                {
+                    copied += 1;
+                }
+            }
+            println!(
+                "Pacchetto in {}: {} file di dati, {} immagini su {} pittogrammi usati",
+                out.display(),
+                files.len(),
+                copied,
+                ids.len()
             );
             ExitCode::SUCCESS
         }

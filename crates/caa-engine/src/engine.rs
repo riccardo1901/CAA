@@ -21,9 +21,22 @@ use crate::viterbi::{decode, Node, Weights};
 // Contratto (SPEC.md, "Contratto (Rust)")
 // ---------------------------------------------------------------------------------------
 
-/// Politica delle parole funzionali e preset del documento (la usa la fase 10, M8).
+/// Politica delle parole funzionali (SPEC.md, fase 10): cosa si mostra di articoli, clitici non
+/// riflessivi e "che".
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum FunctionPolicy {
+    /// Articoli con simbolo ridotto, clitici con il simbolo del pronome, "che" come solo testo.
+    #[default]
+    Complete,
+    /// Articoli, clitici non riflessivi e "che" nascosti.
+    Essential,
+}
+
+/// Preferenze del documento (la politica e, più avanti, la tabella personalizzata).
 #[derive(Debug, Clone, Default)]
-pub struct DocPrefs {}
+pub struct DocPrefs {
+    pub function_policy: FunctionPolicy,
+}
 
 /// Scelta esplicita del docente su un intervallo di testo (la usa la fase 8, M8).
 #[derive(Debug, Clone)]
@@ -362,6 +375,33 @@ const ELISION_TABLE: [(&str, &str, Cat); 18] = [
     ("sant'", "santo", Cat::Adj),
 ];
 
+/// Fase 10: cosa si mostra delle parole funzionali. Non tocca i token dei gruppi (ausiliari e
+/// membri sono già nascosti, la testa resta visibile) né quelli senza pittogramma.
+fn apply_policy(tokens: &mut [Token], prefs: &DocPrefs) {
+    let essential = prefs.function_policy == FunctionPolicy::Essential;
+    for t in tokens.iter_mut() {
+        let Some(a) = &t.analysis else { continue };
+        if t.group.is_some() || t.display == Display::Hidden || t.kind != TokenKind::Word {
+            continue;
+        }
+        let has_picto = t.picto.is_some();
+        let che = normalize_key(&a.lemma) == "che";
+        t.display = match a.cat {
+            _ if che => {
+                if essential {
+                    Display::Hidden
+                } else {
+                    Display::TextOnly
+                }
+            }
+            Cat::Art if essential => Display::Hidden,
+            Cat::Art if has_picto => Display::Reduced,
+            Cat::Clitic if essential => Display::Hidden,
+            _ => t.display,
+        };
+    }
+}
+
 /// Preposizione semplice di una preposizione articolata, dal lemma di Morph-it! ("nella" → "in",
 /// "dall'" → "da", "col" → "con").
 fn articulated_base(lemma: &str) -> Option<&'static str> {
@@ -694,6 +734,7 @@ impl<D: AsRef<[u8]>> Engine<D> {
             .collect();
         self.apply_groups(&mut tokens);
         self.apply_multiword(&mut tokens);
+        apply_policy(&mut tokens, req.prefs);
         tokens
     }
 

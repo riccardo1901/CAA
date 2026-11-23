@@ -54,8 +54,9 @@ npx playwright test                  # resa A (quella scelta); in CI senza @perf
 npm run test:e2e:confronto           # resa A e B
 npx playwright test --grep @perf     # velocità (dipende dalla macchina)
 
-# App in sviluppo (richiede Rust, Node e, su Windows, WebView2)
+# App in sviluppo (richiede Rust, Node e, su Windows, WebView2). Cerca i dati in CAA_DATA, dati/ o data/build/
 npm run tauri dev
+cargo run --release -q -p caa-eval -- pacchetto /percorso/dati   # lessico + solo le immagini dei testi di prova (~30 MB)
 
 # App compilata senza installer (target/release/caa-app, su Windows caa-app.exe)
 npx tauri build --no-bundle

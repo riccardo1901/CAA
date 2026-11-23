@@ -227,6 +227,9 @@ dependencies = [
 name = "caa-app"
 version = "0.1.0"
 dependencies = [
+ "caa-engine",
+ "caa-store",
+ "serde",
  "tauri",
  "tauri-build",
 ]

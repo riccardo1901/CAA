@@ -16,6 +16,9 @@ use memmap2::Mmap;
 /// Numero di schema del formato `.caa` (cresce a ogni modifica incompatibile).
 pub const SCHEMA: u32 = 1;
 
+/// Il motore completo con i file mappati in memoria (quello che usa l'app).
+pub type MappedEngine = Engine<Mmap>;
+
 /// Errore di apertura del lessico.
 #[derive(Debug)]
 pub enum LoadError {
@@ -78,7 +81,7 @@ pub fn open_lexicon(dir: &Path) -> Result<Lexicon, LoadError> {
 
 /// Apre il motore completo: lessico mappato in memoria più i file curati (`overrides/`, copiati
 /// dalla build; se mancano valgono come vuoti).
-pub fn open_engine(dir: &Path) -> Result<Engine<Mmap>, LoadError> {
+pub fn open_engine(dir: &Path) -> Result<MappedEngine, LoadError> {
     let lexicon = open_lexicon(dir)?;
     let read = |name: &str| -> Result<String, LoadError> {
         let path = dir.join("overrides").join(name);

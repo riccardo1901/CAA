@@ -67,6 +67,7 @@ lavato\tlavare\tVER:part+past+s+m
 lavo\tlavare\tVER:ind+pres+1+s
 mangerò\tmangiare\tVER:ind+fut+1+s
 andato\tandare\tVER:part+past+s+m
+che\tche\tWH-CHE
 lava\tlavare\tVER:impr+pres+2+s
 voglio\tvolere\tVER:ind+pres+1+s
 vuole\tvolere\tVER:ind+pres+3+s

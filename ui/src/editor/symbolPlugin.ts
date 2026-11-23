@@ -8,6 +8,7 @@
 import type { Node as PMNode } from "prosemirror-model";
 import { Plugin, PluginKey } from "prosemirror-state";
 import { Decoration, DecorationSet } from "prosemirror-view";
+import { engineKey } from "./engineSymbols";
 import { symbolUrl } from "./symbols";
 import { wordRanges } from "./words";
 
@@ -41,7 +42,7 @@ function wordsOf(node: PMNode): Cached {
 }
 
 /** Fine (in offset relativi al paragrafo) di ciascun pezzo di testo: cambiano dove cambia la formattazione. */
-function pieceEnds(node: PMNode): number[] {
+export function pieceEnds(node: PMNode): number[] {
   const ends: number[] = [];
   let off = 0;
   node.forEach((child) => {
@@ -52,7 +53,7 @@ function pieceEnds(node: PMNode): number[] {
 }
 
 /** Divide la parola [a, b) nei pezzi in cui la formattazione la spezza (es. "gras" + "setto" in grassetto). */
-function splitWord(a: number, b: number, ends: number[]): Array<[number, number]> {
+export function splitWord(a: number, b: number, ends: number[]): Array<[number, number]> {
   const out: Array<[number, number]> = [];
   let from = a;
   for (const e of ends) {
@@ -116,7 +117,9 @@ export function symbolPlugin(initial: Mode = "A"): Plugin<State> {
       },
     },
     props: {
-      decorations: (state) => symbolKey.getState(state)?.decos ?? DecorationSet.empty,
+      // Con il motore attivo i simboli finti si spengono (li disegna engineSymbols).
+      decorations: (state) =>
+        engineKey.getState(state)?.client ? DecorationSet.empty : (symbolKey.getState(state)?.decos ?? DecorationSet.empty),
     },
   });
 }

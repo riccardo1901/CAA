@@ -578,3 +578,72 @@ fn il_pronominale_rispetta_lemma_picto() {
         Some(128)
     );
 }
+
+// --- Fase 10: politica delle parole funzionali ----------------------------------------------
+
+use caa_engine::engine::{DocPrefs, ForcedPick, FunctionPolicy, Request, SenseLocks, UserMemory};
+
+fn with_policy(text: &str, policy: FunctionPolicy) -> Vec<Token> {
+    let prefs = DocPrefs {
+        function_policy: policy,
+    };
+    engine("", "").symbolize(&Request {
+        text,
+        prefs: &prefs,
+        forced: &[] as &[ForcedPick],
+        sense_locks: &SenseLocks::default(),
+        memory: &UserMemory::default(),
+    })
+}
+
+#[test]
+fn articoli_ridotti_o_nascosti() {
+    // "la" ha un pittogramma (120): Completo = simbolo ridotto, Essenziale = nascosto.
+    let c = with_policy("la porta", FunctionPolicy::Complete);
+    assert_eq!(
+        (c[0].display, c[1].display),
+        (Display::Reduced, Display::Full)
+    );
+    let e = with_policy("la porta", FunctionPolicy::Essential);
+    assert_eq!(
+        (e[0].display, e[1].display),
+        (Display::Hidden, Display::Full)
+    );
+    // Il pittogramma resta nel token anche se non si mostra: serve a chi cambia politica.
+    assert_eq!(e[0].picto.map(|p| p.id), Some(120));
+}
+
+#[test]
+fn che_testo_o_nascosto_e_punteggiatura_sempre_testo() {
+    let c = with_policy("che porta.", FunctionPolicy::Complete);
+    assert_eq!(c[0].display, Display::TextOnly);
+    assert_eq!(c[2].display, Display::TextOnly);
+    let e = with_policy("che porta.", FunctionPolicy::Essential);
+    assert_eq!(e[0].display, Display::Hidden);
+    assert_eq!(e[2].display, Display::TextOnly);
+}
+
+#[test]
+fn preposizioni_articolate_sempre_con_il_simbolo_della_preposizione() {
+    for p in [FunctionPolicy::Complete, FunctionPolicy::Essential] {
+        let t = with_policy("nella scuola", p);
+        assert_eq!(
+            (t[0].display, t[0].picto.map(|x| x.id)),
+            (Display::Full, Some(121)),
+            "{p:?}"
+        );
+    }
+}
+
+#[test]
+fn la_politica_non_tocca_i_gruppi() {
+    // L'ausiliare resta nascosto e la testa del gruppo resta visibile in entrambe le politiche.
+    for p in [FunctionPolicy::Complete, FunctionPolicy::Essential] {
+        let t = with_policy("Ho mangiato", p);
+        assert_eq!(
+            (t[0].display, t[1].display),
+            (Display::Hidden, Display::Full),
+            "{p:?}"
+        );
+    }
+}

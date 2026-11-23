@@ -5,6 +5,7 @@ import type { Node as PMNode } from "prosemirror-model";
 import { EditorState } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { normalizeMarks, normalizeState, toggleBoldWords } from "./wordMarks";
+import { engineKey, engineSymbolPlugin } from "./engineSymbols";
 import { symbolPlugin, symbolKey, type Mode } from "./symbolPlugin";
 
 export function createEditor(mount: HTMLElement, doc: PMNode, mode: Mode = "A"): EditorView {
@@ -21,6 +22,7 @@ export function createEditor(mount: HTMLElement, doc: PMNode, mode: Mode = "A"):
       keymap(baseKeymap),
       normalizeMarks(),
       symbolPlugin(mode),
+      engineSymbolPlugin(),
     ],
   }));
   // Lingua italiana e correttore ortografico di sistema (prova 6 di M3).
@@ -36,4 +38,5 @@ export function replaceDoc(view: EditorView, doc: PMNode): void {
   const mode = currentMode(view);
   view.updateState(normalizeState(EditorState.create({ doc, plugins: view.state.plugins })));
   view.dispatch(view.state.tr.setMeta(symbolKey, { mode, refresh: true }));
+  view.dispatch(view.state.tr.setMeta(engineKey, { refresh: true }));
 }

@@ -3,14 +3,20 @@ import { TextSelection } from "prosemirror-state";
 import type { EditorView } from "prosemirror-view";
 import { benchmark, checkSymbolHits, checkWrap } from "./checks";
 import { createEditor, currentMode, replaceDoc } from "./editor/editor";
+import { engineStats, onEngineUpdate, setEngine, setPolicy } from "./editor/engineSymbols";
+import { engineInfo, inTauri, tauriClient, type EngineClient, type EngineInfo, type Policy } from "./engine/client";
+import { createBars } from "./toolbar";
 import { symbolKey, type Mode } from "./editor/symbolPlugin";
 import { setSymbols } from "./editor/symbols";
 import { createPanel } from "./panel";
-import { fragmentsDoc, sampleDoc } from "./sample";
+import { emptyDoc, fragmentsDoc, sampleDoc } from "./sample";
 import type { Node as PMNode } from "prosemirror-model";
 
 let view: EditorView;
 let size = 68;
+let layoutEl: HTMLElement;
+let panelEl: HTMLElement;
+let root: HTMLElement;
 
 export function replaceDocument(doc: PMNode): void {
   replaceDoc(view, doc);
@@ -22,7 +28,22 @@ function applySize(px: number): void {
   document.documentElement.style.setProperty("--sym", `${px}px`);
 }
 
-export function startApp(root: HTMLElement): void {
+/** Passa all'interfaccia con il motore: barre, simboli veri, niente pannello di prova. */
+function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): void {
+  panelEl.remove();
+  const app = document.createElement("div");
+  app.className = "app";
+  const bars = createBars(view, info, applySize, () => size, () => replaceDocument(emptyDoc()), () => replaceDocument(sampleDoc(1)));
+  app.append(bars.banner, bars.toolbar, layoutEl, bars.statusbar);
+  root.appendChild(app);
+  onEngineUpdate(bars.refresh);
+  if (client) setEngine(view, client);
+  else view.dispatch(view.state.tr.setMeta(symbolKey, { mode: "off" }));
+  bars.refresh();
+}
+
+export function startApp(mount: HTMLElement): void {
+  root = mount;
   const layout = document.createElement("div");
   layout.className = "layout";
   const wrap = document.createElement("main");
@@ -35,7 +56,17 @@ export function startApp(root: HTMLElement): void {
 
   applySize(size);
   view = createEditor(sheet, sampleDoc(1));
-  layout.appendChild(createPanel(view, applySize, () => size));
+  layoutEl = layout;
+  panelEl = createPanel(view, applySize, () => size);
+  layout.appendChild(panelEl);
+
+  // Nell'app (Tauri) si passa subito al motore; nel browser restano il prototipo e le sue prove.
+  if (inTauri()) {
+    engineInfo().then(
+      (info) => enterEngineMode(info.ok ? tauriClient() : null, info),
+      (e: unknown) => enterEngineMode(null, { ok: false, dir: null, error: String(e), tagger: false, expressions: false }),
+    );
+  }
 
   // Interfaccia per i test automatici.
   (window as unknown as { caaProto: unknown }).caaProto = {
@@ -46,6 +77,10 @@ export function startApp(root: HTMLElement): void {
     loadSample: (repeat = 1) => replaceDocument(sampleDoc(repeat)),
     loadFragments: () => replaceDocument(fragmentsDoc()),
     setSymbols,
+    // Motore (prove automatiche con un motore finto, app con quello vero).
+    enterEngineMode: (client: EngineClient) => enterEngineMode(client, { ok: true, dir: null, error: null, tagger: true, expressions: true }),
+    engineStats: () => engineStats(view),
+    setPolicy: (p: Policy) => setPolicy(view, p),
     refresh: () => view.dispatch(view.state.tr.setMeta(symbolKey, { refresh: true })),
     checkWrap: () => checkWrap(view),
     checkSymbolHits: () => checkSymbolHits(view),

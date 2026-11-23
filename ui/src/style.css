@@ -116,3 +116,87 @@ body { margin: 0; }
 .panel .steps { color: #555; font-size: 12.5px; margin-top: 2px; }
 .panel pre.auto { white-space: pre-wrap; font-size: 12.5px; margin: 6px 0 0; }
 .panel textarea.res { width: 100%; font-size: 12px; }
+
+/* ---- Simboli del motore (M8) ---- */
+/* Parola senza simbolo (parola funzionale per scelta, punteggiatura esclusa): stesso ingombro, nessuna immagine. */
+.w.ns::before { background: none; }
+/* Parola piena senza pittogramma: segnaposto tratteggiato (non si stampa). */
+.w.ph::before {
+  background: none;
+  border: 2px dashed #b4b4c0;
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+/* Simbolo ridotto (articoli nella politica "Completo"). */
+.w.red::before {
+  top: calc(var(--sym) * 0.4);
+  width: calc(var(--sym) * 0.6);
+  height: calc(var(--sym) * 0.6);
+  margin-left: calc(var(--sym) * -0.3);
+}
+.w.hid { opacity: 0.55; }
+/* Parola da controllare (confidenza bassa): sottolineatura ondulata arancione. */
+.w.dbt {
+  text-decoration: underline wavy #e0791f;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+/* Segni di plurale, passato e futuro: provvisori, in attesa della convenzione scelta con la scuola. */
+.w.mp::after,
+.w.mpast::after,
+.w.mfut::after {
+  position: absolute;
+  top: 0;
+  right: calc(50% - var(--sym) / 2);
+  padding: 0 calc(var(--sym) * 0.07);
+  min-width: calc(var(--sym) * 0.3);
+  height: calc(var(--sym) * 0.3);
+  line-height: calc(var(--sym) * 0.3);
+  border-radius: calc(var(--sym) * 0.15);
+  background: #1f3a6b;
+  color: #fff;
+  font-size: calc(var(--sym) * 0.22);
+  font-weight: 700;
+  text-align: center;
+  white-space: pre;
+}
+.w.mp::after { content: "+"; }
+.w.mpast::after { content: "\25C0"; }
+.w.mfut::after { content: "\25B6"; }
+.w.mp.mpast::after { content: "\25C0 +"; }
+.w.mp.mfut::after { content: "+ \25B6"; }
+.w.wc::after { content: none !important; }
+
+/* Barra degli strumenti e barra di stato (app) */
+.app { display: flex; flex-direction: column; height: 100vh; }
+.app .layout { flex: 1; min-height: 0; height: auto; }
+.toolbar, .statusbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 6px 14px;
+  background: #fafafa;
+  font-size: 14px;
+}
+.toolbar { border-bottom: 1px solid #c8c8d0; }
+.statusbar { border-top: 1px solid #c8c8d0; color: #444; }
+.toolbar button, .toolbar select {
+  padding: 4px 10px;
+  border: 1px solid #9a9aa8;
+  border-radius: 4px;
+  background: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+.toolbar button.on { background: #dfe8f8; border-color: #3b6fd0; }
+.toolbar .grow, .statusbar .grow { flex: 1; }
+.statusbar .warn { color: #b8560b; font-weight: 600; }
+.banner {
+  flex: none;
+  padding: 8px 14px;
+  background: #fff4d6;
+  border-bottom: 1px solid #e0c46a;
+  font-size: 14px;
+}

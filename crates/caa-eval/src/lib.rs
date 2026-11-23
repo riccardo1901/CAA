@@ -67,6 +67,26 @@ pub fn run_structures<D: AsRef<[u8]>>(
     })
 }
 
+/// Pittogrammi che il motore usa per alcuni testi (e quelli accettati dal corpus annotato): servono
+/// al pacchetto di prova, che porta con sé solo le immagini necessarie.
+pub fn picto_ids_for_texts<D: AsRef<[u8]>>(
+    engine: &Engine<D>,
+    texts: &[String],
+    extra: &[u32],
+) -> std::collections::BTreeSet<u32> {
+    let mut ids: std::collections::BTreeSet<u32> = extra.iter().copied().collect();
+    for text in texts {
+        for sentence in corpus::split_sentences(text) {
+            for t in engine.symbolize_text(&sentence) {
+                if let Some(p) = t.picto {
+                    ids.insert(p.id);
+                }
+            }
+        }
+    }
+    ids
+}
+
 /// Una parola di base: forma (lemma) e categoria indicativa.
 #[derive(Debug, Clone)]
 pub struct BaseWord {

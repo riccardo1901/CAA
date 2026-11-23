@@ -14,7 +14,7 @@
       { "title": "Editor CAA", "width": 1100, "height": 800 }
     ],
     "security": {
-      "csp": "default-src 'self'; img-src 'self' picto: data: blob:; style-src 'self' 'unsafe-inline'"
+      "csp": "default-src 'self'; img-src 'self' picto: http://picto.localhost https://picto.localhost data: blob:; style-src 'self' 'unsafe-inline'"
     }
   },
   "bundle": {
