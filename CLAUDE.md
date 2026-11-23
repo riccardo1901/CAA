@@ -33,4 +33,33 @@ Programma desktop (Tauri 2) per docenti: scrivono un testo italiano e vedono sop
 
 ## Comandi
 
-Da compilare in M0 (build, test, avvio in sviluppo, `caa-eval`, build del lessico).
+Struttura: `crates/` (motore, build del lessico, valutazione, archivio), `src-tauri/` (app), `ui/` (frontend Vite + TypeScript).
+
+```bash
+# Test Rust (motore, lessico, valutazione, archivio; esclude l'app Tauri)
+cargo test
+
+# Controlli di formato e qualità, gli stessi della CI
+cargo fmt --all --check
+cargo clippy --workspace --all-targets -- -D warnings
+
+# Frontend: installazione e build (controllo TypeScript + Vite)
+npm install
+npm run build
+
+# App in sviluppo (richiede Rust, Node e, su Windows, WebView2)
+npm run tauri dev
+
+# App compilata senza installer (target/release/caa-app, su Windows caa-app.exe)
+npx tauri build --no-bundle
+
+# Valutazione del motore sul corpus (scheletro: la logica arriva in M7)
+cargo run -p caa-eval
+
+# Build del lessico (scheletro: la logica arriva in M2)
+cargo run -p caa-lexicon-build
+```
+
+Su Linux, per compilare l'app servono le librerie di sistema elencate nel job `linux` di `.github/workflows/ci.yml`.
+
+La CI (GitHub Actions) gira su Linux e Windows; il job Windows pubblica `caa-app.exe` come artifact per la prova manuale.

@@ -1,0 +1,13 @@
+[package]
+name = "caa-app"
+description = "Editor CAA in simboli (app Tauri 2)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
