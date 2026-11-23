@@ -189,8 +189,10 @@ impl<D: AsRef<[u8]>> MorphLexicon<D> {
             return Vec::new();
         };
         bytes
-            .chunks_exact(READING_SIZE)
-            .filter_map(Reading::from_bytes)
+            .as_chunks::<READING_SIZE>()
+            .0
+            .iter()
+            .filter_map(|chunk| Reading::from_bytes(chunk))
             .collect()
     }
 
@@ -344,8 +346,10 @@ impl<D: AsRef<[u8]>> PictoIndex<D> {
             return Vec::new();
         };
         bytes
-            .chunks_exact(PICTO_RECORD_SIZE)
-            .filter_map(PictoEntry::from_bytes)
+            .as_chunks::<PICTO_RECORD_SIZE>()
+            .0
+            .iter()
+            .filter_map(|chunk| PictoEntry::from_bytes(chunk))
             .collect()
     }
 

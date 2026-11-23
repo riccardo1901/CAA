@@ -242,9 +242,6 @@ dependencies = [
 [[package]]
 name = "caa-eval"
 version = "0.1.0"
-dependencies = [
- "caa-engine",
-]
 
 [[package]]
 name = "caa-lexicon-build"
