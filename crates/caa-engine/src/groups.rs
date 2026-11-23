@@ -52,6 +52,8 @@ pub struct VerbalGroup {
 /// Segno di tempo di una forma verbale semplice o dell'ausiliare di un gruppo.
 pub fn tense_mark(f: &Feats, compound: bool) -> Tense3 {
     match (f.mood, f.tense) {
+        // Infinito composto: "aver giocato" è un passato.
+        (Some(Mood::Inf), _) if compound => Tense3::Past,
         (Some(Mood::Ind), Some(Tense::Fut)) => Tense3::Future,
         (Some(Mood::Ind), Some(Tense::Impf | Tense::Past)) => Tense3::Past,
         // Tempo composto: il presente dell'ausiliare dà il passato, il condizionale pure.
@@ -65,8 +67,11 @@ fn finite(v: &View) -> bool {
     matches!(v.feats.mood, Some(Mood::Ind | Mood::Sub | Mood::Cond)) && v.feats.person.is_some()
 }
 
+/// Ausiliare a un modo finito, o all'infinito ("dopo aver giocato", "senza essere stato").
 fn is_aux(v: &View) -> bool {
-    v.word && matches!(v.lemma.as_str(), "essere" | "avere") && finite(v)
+    v.word
+        && matches!(v.lemma.as_str(), "essere" | "avere")
+        && (finite(v) || v.feats.mood == Some(Mood::Inf))
 }
 
 fn is_participle(v: &View) -> bool {
@@ -505,5 +510,33 @@ mod tests {
             verbal_groups(&[ci, siamo, part("lavare", "lavati")])[0].reflexive,
             Some(0)
         );
+    }
+
+    #[test]
+    fn infinito_composto_essere_stato_e_aver_giocato() {
+        // "dopo aver giocato", "dopo essere stato": ausiliare all'infinito + participio = PASSATO.
+        let mut aver = v(Cat::Aux, "avere", "aver", Some(Mood::Inf), None, None, None);
+        aver.feats.tense = Some(Tense::Pres);
+        let g = verbal_groups(&[aver, part("giocare", "giocato")]);
+        assert_eq!(g.len(), 1);
+        assert_eq!(
+            (g[0].head, g[0].hidden.clone(), g[0].tense),
+            (1, vec![0], Tense3::Past)
+        );
+        let essere = v(
+            Cat::Aux,
+            "essere",
+            "essere",
+            Some(Mood::Inf),
+            None,
+            None,
+            None,
+        );
+        let g = verbal_groups(&[
+            essere,
+            part("essere", "stato"),
+            plain(Cat::Adj, "bravo", "bravo"),
+        ]);
+        assert_eq!((g[0].head, g[0].tense), (1, Tense3::Past));
     }
 }

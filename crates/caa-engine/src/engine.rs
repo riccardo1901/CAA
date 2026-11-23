@@ -903,12 +903,16 @@ impl<D: AsRef<[u8]>> Engine<D> {
     /// Chiave ARASAAC del verbo pronominale ("lavare" → "lavarsi": infinito senza -e più "si";
     /// "condurre" → "condursi").
     fn pronominal_picto(&self, lemma: &str) -> Option<u32> {
-        let key = pronominal_lemma(lemma)?;
+        self.picto_for_key(&pronominal_lemma(lemma)?)
+    }
+
+    /// Il pittogramma di una parola chiave ARASAAC esatta (senza i bloccati).
+    fn picto_for_key(&self, key: &str) -> Option<u32> {
         let entries: Vec<PictoEntry> = self
             .picto
-            .lookup(&key)
+            .lookup(key)
             .into_iter()
-            .filter(|e| !self.curated.is_blocked(&[key.as_str()], e.id))
+            .filter(|e| !self.curated.is_blocked(&[key], e.id))
             .collect();
         Self::best_entry(entries).map(|e| e.id)
     }
@@ -969,10 +973,12 @@ impl<D: AsRef<[u8]>> Engine<D> {
             // Verbo pronominale ("mi sono lavato" = lavarsi): serve il pittogramma di "lavarsi".
             let mut members = g.hidden.clone();
             if let Some(c) = g.reflexive {
+                // Il riflessivo della stessa persona non si mostra mai; il pittogramma è quello di
+                // "lavarsi" se ARASAAC lo ha, altrimenti resta quello del verbo.
+                kind = GroupKind::Pronominal;
+                members.push(c);
                 let lemma = views[g.head].lemma.clone();
                 if let Some(picto) = self.pronominal_picto(&lemma) {
-                    kind = GroupKind::Pronominal;
-                    members.push(c);
                     let head = &mut tokens[g.head];
                     head.picto = Some(PictoRef { id: picto });
                     head.display = Display::Full;
@@ -989,6 +995,30 @@ impl<D: AsRef<[u8]>> Engine<D> {
             link(tokens, g.head, id, kind, true);
             in_group[g.head] = true;
         }
+        // "c'è", "ci sono", "c'era": "ci" + essere alla terza persona è "esserci"; "ci" non si mostra.
+        for i in 1..tokens.len() {
+            let essere = views[i].word
+                && views[i].lemma == "essere"
+                && views[i].feats.person == Some(3)
+                && views[i - 1].word
+                && views[i - 1].cat == Cat::Clitic
+                && views[i - 1].lemma == "ci";
+            if in_group[i] || in_group[i - 1] || !essere {
+                continue;
+            }
+            let id = next_id;
+            next_id += 1;
+            tokens[i - 1].display = Display::Hidden;
+            link(tokens, i - 1, id, GroupKind::Pronominal, false);
+            link(tokens, i, id, GroupKind::Pronominal, true);
+            if let Some(picto) = self.picto_for_key("esserci") {
+                tokens[i].picto = Some(PictoRef { id: picto });
+                tokens[i].display = Display::Full;
+                tokens[i].reason.picto = PictoReason::Pronominal;
+            }
+            in_group[i] = true;
+            in_group[i - 1] = true;
+        }
         // Verbo semplice con il riflessivo davanti ("mi lavo", "si pettina").
         for i in 1..tokens.len() {
             if in_group[i] || in_group[i - 1] || !views[i].word || views[i].cat != Cat::Verb {
@@ -999,18 +1029,18 @@ impl<D: AsRef<[u8]>> Engine<D> {
             {
                 continue;
             }
+            let id = next_id;
+            next_id += 1;
+            tokens[i - 1].display = Display::Hidden;
+            link(tokens, i - 1, id, GroupKind::Pronominal, false);
+            link(tokens, i, id, GroupKind::Pronominal, true);
             if let Some(picto) = self.pronominal_picto(&views[i].lemma) {
-                let id = next_id;
-                next_id += 1;
-                tokens[i - 1].display = Display::Hidden;
-                link(tokens, i - 1, id, GroupKind::Pronominal, false);
-                link(tokens, i, id, GroupKind::Pronominal, true);
                 tokens[i].picto = Some(PictoRef { id: picto });
                 tokens[i].display = Display::Full;
                 tokens[i].reason.picto = PictoReason::Pronominal;
-                in_group[i] = true;
-                in_group[i - 1] = true;
             }
+            in_group[i] = true;
+            in_group[i - 1] = true;
         }
         // Clitico riflessivo attaccato ("lavarsi", "lavandosi"): stesso pittogramma pronominale.
         for (i, t) in tokens.iter_mut().enumerate() {

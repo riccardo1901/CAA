@@ -5,6 +5,7 @@
 # multiparola: ARASAAC ha i pittogrammi "aprire la porta", "portare a scuola", "avere fame",
 # "salire le scale" e "mettere il sale", che con la regola della corrispondenza piu' lunga assorbono
 # le parole (l'analisi di ogni parola resta quella della tabella di SPEC.md: vedi analisi.tsv).
+# Il caso 9: "c'" (lemma ci, vedi analisi.tsv) fa parte di "esserci" e non si mostra (M7).
 # (lemma in minuscolo; nella chiave _ sta per lo spazio). Il segno e il pittogramma stanno sulla testa del gruppo.
 Apri la porta.	aprire=aprire_la_porta ~ ~
 Lei la porta a scuola.	lei la portare=portare_a_scuola ~ ~
@@ -14,7 +15,7 @@ Marco si lava le mani.	marco ~ lavare=lavarsi_le_mani ~ ~
 Mi sono divertito al parco.	~ ~ divertire+PASSATO=divertirsi a parco
 Dammi il libro.	dare il libro
 Il bambino stava dormendo.	il bambino ~ dormire+PASSATO
-C'era una volta un re.	ci essere+PASSATO una=una_volta ~ un re
+C'era una volta un re.	~ essere+PASSATO=esserci una=una_volta ~ un re
 Ho mangiato il riso.	~ mangiare+PASSATO il riso
 Ho riso tanto.	~ ridere+PASSATO tanto
 I ragazzi hanno fatto colazione.	il ragazzo+PLURALE ~ fare+PASSATO=far_colazione ~

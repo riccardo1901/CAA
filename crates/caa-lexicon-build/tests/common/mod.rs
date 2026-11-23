@@ -122,7 +122,8 @@ pub const ARASAAC: &str = r#"[
  {"_id":132,"keywords":[{"type":3,"keyword":"far colazione"}]},
  {"_id":133,"keywords":[{"type":3,"keyword":"lavarsi i denti"}]},
  {"_id":134,"keywords":[{"type":2,"keyword":"dente"}]},
- {"_id":135,"keywords":[{"type":5,"keyword":"le tre"}]}
+ {"_id":135,"keywords":[{"type":5,"keyword":"le tre"}]},
+ {"_id":136,"keywords":[{"type":3,"keyword":"esserci"}]}
 ]"#;
 
 pub fn engine(lemma_picto: &str, blocklist: &str) -> Engine<Vec<u8>> {

@@ -33,6 +33,11 @@ pub struct MweRecord {
 /// elisioni, "dell'orto" → "dell'" + "orto". `None` se la chiave ha cifre o punteggiatura al
 /// centro (non può comparire come sequenza di parole in un testo) o più di [`MAX_WORDS`] pezzi.
 pub fn key_pieces(key: &str) -> Option<Vec<String>> {
+    // Domande ed esclamazioni ("sei contento?", "apri la porta!") sono frasi o saluti, non
+    // espressioni lessicali: nel testo "era contenta" non deve diventare "sei contento?".
+    if key.contains(['?', '!']) {
+        return None;
+    }
     let mut out = Vec::new();
     for word in key.split_whitespace() {
         if word.chars().any(|c| c.is_ascii_digit()) {
@@ -169,9 +174,12 @@ mod tests {
             ["c'", "era", "una", "volta"]
         );
         assert_eq!(
-            key_pieces("buon compleanno!").unwrap(),
+            key_pieces("buon compleanno.").unwrap(),
             ["buon", "compleanno"]
         );
+        // Frasi e saluti ("sei contento?", "apri la porta!") non sono parole del testo: fuori.
+        assert!(key_pieces("sei contento?").is_none());
+        assert!(key_pieces("apri la porta!").is_none());
         assert!(key_pieces("casa").is_none());
         assert!(key_pieces("di 3 anni").is_none());
         assert!(key_pieces("a b c d e f g h i").is_none());

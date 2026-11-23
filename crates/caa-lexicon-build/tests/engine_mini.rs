@@ -460,11 +460,31 @@ fn verbo_pronominale_prende_il_pittogramma_di_lavarsi() {
 }
 
 #[test]
-fn senza_pittogramma_pronominale_il_clitico_resta() {
-    // "andare" non ha "andarsi" in ARASAAC: "mi sono andato" non forma un gruppo pronominale.
+fn il_riflessivo_si_nasconde_anche_senza_pittogramma_pronominale() {
+    // "andare" non ha "andarsi" in ARASAAC, ma "mi" riflessivo (stessa persona) non e' un pronome
+    // da mostrare: SPEC.md fase 10 parla solo di "clitici non riflessivi". Resta il simbolo di
+    // "andare" (M7: gli annotatori nascondono tutti i riflessivi).
     let t = run("Mi sono andato");
-    assert_ne!(t[0].display, Display::Hidden);
-    assert_ne!(t[0].group.map(|g| g.kind), Some(GroupKind::Pronominal));
+    assert_eq!(
+        (t[0].display, t[1].display),
+        (Display::Hidden, Display::Hidden)
+    );
+    assert_eq!(t[2].picto.map(|p| p.id), Some(130));
+    assert_eq!(t[2].group.map(|g| g.kind), Some(GroupKind::Pronominal));
+    // Il pittogramma e' di "andare", non un pronominale.
+    assert_ne!(t[2].reason.picto, PictoReason::Pronominal);
+}
+
+#[test]
+fn ci_e_il_verbo_essere_formano_esserci() {
+    // "c'era", "ci sono": "ci" non e' un pronome da mostrare; il pittogramma e' "esserci".
+    let t = run("c'era");
+    assert_eq!(
+        (t[0].display, t[1].picto.map(|p| p.id)),
+        (Display::Hidden, Some(136))
+    );
+    assert_eq!(t[1].reason.picto, PictoReason::Pronominal);
+    assert_eq!(mods(&t[1]), Modifiers::PAST);
 }
 
 #[test]
