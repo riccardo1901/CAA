@@ -58,7 +58,15 @@ cargo run -p caa-eval
 
 # Build del lessico (scheletro: la logica arriva in M2)
 cargo run -p caa-lexicon-build
+
+# Acquisizione dati (M1): tutto finisce in data/raw/, fuori da git. Gli script sono riprendibili.
+node scripts/fetch-arasaac-keywords.mjs   # parole chiave italiane ARASAAC (api.arasaac.org)
+node scripts/fetch-morphit.mjs            # Morph-it! (usa curl) convertito in UTF-8
+node scripts/fetch-arasaac-images.mjs     # ~14.000 pittogrammi a 500 px in WebP (~20 min); --limit N per provare
+node scripts/report-m1.mjs                # rapporto con conteggi, etichette Morph-it!, categorie ARASAAC
 ```
+
+Nota per gli script di scarico: dentro il container cloud Node ha bisogno di `NODE_USE_ENV_PROXY=1 NODE_EXTRA_CA_CERTS=/root/.ccr/ca-bundle.crt`; sul PC normale non serve nulla. Il sito di Unibo (Morph-it!) rifiuta con 402 ogni User-Agent diverso da quello di curl, per questo `fetch-morphit.mjs` chiama `curl`.
 
 Su Linux, per compilare l'app servono le librerie di sistema elencate nel job `linux` di `.github/workflows/ci.yml`.
 
