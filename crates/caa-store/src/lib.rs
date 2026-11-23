@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 use caa_engine::curated::Curated;
 use caa_engine::engine::Engine;
 use caa_engine::lexicon::{LexiconError, MorphLexicon, PictoIndex};
+use caa_engine::mwe::MweIndex;
 use caa_engine::tagger::Tagger;
 use memmap2::Mmap;
 
@@ -90,7 +91,17 @@ pub fn open_engine(dir: &Path) -> Result<Engine<Mmap>, LoadError> {
     let curated = Curated::parse(&read("lemma_picto.tsv")?, &read("blocklist.tsv")?)
         .map_err(LoadError::Curated)?;
     let build_id = lexicon.morph.build_id();
-    let engine = Engine::new(lexicon.morph, lexicon.picto, curated);
+    let mut engine = Engine::new(lexicon.morph, lexicon.picto, curated);
+    // Le espressioni multiparola (`arasaac/mwe.bin`) sono facoltative; se ci sono devono venire
+    // dalla stessa build.
+    let mwe_path = dir.join("arasaac/mwe.bin");
+    if mwe_path.exists() {
+        let mwe = MweIndex::new(map(&mwe_path)?)?;
+        if mwe.build_id() != build_id {
+            return Err(LexiconError::BuildMismatch("mwe.bin e il lessico").into());
+        }
+        engine = engine.with_mwe(mwe);
+    }
     // Il tagger (`treebank/tagger.bin`) è facoltativo; se c'è deve venire dalla stessa build.
     let tagger_path = dir.join("treebank/tagger.bin");
     if !tagger_path.exists() {

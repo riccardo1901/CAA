@@ -67,6 +67,18 @@ lavato\tlavare\tVER:part+past+s+m
 lavo\tlavare\tVER:ind+pres+1+s
 mangerò\tmangiare\tVER:ind+fut+1+s
 andato\tandare\tVER:part+past+s+m
+ferro\tferro\tNOUN-M:s
+ferri\tferro\tNOUN-M:p
+stiro\tstiro\tNOUN-M:s
+da\tda\tPRE
+colazione\tcolazione\tNOUN-F:s
+fatto\tfare\tVER:part+past+s+m
+fare\tfare\tVER:inf+pres
+far\tfare\tVER:inf+pres
+hanno\tavere\tAUX:ind+pres+3+p
+i\til\tART-M:p
+denti\tdente\tNOUN-M:p
+dente\tdente\tNOUN-M:s
 ";
 
 pub const ARASAAC: &str = r#"[
@@ -97,7 +109,11 @@ pub const ARASAAC: &str = r#"[
  {"_id":127,"keywords":[{"type":3,"keyword":"lavarsi"}]},
  {"_id":128,"keywords":[{"type":3,"keyword":"lavare"}]},
  {"_id":129,"keywords":[{"type":3,"keyword":"dormire"}]},
- {"_id":130,"keywords":[{"type":3,"keyword":"andare"}]}
+ {"_id":130,"keywords":[{"type":3,"keyword":"andare"}]},
+ {"_id":131,"keywords":[{"type":2,"keyword":"ferro da stiro","plural":"ferri da stiro"}]},
+ {"_id":132,"keywords":[{"type":3,"keyword":"far colazione"}]},
+ {"_id":133,"keywords":[{"type":3,"keyword":"lavarsi i denti"}]},
+ {"_id":134,"keywords":[{"type":2,"keyword":"dente"}]}
 ]"#;
 
 pub fn engine(lemma_picto: &str, blocklist: &str) -> Engine<Vec<u8>> {
@@ -114,4 +130,14 @@ pub fn engine(lemma_picto: &str, blocklist: &str) -> Engine<Vec<u8>> {
         PictoIndex::new(o.picto_index).unwrap(),
         Curated::parse(lemma_picto, blocklist).unwrap(),
     )
+}
+
+/// Come `engine`, con l'indice delle multiparola costruito dalle parole chiave del mini-lessico.
+#[allow(dead_code)] // la usa solo mwe_mini
+pub fn engine_mwe(lemma_picto: &str, blocklist: &str) -> Engine<Vec<u8>> {
+    use caa_lexicon_build::mwe_build::build_mwe;
+    let pictograms = arasaac::parse(ARASAAC.as_bytes()).unwrap();
+    let plain = engine(lemma_picto, blocklist);
+    let built = build_mwe(&plain, &arasaac::index_entries(&pictograms), 7).unwrap();
+    plain.with_mwe(caa_engine::mwe::MweIndex::new(built.bytes).unwrap())
 }

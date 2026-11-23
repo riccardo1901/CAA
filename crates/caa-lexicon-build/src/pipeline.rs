@@ -3,7 +3,7 @@
 //! Uscita (cartelle separate per licenza):
 //!
 //! ```text
-//! <out>/arasaac/picto_index.bin, images/<id>.webp   (CC BY-NC-SA)
+//! <out>/arasaac/picto_index.bin, mwe.bin, images/<id>.webp   (CC BY-NC-SA)
 //! <out>/morphit/morph.fst, morph_feats.bin, lemmas.fst (CC BY-SA / LGPL)
 //! <out>/overrides/*.tsv                              (correzioni curate)
 //! <out>/report/report.md, keys_without_lemma.tsv, multiword_unknown_words.tsv
@@ -22,6 +22,7 @@ use sha2::{Digest, Sha256};
 
 use crate::arasaac;
 use crate::compile::{compile, Inputs, Stats};
+use crate::mwe_build::build_mwe;
 use crate::overrides::{OverrideTexts, Overrides};
 use crate::report::{self, ImageReport};
 use crate::tagger_build::build_tagger;
@@ -214,6 +215,21 @@ pub fn run(cfg: &Config) -> Result<Summary, String> {
         return Err("i file prodotti non coincidono con i conteggi della build".into());
     }
 
+    // Espressioni multiparola: le chiavi ARASAAC con più parole, lemmatizzate con il motore stesso.
+    let mwe = {
+        let lemmatizer = caa_engine::engine::Engine::new(
+            MorphLexicon::new(
+                out.morph_fst.clone(),
+                out.lemmas_fst.clone(),
+                out.morph_feats.clone(),
+            )
+            .map_err(|e| e.to_string())?,
+            PictoIndex::new(out.picto_index.clone()).map_err(|e| e.to_string())?,
+            caa_engine::curated::Curated::parse("", "").map_err(|e| e.join("; "))?,
+        );
+        build_mwe(&lemmatizer, &arasaac::index_entries(&pictograms), build_id)?
+    };
+
     // Tagger: statistiche dal treebank di addestramento (facoltativo: senza, il motore sceglie le
     // letture con la regola fissa di M4).
     let tagger = build_treebank_tagger(&cfg.raw, build_id)?;
@@ -244,6 +260,7 @@ pub fn run(cfg: &Config) -> Result<Summary, String> {
     for (name, bytes, _) in &files {
         write(&cfg.out.join(name), bytes)?;
     }
+    write(&cfg.out.join("arasaac/mwe.bin"), &mwe.bytes)?;
     let tagger_path = cfg.out.join("treebank/tagger.bin");
     match &tagger {
         Some(t) => write(&tagger_path, &t.bytes)?,
@@ -324,6 +341,12 @@ pub fn run(cfg: &Config) -> Result<Summary, String> {
             "images": img.linked, "keys_without_lemma": cov.without_lemma.len(),
         },
         "files": files.iter().map(|(n, b, l)| json!({ "path": n, "bytes": b.len(), "sha256": sha256_hex(b), "license": l })).collect::<Vec<_>>(),
+        "mwe": json!({
+            "path": "arasaac/mwe.bin", "bytes": mwe.bytes.len(), "sha256": sha256_hex(&mwe.bytes),
+            "license": "CC BY-NC-SA 4.0 (ARASAAC)",
+            "keys": mwe.stats.keys, "indexed": mwe.stats.indexed, "skipped": mwe.stats.skipped,
+            "sequences": mwe.stats.sequences, "records": mwe.stats.records,
+        }),
         "tagger": tagger.as_ref().map(|t| json!({
             "path": "treebank/tagger.bin", "bytes": t.bytes.len(), "sha256": sha256_hex(&t.bytes),
             "license": "CC BY-NC-SA 3.0 (UD Italian ISDT)",

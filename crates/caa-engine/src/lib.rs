@@ -10,6 +10,7 @@ pub mod engine;
 pub mod golden;
 pub mod groups;
 pub mod lexicon;
+pub mod mwe;
 pub mod norm;
 pub mod tagger;
 pub mod tokenize;

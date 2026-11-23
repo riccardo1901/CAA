@@ -10,6 +10,7 @@ use std::fmt;
 use crate::curated::Curated;
 use crate::groups::{reflexive_agrees, tense_mark, verbal_groups, Tense3, VerbalKind, View};
 use crate::lexicon::{picto_flags, MorphLexicon, PictoEntry, PictoIndex};
+use crate::mwe::MweIndex;
 use crate::norm::normalize_key;
 use crate::tagger::Tagger;
 use crate::tokenize::{tokenize, RawToken, TokenKind};
@@ -170,6 +171,8 @@ pub enum PictoReason {
     NumberWord,
     /// Verbo pronominale: "lavarsi" per "mi lavo".
     Pronominal,
+    /// Espressione multiparola di ARASAAC ("far colazione", "ferro da stiro").
+    Multiword,
 }
 
 /// Perché il motore ha scelto così (debug e menu delle alternative).
@@ -192,6 +195,7 @@ impl Reason {
             PictoReason::IgnoringCategory => "ignorando la categoria",
             PictoReason::NumberWord => "numero in lettere",
             PictoReason::Pronominal => "verbo pronominale",
+            PictoReason::Multiword => "espressione multiparola",
         }
     }
 }
@@ -222,6 +226,7 @@ impl fmt::Display for Reason {
             PictoReason::IgnoringCategory => "pittogramma trovato ignorando la categoria",
             PictoReason::NumberWord => "pittogramma del numero in lettere",
             PictoReason::Pronominal => "pittogramma del verbo pronominale",
+            PictoReason::Multiword => "pittogramma dell'espressione multiparola",
         };
         write!(f, "{reading}; {picto}")
     }
@@ -356,6 +361,19 @@ const ELISION_TABLE: [(&str, &str, Cat); 18] = [
     ("buon'", "buono", Cat::Adj),
     ("sant'", "santo", Cat::Adj),
 ];
+
+/// "lavare" → "lavarsi" (infinito senza -e più "si"; "condurre" → "condursi").
+pub fn pronominal_lemma(lemma: &str) -> Option<String> {
+    let lemma = normalize_key(lemma);
+    let stem = if lemma.ends_with("rre") {
+        lemma.strip_suffix("re")?
+    } else if lemma.ends_with("are") || lemma.ends_with("ere") || lemma.ends_with("ire") {
+        lemma.strip_suffix('e')?
+    } else {
+        return None;
+    };
+    Some(format!("{stem}si"))
+}
 
 fn elision_reading(key: &str) -> Option<Analysis> {
     let (_, lemma, cat) = ELISION_TABLE.iter().find(|(prefix, _, _)| *prefix == key)?;
@@ -539,6 +557,7 @@ pub struct Engine<D: AsRef<[u8]>> {
     picto: PictoIndex<D>,
     curated: Curated,
     tagger: Option<Tagger<D>>,
+    mwe: Option<MweIndex<D>>,
     weights: Weights,
 }
 
@@ -549,6 +568,7 @@ impl<D: AsRef<[u8]>> Engine<D> {
             picto,
             curated,
             tagger: None,
+            mwe: None,
             weights: Weights::default(),
         }
     }
@@ -557,6 +577,16 @@ impl<D: AsRef<[u8]>> Engine<D> {
     pub fn with_tagger(mut self, tagger: Tagger<D>) -> Self {
         self.tagger = Some(tagger);
         self
+    }
+
+    /// Aggiunge l'indice delle espressioni multiparola (senza, la fase 6 non fa nulla).
+    pub fn with_mwe(mut self, mwe: MweIndex<D>) -> Self {
+        self.mwe = Some(mwe);
+        self
+    }
+
+    pub fn mwe(&self) -> Option<&MweIndex<D>> {
+        self.mwe.as_ref()
     }
 
     /// Cambia i pesi delle regole (serve alla taratura di `caa-eval`).
@@ -616,21 +646,200 @@ impl<D: AsRef<[u8]>> Engine<D> {
             .map(|((p, slot), surface)| self.finish(p, surface, slot))
             .collect();
         self.apply_groups(&mut tokens);
+        self.apply_multiword(&mut tokens);
         tokens
+    }
+
+    /// Fase 6: espressioni multiparola. Si cammina sulle unità (parole e gruppi verbali, senza gli
+    /// ausiliari già raggruppati) cercando la sequenza di lemmi più lunga che sia una parola
+    /// chiave ARASAAC. Un'unità sicura (confidenza almeno 0,6) conta solo con il lemma scelto dal
+    /// contesto; una incerta con tutti i suoi lemmi possibili (è l'ipotesi con bonus della
+    /// specifica, nella versione semplice: il contesto la fa perdere solo se è sicuro).
+    fn apply_multiword(&self, tokens: &mut [Token]) {
+        let Some(mwe) = &self.mwe else { return };
+        struct Unit {
+            tokens: Vec<usize>,
+            head: usize,
+            lemmas: Vec<String>,
+            key: String,
+        }
+        let mut units: Vec<Option<Unit>> = Vec::new(); // None = confine (punteggiatura, ignoto)
+        for i in 0..tokens.len() {
+            let t = &tokens[i];
+            let (Some(a), TokenKind::Word) = (&t.analysis, t.kind) else {
+                units.push(None);
+                continue;
+            };
+            let group = t.group;
+            if group.is_some_and(|g| g.role == GroupRole::Member) {
+                continue;
+            }
+            let key = normalize_key(&t.surface);
+            let mut members: Vec<usize> = match group {
+                Some(g) => (0..tokens.len())
+                    .filter(|&j| tokens[j].group.is_some_and(|x| x.id == g.id))
+                    .collect(),
+                None => vec![i],
+            };
+            members.sort_unstable();
+            let mut lemmas = self.lemma_set(&key);
+            let chosen = if group.is_some_and(|g| g.kind == GroupKind::Pronominal) {
+                pronominal_lemma(&a.lemma).unwrap_or_else(|| normalize_key(&a.lemma))
+            } else {
+                normalize_key(&a.lemma)
+            };
+            if !lemmas.contains(&chosen) {
+                lemmas.insert(0, chosen.clone());
+            }
+            if t.confidence >= 0.6 {
+                lemmas = vec![chosen];
+            } else if let Some(pos) = lemmas.iter().position(|l| *l == chosen) {
+                lemmas.swap(0, pos);
+            }
+            units.push(Some(Unit {
+                tokens: members,
+                head: i,
+                lemmas,
+                key,
+            }));
+        }
+        let mut s = 0;
+        while s < units.len() {
+            let Some(first) = &units[s] else {
+                s += 1;
+                continue;
+            };
+            let _ = first;
+            let span_max = units[s..]
+                .iter()
+                .take(crate::mwe::MAX_WORDS)
+                .take_while(|u| u.is_some())
+                .count();
+            let mut applied = false;
+            for len in (2..=span_max).rev() {
+                let sets: Vec<&Vec<String>> = units[s..s + len]
+                    .iter()
+                    .map(|u| {
+                        u.as_ref()
+                            .map(|u| &u.lemmas)
+                            .unwrap_or_else(|| unreachable!())
+                    })
+                    .collect();
+                // Combinazioni di lemmi, al massimo 64.
+                let mut combos: Vec<Vec<&str>> = vec![Vec::new()];
+                for set in &sets {
+                    let mut next = Vec::new();
+                    'outer: for prefix in &combos {
+                        for l in set.iter() {
+                            let mut p = prefix.clone();
+                            p.push(l.as_str());
+                            next.push(p);
+                            if next.len() >= 64 {
+                                break 'outer;
+                            }
+                        }
+                    }
+                    combos = next;
+                }
+                let surfaces: Vec<&str> = units[s..s + len]
+                    .iter()
+                    .flatten()
+                    .map(|u| u.key.as_str())
+                    .collect();
+                let mut best: Option<(crate::mwe::MweRecord, usize)> = None;
+                for combo in &combos {
+                    for rec in mwe.lookup(&combo.join(" ")) {
+                        if self.curated.is_blocked(&[rec.key.as_str()], rec.picto) {
+                            continue;
+                        }
+                        let words = crate::mwe::key_pieces(&rec.key).unwrap_or_default();
+                        if words.len() != len {
+                            continue;
+                        }
+                        let exact = words.iter().zip(&surfaces).filter(|(w, k)| w == k).count();
+                        let rank = |r: &crate::mwe::MweRecord, e: usize| {
+                            (
+                                Reverse(e),
+                                r.flags & picto_flags::FIRST_KEY == 0,
+                                r.n_keys,
+                                r.picto,
+                            )
+                        };
+                        if best
+                            .as_ref()
+                            .is_none_or(|(b, be)| rank(&rec, exact) < rank(b, *be))
+                        {
+                            best = Some((rec, exact));
+                        }
+                    }
+                }
+                let Some((rec, _)) = best else { continue };
+                let words = crate::mwe::key_pieces(&rec.key).unwrap_or_default();
+                let group_id = tokens
+                    .iter()
+                    .filter_map(|t| t.group.map(|g| g.id))
+                    .max()
+                    .unwrap_or(0)
+                    + 1;
+                let span: Vec<usize> = units[s..s + len]
+                    .iter()
+                    .flatten()
+                    .flat_map(|u| u.tokens.iter().copied())
+                    .collect();
+                let head = units[s].as_ref().map_or(0, |u| u.head);
+                // Segni: il tempo del verbo dell'espressione e il plurale di un nome che il
+                // pittogramma (singolare) non mostra.
+                let mut flags = 0u8;
+                let mut confidence: f32 = 1.0;
+                for (p, u) in units[s..s + len].iter().flatten().enumerate() {
+                    let t = &tokens[u.head];
+                    flags |= t.modifiers.0 & (Modifiers::PAST | Modifiers::FUTURE);
+                    confidence = confidence.min(t.confidence);
+                    let plural_noun = t
+                        .analysis
+                        .as_ref()
+                        .is_some_and(|a| a.cat == Cat::Noun && a.feats.number == Some(Number::P));
+                    // Il pittogramma è del singolare se la chiave non ha quella forma, o se è un
+                    // plurale che ARASAAC ha derivato dal singolare ("ferri da stiro").
+                    let singular_picto = rec.flags & picto_flags::PLURAL_FORM != 0
+                        || words.get(p).is_some_and(|w| *w != u.key);
+                    if plural_noun && singular_picto {
+                        flags |= Modifiers::PLURAL;
+                    }
+                }
+                for &i in &span {
+                    let t = &mut tokens[i];
+                    t.display = Display::Hidden;
+                    t.modifiers = Modifiers::default();
+                    t.group = Some(GroupRef {
+                        id: group_id,
+                        kind: GroupKind::Multiword,
+                        role: GroupRole::Member,
+                    });
+                }
+                let t = &mut tokens[head];
+                t.display = Display::Full;
+                t.picto = Some(PictoRef { id: rec.picto });
+                t.reason.picto = PictoReason::Multiword;
+                t.modifiers = Modifiers(flags);
+                t.confidence = confidence;
+                if let Some(g) = &mut t.group {
+                    g.role = GroupRole::Head;
+                }
+                s += len;
+                applied = true;
+                break;
+            }
+            if !applied {
+                s += 1;
+            }
+        }
     }
 
     /// Chiave ARASAAC del verbo pronominale ("lavare" → "lavarsi": infinito senza -e più "si";
     /// "condurre" → "condursi").
     fn pronominal_picto(&self, lemma: &str) -> Option<u32> {
-        let lemma = normalize_key(lemma);
-        let stem = if lemma.ends_with("rre") {
-            lemma.strip_suffix("re")?
-        } else if lemma.ends_with("are") || lemma.ends_with("ere") || lemma.ends_with("ire") {
-            lemma.strip_suffix('e')?
-        } else {
-            return None;
-        };
-        let key = format!("{stem}si");
+        let key = pronominal_lemma(lemma)?;
         let entries: Vec<PictoEntry> = self
             .picto
             .lookup(&key)
@@ -981,6 +1190,37 @@ impl<D: AsRef<[u8]>> Engine<D> {
                 )
             })
             .collect()
+    }
+
+    /// I lemmi possibili di una forma già normalizzata, per le espressioni multiparola. È il codice
+    /// con cui si lemmatizzano sia le parole chiave ARASAAC alla build sia le parole del testo a
+    /// runtime: un infinito con "si" attaccato ("lavarsi") dà il lemma pronominale "lavarsi", una
+    /// forma sconosciuta dà se stessa. Al massimo 4 lemmi.
+    pub fn lemma_set(&self, key: &str) -> Vec<String> {
+        let mut readings = match elision_reading(key) {
+            Some(a) => vec![a],
+            None => self.lexicon_readings(key),
+        };
+        let split = self.enclitic_readings(key, &readings);
+        readings.extend(split);
+        let mut out: Vec<String> = Vec::new();
+        for r in &readings {
+            let reflexive = r.feats.enclitic.is_some_and(|e| e.pieces() == ["si"])
+                && matches!(r.feats.mood, Some(Mood::Inf | Mood::Ger | Mood::Part));
+            let lemma = if reflexive {
+                pronominal_lemma(&r.lemma).unwrap_or_else(|| normalize_key(&r.lemma))
+            } else {
+                normalize_key(&r.lemma)
+            };
+            if !lemma.is_empty() && !out.contains(&lemma) {
+                out.push(lemma);
+            }
+        }
+        if out.is_empty() {
+            out.push(key.to_string());
+        }
+        out.truncate(4);
+        out
     }
 
     /// Fase 4: verbo con clitici attaccati che Morph-it! non ha ("portamelo", "dillo"). Non si

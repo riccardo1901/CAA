@@ -6,6 +6,7 @@ pub mod arasaac;
 pub mod compile;
 pub mod labels;
 pub mod morphit;
+pub mod mwe_build;
 pub mod overrides;
 pub mod pipeline;
 pub mod report;
