@@ -424,16 +424,16 @@ Prodotti da `caa-lexicon-build`, caricati con mmap all'avvio, versionati con un 
 | `morph.fst` | forma → indice nella tabella letture | `fst::Map` | Morph-it! (BY-SA / LGPL) |
 | `morph_feats.bin` | testo dei lemmi e tabella letture (lemma id, categoria, tratti) | record da 12 byte letti direttamente dal file mappato | Morph-it! |
 | `lemmas.fst` | stringhe dei lemmi ↔ id | `fst::Map` | Morph-it! |
-| `picto_index.bin` | chiave normalizzata → lista di (id pittogramma, tipo ARASAAC, flag: prima chiave, plurale derivato, multiparola, plurale invariabile; numero chiavi) | `fst` incorporato + record da 8 byte | ARASAAC (BY-NC-SA) |
+| `picto_index.bin` | chiave normalizzata → lista di (id pittogramma, insieme dei tipi ARASAAC, flag: prima chiave, plurale derivato, multiparola, plurale invariabile, precisazione tolta; numero chiavi; singolare per i plurali derivati) | `fst` incorporato + record da 12 byte + testi dei singolari | ARASAAC (BY-NC-SA) |
 | `mwe.trie` | sequenze di lemmi → pittogrammi (costruito in M4–M6: serve il motore per lemmatizzare) | trie serializzato | ARASAAC |
 | `tagger.bin` | prior di lettura e trigrammi di categoria (costruito in M5) | tabelle di log-probabilità | treebank (licenza da verificare) |
 | `overrides/` | TSV curati | testo | nostra |
 
 I file restano separati per licenza (vedi Fonti dati). Il join avviene in memoria tramite la stringa del lemma normalizzata.
 
-**Formato (M2).** Ogni ricerca passa da un automa `fst` che restituisce la posizione di un record a lunghezza fissa; i file si leggono direttamente dalla memoria mappata, senza ricostruire strutture all'avvio (caricamento misurato: 0,3–0,5 ms, compreso il controllo di integrità degli automi). Il lettore sta in `caa-engine` e lavora su byte già caricati, l'apertura dei file con `mmap` sta in `caa-store`. Gli `.bin` iniziano con un'intestazione (magic, numero di schema) e il lettore rifiuta file troncati, incoerenti o di schema diverso; gli automi `fst` si verificano con la loro somma di controllo all'apertura.
+**Formato (M2).** Ogni ricerca passa da un automa `fst` che restituisce la posizione di un record a lunghezza fissa; i file si leggono direttamente dalla memoria mappata, senza ricostruire strutture all'avvio (caricamento misurato: 0,3–0,5 ms, compreso il controllo di integrità degli automi). Il lettore sta in `caa-engine` e lavora su byte già caricati, l'apertura dei file con `mmap` sta in `caa-store`. Gli `.bin` iniziano con un'intestazione di 28 byte (magic, numero di schema, identificativo di build, tre contatori) e il lettore rifiuta file troncati, incoerenti o di schema diverso; gli automi `fst` si verificano con la loro somma di controllo all'apertura. L'identificativo di build (hash dei dati di partenza) sta anche nei due automi morfologici come chiave sentinella: file di build diverse aperti insieme danno un errore, non ricerche vuote. L'ordine delle letture di una forma è per categoria e poi per lemma: serve solo a essere deterministico e non ha significato, la scelta della lettura spetta alla fase 7. Le parole chiave ARASAAC con una precisazione tra parentesi ("castagno (albero)", "(la) atleta") sono registrate senza la parte tra parentesi; se una chiave ha più tipi ARASAAC si conservano tutti; i plurali derivati ricordano la parola chiave singolare, che la fase 3 usa come lemma.
 
-**Normalizzazione delle chiavi** (identica alla build e a runtime, unica funzione condivisa): minuscolo, NFC, apostrofi uniformati, spazi singoli. Gli accenti **restano** ("pera" e "perà" non devono collassare), ma esiste una seconda chiave senza accenti usata solo come ripiego per i refusi (la funzione `fold_accents` è in `caa-engine`; l'indice dedicato si costruisce in M4–M5, quando serve).
+**Normalizzazione delle chiavi** (identica alla build e a runtime, unica funzione condivisa): minuscolo, NFC, apostrofi uniformati (anche ‘ ´ `), caratteri invisibili tolti (trattino morbido, spazio di larghezza zero, word joiner, BOM: arrivano da testo copiato da Word o PDF), "İ" → "i", spazi singoli. Gli accenti **restano** ("pera" e "perà" non devono collassare), ma esiste una seconda chiave senza accenti usata solo come ripiego per i refusi (la funzione `fold_accents` è in `caa-engine`; l'indice dedicato si costruisce in M4–M5, quando serve).
 
 ### Build del lessico (`caa-lexicon-build`)
 
@@ -737,6 +737,7 @@ Dodici milestone in ordine di dipendenza. Ognuna si chiude solo quando il criter
 - [ ] **Dimensioni reali dei simboli** in stampa: da tarare con prove su carta.
 - [ ] **Cartella condivisa**: percorso, permessi (lettura per tutti, scrittura in `biblioteca\` per tutti i docenti), backup del server. Da concordare con il tecnico.
 - [ ] **Corpus**: quali 20–40 testi, chi li annota, se esistono già versioni SymWriter da confrontare.
+- [ ] **Etichette `WH` e `WH-CHE` di Morph-it!**: oggi `WH` (perché, quando, come, dove) → avverbio e `WH-CHE` (che) → congiunzione, che perde il "che" relativo e la congiunzione di "perché"; da decidere in M5, insieme all'allineamento con il treebank.
 - [ ] **Nome del programma.**
 - [ ] **Firma del codice**: certificato sì o no.
 - [ ] **DPO**: informativa sull'uso di foto di studenti come simboli personali e sulle copie su dispositivi personali.

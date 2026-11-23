@@ -6,14 +6,19 @@
 use unicode_normalization::char::is_combining_mark;
 use unicode_normalization::UnicodeNormalization;
 
-/// Chiave normalizzata: Unicode NFC, minuscolo, apostrofi tipografici uniformati a `'`,
-/// spazi singoli e nessuno spazio ai bordi. Gli accenti **restano** ("pera" e "perà" sono diverse).
+/// Chiave normalizzata: Unicode NFC, minuscolo, apostrofi uniformati a `'` (anche ‘ ´ ` usati da
+/// tastiera), caratteri invisibili tolti (trattino morbido, spazio di larghezza zero, word joiner,
+/// BOM: arrivano da testo copiato da Word o PDF), spazi singoli e nessuno spazio ai bordi.
+/// Gli accenti **restano** ("pera" e "perà" sono diverse).
 pub fn normalize_key(s: &str) -> String {
     let unified: String = s
         .nfc()
-        .map(|c| match c {
-            '\u{2019}' | '\u{02BC}' | '\u{2032}' => '\'',
-            c => c,
+        .filter_map(|c| match c {
+            '\u{00AD}' | '\u{200B}' | '\u{2060}' | '\u{FEFF}' => None,
+            '\u{2018}' | '\u{2019}' | '\u{02BC}' | '\u{2032}' | '\u{00B4}' | '`' => Some('\''),
+            // "İ" in minuscolo darebbe "i" + punto combinante, che il lessico non conosce.
+            '\u{0130}' => Some('i'),
+            c => Some(c),
         })
         .collect();
     let lower = unified.to_lowercase().nfc().collect::<String>();
@@ -82,6 +87,32 @@ mod tests {
             let once = normalize_key(s);
             assert_eq!(normalize_key(&once), once);
         }
+    }
+
+    #[test]
+    fn apostrofi_e_accenti_da_tastiera() {
+        // Revisione M0-M2: ‘ ´ ` si usano spesso al posto dell'apostrofo ("perche´", "po`").
+        assert_eq!(normalize_key("perche\u{00B4}"), "perche'");
+        assert_eq!(normalize_key("l\u{2018}albero"), "l'albero");
+        assert_eq!(normalize_key("po`"), "po'");
+    }
+
+    #[test]
+    fn caratteri_invisibili_da_word_e_pdf() {
+        // Trattino morbido, spazio di larghezza zero, word joiner e BOM non fanno parte della parola.
+        assert_eq!(normalize_key("cit\u{00AD}tà"), "città");
+        assert_eq!(normalize_key("cit\u{200B}tà"), "città");
+        assert_eq!(normalize_key("\u{FEFF}casa"), "casa");
+        assert_eq!(normalize_key("ca\u{2060}sa"), "casa");
+        // Lo spazio non separabile è uno spazio.
+        assert_eq!(normalize_key("scuola\u{00A0}media"), "scuola media");
+    }
+
+    #[test]
+    fn i_maiuscola_con_punto_diventa_i() {
+        // "İ" in minuscolo darebbe "i" + punto combinante: non si troverebbe nel lessico.
+        assert_eq!(normalize_key("İstria"), "istria");
+        assert_eq!(normalize_key("İSTRIA").chars().count(), 6);
     }
 
     #[test]

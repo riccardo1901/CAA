@@ -4,14 +4,21 @@
 //! nei test). Ogni ricerca passa da un automa `fst` che restituisce una posizione in una tabella
 //! di record a lunghezza fissa, quindi non si ricostruisce nulla all'avvio.
 //!
-//! Formati (tutti little-endian; vedi `SCHEMA`):
+//! Formati (tutti little-endian; vedi `SCHEMA`). Le intestazioni dei `.bin` sono di 28 byte:
+//! magic (4), schema (4), identificativo di build (8), tre contatori (4 ciascuno).
 //!
 //! * `morph.fst`: forma normalizzata → `(posizione << 16) | numero_letture`
 //! * `lemmas.fst`: lemma normalizzato → id del lemma
-//! * `morph_feats.bin`: intestazione `CAAF` + schema + n. lemmi + n. letture, tabella delle
-//!   posizioni dei lemmi, testo dei lemmi, letture da 12 byte (`types::Reading`)
-//! * `picto_index.bin`: intestazione `CAAP` + schema + n. record + lunghezza fst, l'fst
-//!   (chiave → `(posizione << 16) | numero_record`), record da 8 byte
+//! * `morph_feats.bin` (`CAAF`; contatori: n. lemmi, n. letture): tabella delle posizioni dei lemmi,
+//!   testo dei lemmi, letture da 12 byte (`types::Reading`)
+//! * `picto_index.bin` (`CAAP`; contatori: n. record, lunghezza fst, lunghezza testi): l'fst
+//!   (chiave → `(posizione << 16) | numero_record`), record da 12 byte, testi dei singolari
+//!   (ciascuno preceduto dalla lunghezza su 2 byte)
+//!
+//! I due `fst` morfologici contengono in più la chiave sentinella [`BUILD_KEY`] con
+//! l'identificativo di build: chi li apre insieme a un `morph_feats.bin` di un'altra build riceve un
+//! errore invece di ricerche vuote. Chi scorre le chiavi di un `fst` deve saltare le chiavi che
+//! iniziano con NUL.
 
 use std::fmt;
 use std::sync::Arc;
@@ -19,14 +26,17 @@ use std::sync::Arc;
 use crate::types::{Reading, READING_SIZE};
 
 /// Numero di schema dei file compilati: cresce a ogni modifica incompatibile.
-pub const SCHEMA: u32 = 1;
+pub const SCHEMA: u32 = 2;
 
 pub const MAGIC_FEATS: &[u8; 4] = b"CAAF";
 pub const MAGIC_PICTO: &[u8; 4] = b"CAAP";
 /// Dimensione dell'intestazione di `morph_feats.bin` e di `picto_index.bin`.
-pub const HEADER_SIZE: usize = 16;
+pub const HEADER_SIZE: usize = 28;
 /// Dimensione di un record di `picto_index.bin`.
-pub const PICTO_RECORD_SIZE: usize = 8;
+pub const PICTO_RECORD_SIZE: usize = 12;
+/// Chiave sentinella (inizia con NUL: nessuna chiave normalizzata può coincidere) con l'identificativo
+/// di build, nei due `fst` morfologici.
+pub const BUILD_KEY: &str = "\u{0}build";
 
 /// Bit del campo `flags` di un [`PictoEntry`].
 pub mod picto_flags {
@@ -38,6 +48,8 @@ pub mod picto_flags {
     pub const MULTIWORD: u8 = 4;
     /// ARASAAC indica come plurale la parola chiave stessa (parola invariabile).
     pub const INVARIABLE_PLURAL: u8 = 8;
+    /// La chiave si è ottenuta togliendo una precisazione tra parentesi ("castagno (albero)").
+    pub const DISAMBIGUATED: u8 = 16;
 }
 
 /// Errore di lettura di un file del lessico.
@@ -51,6 +63,8 @@ pub enum LexiconError {
         expected: u32,
     },
     Corrupt(&'static str),
+    /// I file aperti insieme non vengono dalla stessa build del lessico.
+    BuildMismatch(&'static str),
     Fst(fst::Error),
 }
 
@@ -64,6 +78,10 @@ impl fmt::Display for LexiconError {
                 "{file}: schema {found}, atteso {expected} (rigenera il lessico con caa-lexicon-build)"
             ),
             LexiconError::Corrupt(file) => write!(f, "{file}: contenuto incoerente"),
+            LexiconError::BuildMismatch(what) => write!(
+                f,
+                "{what}: file di build diverse (rigenera il lessico con caa-lexicon-build)"
+            ),
             LexiconError::Fst(e) => write!(f, "automa fst non valido: {e}"),
         }
     }
@@ -90,8 +108,16 @@ fn unpack_span(v: u64) -> (usize, usize) {
     ((v >> 16) as usize, (v & 0xFFFF) as usize)
 }
 
-/// Controlla intestazione e schema; restituisce i due contatori dell'intestazione.
-fn check_header(b: &[u8], magic: &[u8; 4], file: &'static str) -> Result<(u32, u32), LexiconError> {
+/// Contenuto dell'intestazione di un `.bin`.
+struct Header {
+    build_id: u64,
+    c1: u32,
+    c2: u32,
+    c3: u32,
+}
+
+/// Controlla magic e schema; restituisce identificativo di build e contatori.
+fn check_header(b: &[u8], magic: &[u8; 4], file: &'static str) -> Result<Header, LexiconError> {
     if b.len() < HEADER_SIZE {
         return Err(LexiconError::Truncated(file));
     }
@@ -106,7 +132,14 @@ fn check_header(b: &[u8], magic: &[u8; 4], file: &'static str) -> Result<(u32, u
             expected: SCHEMA,
         });
     }
-    Ok((rd_u32(b, 8), rd_u32(b, 12)))
+    let mut id = [0u8; 8];
+    id.copy_from_slice(&b[8..16]);
+    Ok(Header {
+        build_id: u64::from_le_bytes(id),
+        c1: rd_u32(b, 16),
+        c2: rd_u32(b, 20),
+        c3: rd_u32(b, 24),
+    })
 }
 
 // ---------------------------------------------------------------------------------------
@@ -118,6 +151,7 @@ pub struct MorphLexicon<D: AsRef<[u8]>> {
     forms: fst::Map<D>,
     lemmas: fst::Map<D>,
     feats: D,
+    build_id: u64,
     n_lemmas: usize,
     n_readings: usize,
     blob_start: usize,
@@ -129,10 +163,8 @@ impl<D: AsRef<[u8]>> MorphLexicon<D> {
     /// `forms` = `morph.fst`, `lemmas` = `lemmas.fst`, `feats` = `morph_feats.bin`.
     pub fn new(forms: D, lemmas: D, feats: D) -> Result<Self, LexiconError> {
         const FILE: &str = "morph_feats.bin";
-        let (n_lemmas, n_readings) = {
-            let (a, b) = check_header(feats.as_ref(), MAGIC_FEATS, FILE)?;
-            (a as usize, b as usize)
-        };
+        let header = check_header(feats.as_ref(), MAGIC_FEATS, FILE)?;
+        let (n_lemmas, n_readings) = (header.c1 as usize, header.c2 as usize);
         let f = feats.as_ref();
         // Aritmetica con controllo: su 32 bit (WebAssembly) un'intestazione ostile non deve
         // "avvolgere" i calcoli e superare i controlli di lunghezza.
@@ -160,10 +192,19 @@ impl<D: AsRef<[u8]>> MorphLexicon<D> {
         forms.as_fst().verify()?;
         let lemmas = fst::Map::new(lemmas)?;
         lemmas.as_fst().verify()?;
+        // I tre file devono venire dalla stessa build (la sentinella è nei due automi).
+        if forms.get(BUILD_KEY) != Some(header.build_id)
+            || lemmas.get(BUILD_KEY) != Some(header.build_id)
+        {
+            return Err(LexiconError::BuildMismatch(
+                "morph.fst, lemmas.fst e morph_feats.bin",
+            ));
+        }
         Ok(MorphLexicon {
             forms,
             lemmas,
             feats,
+            build_id: header.build_id,
             n_lemmas,
             n_readings,
             blob_start,
@@ -214,8 +255,14 @@ impl<D: AsRef<[u8]>> MorphLexicon<D> {
         std::str::from_utf8(blob.get(a..b)?).ok()
     }
 
+    /// Identificativo della build che ha prodotto i file.
+    pub fn build_id(&self) -> u64 {
+        self.build_id
+    }
+
+    /// Numero di forme (senza la chiave sentinella).
     pub fn form_count(&self) -> usize {
-        self.forms.len()
+        self.forms.len().saturating_sub(1)
     }
 
     pub fn lemma_count(&self) -> usize {
@@ -236,27 +283,36 @@ impl<D: AsRef<[u8]>> MorphLexicon<D> {
 pub struct PictoEntry {
     /// Id ARASAAC.
     pub id: u32,
-    /// Categoria numerica ARASAAC della parola chiave (0 = nessuna); vedi `docs/RAPPORTO-M1.md`.
-    pub keyword_type: u8,
+    /// Categorie numeriche ARASAAC della parola chiave, come insieme di bit: il bit `t` è acceso
+    /// se la chiave ha il tipo `t` (0 = nessun tipo); vedi `docs/RAPPORTO-M1.md`.
+    pub keyword_types: u8,
     /// Combinazione di [`picto_flags`].
     pub flags: u8,
     /// Numero di parole chiave italiane del pittogramma (meno ne ha, più è specifico).
     pub n_keys: u16,
+    /// Per le voci `PLURAL_FORM`: posizione (da 1) del testo della parola chiave singolare; 0 se non c'è.
+    /// Si legge con [`PictoIndex::singular`].
+    pub singular: u32,
 }
 
 impl PictoEntry {
     pub fn to_bytes(&self) -> [u8; PICTO_RECORD_SIZE] {
         let i = self.id.to_le_bytes();
         let n = self.n_keys.to_le_bytes();
+        let g = self.singular.to_le_bytes();
         [
             i[0],
             i[1],
             i[2],
             i[3],
-            self.keyword_type,
+            self.keyword_types,
             self.flags,
             n[0],
             n[1],
+            g[0],
+            g[1],
+            g[2],
+            g[3],
         ]
     }
 
@@ -264,14 +320,20 @@ impl PictoEntry {
         let b = b.get(..PICTO_RECORD_SIZE)?;
         Some(PictoEntry {
             id: u32::from_le_bytes([b[0], b[1], b[2], b[3]]),
-            keyword_type: b[4],
+            keyword_types: b[4],
             flags: b[5],
             n_keys: u16::from_le_bytes([b[6], b[7]]),
+            singular: u32::from_le_bytes([b[8], b[9], b[10], b[11]]),
         })
     }
 
     pub fn has_flag(&self, flag: u8) -> bool {
         self.flags & flag != 0
+    }
+
+    /// Vero se la chiave ha la categoria ARASAAC `t` (0..=7).
+    pub fn has_type(&self, t: u8) -> bool {
+        t < 8 && (self.keyword_types >> t) & 1 == 1
     }
 }
 
@@ -292,25 +354,28 @@ impl<D: AsRef<[u8]>> AsRef<[u8]> for Section<D> {
 pub struct PictoIndex<D: AsRef<[u8]>> {
     keys: fst::Map<Section<D>>,
     data: Arc<D>,
+    build_id: u64,
     records_start: usize,
     n_records: usize,
+    strings_start: usize,
+    strings_len: usize,
 }
 
 impl<D: AsRef<[u8]>> PictoIndex<D> {
     /// `data` = contenuto di `picto_index.bin`.
     pub fn new(data: D) -> Result<Self, LexiconError> {
         const FILE: &str = "picto_index.bin";
-        let (n_records, fst_len) = {
-            let (a, b) = check_header(data.as_ref(), MAGIC_PICTO, FILE)?;
-            (a as usize, b as usize)
-        };
+        let header = check_header(data.as_ref(), MAGIC_PICTO, FILE)?;
+        let (n_records, fst_len, strings_len) =
+            (header.c1 as usize, header.c2 as usize, header.c3 as usize);
         let corrupt = || LexiconError::Corrupt(FILE);
         let fst_start = HEADER_SIZE;
         let records_start = fst_start.checked_add(fst_len).ok_or_else(corrupt)?;
-        let total = n_records
+        let strings_start = n_records
             .checked_mul(PICTO_RECORD_SIZE)
             .and_then(|r| records_start.checked_add(r))
             .ok_or_else(corrupt)?;
+        let total = strings_start.checked_add(strings_len).ok_or_else(corrupt)?;
         if data.as_ref().len() != total {
             return Err(corrupt());
         }
@@ -324,8 +389,11 @@ impl<D: AsRef<[u8]>> PictoIndex<D> {
         Ok(PictoIndex {
             keys,
             data,
+            build_id: header.build_id,
             records_start,
             n_records,
+            strings_start,
+            strings_len,
         })
     }
 
@@ -351,6 +419,23 @@ impl<D: AsRef<[u8]>> PictoIndex<D> {
             .iter()
             .filter_map(|chunk| PictoEntry::from_bytes(chunk))
             .collect()
+    }
+
+    /// Parola chiave singolare di una voce `PLURAL_FORM` ("ape" per la chiave "api").
+    pub fn singular(&self, entry: &PictoEntry) -> Option<&str> {
+        let offset = (entry.singular as usize).checked_sub(1)?;
+        let blob = (*self.data)
+            .as_ref()
+            .get(self.strings_start..self.strings_start.checked_add(self.strings_len)?)?;
+        let len =
+            u16::from_le_bytes([*blob.get(offset)?, *blob.get(offset.checked_add(1)?)?]) as usize;
+        let start = offset.checked_add(2)?;
+        std::str::from_utf8(blob.get(start..start.checked_add(len)?)?).ok()
+    }
+
+    /// Identificativo della build che ha prodotto il file.
+    pub fn build_id(&self) -> u64 {
+        self.build_id
     }
 
     pub fn key_count(&self) -> usize {

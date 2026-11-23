@@ -3,7 +3,7 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fmt;
 
-use caa_engine::lexicon::{pack_span, HEADER_SIZE, MAGIC_FEATS, MAGIC_PICTO, SCHEMA};
+use caa_engine::lexicon::{pack_span, BUILD_KEY, HEADER_SIZE, MAGIC_FEATS, MAGIC_PICTO, SCHEMA};
 use caa_engine::norm::normalize_key;
 use caa_engine::types::{Cat, Feats, Reading, READING_SIZE};
 
@@ -13,6 +13,9 @@ use crate::morphit;
 use crate::overrides::FormExtra;
 
 pub struct Inputs<'a> {
+    /// Identificativo della build, scritto in tutti i file: si ricava dai dati di partenza
+    /// (stessi dati, stesso identificativo) così che file di build diverse non si mescolino.
+    pub build_id: u64,
     pub morphit: &'a str,
     pub pictograms: &'a [Pictogram],
     pub forms_extra: &'a [FormExtra],
@@ -20,6 +23,7 @@ pub struct Inputs<'a> {
 
 #[derive(Debug, Default, Clone)]
 pub struct Stats {
+    pub build_id: u64,
     pub rows: usize,
     pub repaired_lines: Vec<usize>,
     pub distinct_labels: usize,
@@ -78,14 +82,22 @@ fn fst_err(e: impl fmt::Display) -> BuildError {
     BuildError::Fst(e.to_string())
 }
 
-fn header(magic: &[u8; 4], a: usize, b: usize, what: &'static str) -> Result<Vec<u8>, BuildError> {
-    let a = u32::try_from(a).map_err(|_| BuildError::TooLarge(what))?;
-    let b = u32::try_from(b).map_err(|_| BuildError::TooLarge(what))?;
+/// Intestazione di 28 byte: magic, schema, identificativo di build e tre contatori.
+fn header(
+    magic: &[u8; 4],
+    build_id: u64,
+    counters: [usize; 3],
+    what: &'static str,
+) -> Result<Vec<u8>, BuildError> {
     let mut v = Vec::with_capacity(HEADER_SIZE);
     v.extend_from_slice(magic);
     v.extend_from_slice(&SCHEMA.to_le_bytes());
-    v.extend_from_slice(&a.to_le_bytes());
-    v.extend_from_slice(&b.to_le_bytes());
+    v.extend_from_slice(&build_id.to_le_bytes());
+    for c in counters {
+        let c = u32::try_from(c).map_err(|_| BuildError::TooLarge(what))?;
+        v.extend_from_slice(&c.to_le_bytes());
+    }
+    debug_assert_eq!(v.len(), HEADER_SIZE);
     Ok(v)
 }
 
@@ -153,6 +165,10 @@ pub fn compile(inp: &Inputs) -> Result<Outputs, BuildError> {
         .map(|(i, l)| (l.as_str(), i as u32))
         .collect();
     let mut lemmas_builder = fst::MapBuilder::memory();
+    // La chiave sentinella (inizia con NUL, quindi viene prima di tutte) lega l'automa alla build.
+    lemmas_builder
+        .insert(BUILD_KEY.as_bytes(), inp.build_id)
+        .map_err(fst_err)?;
     for (i, l) in lemma_list.iter().enumerate() {
         lemmas_builder
             .insert(l.as_bytes(), i as u64)
@@ -160,17 +176,26 @@ pub fn compile(inp: &Inputs) -> Result<Outputs, BuildError> {
     }
     let lemmas_fst = lemmas_builder.into_inner().map_err(fst_err)?;
 
-    // 3. Letture per forma, ordinate e senza doppioni.
-    let mut by_form: BTreeMap<String, Vec<[u8; READING_SIZE]>> = BTreeMap::new();
+    // 3. Letture per forma, senza doppioni. Ordine esplicito: per categoria, poi per lemma (gli id
+    // seguono l'ordine alfabetico), poi per tratti. L'ordine non ha altro significato: la scelta
+    // della lettura spetta alla fase 7.
+    type Row = (u8, u32, [u8; READING_SIZE]);
+    let mut by_form: BTreeMap<String, Vec<Row>> = BTreeMap::new();
     for (form, lemma, cat, feats) in entries {
         let reading = Reading {
             lemma_id: lemma_ids[lemma.as_str()],
             cat,
             feats,
         };
-        by_form.entry(form).or_default().push(reading.to_bytes());
+        by_form
+            .entry(form)
+            .or_default()
+            .push((cat.as_u8(), reading.lemma_id, reading.to_bytes()));
     }
     let mut forms_builder = fst::MapBuilder::memory();
+    forms_builder
+        .insert(BUILD_KEY.as_bytes(), inp.build_id)
+        .map_err(fst_err)?;
     let mut readings_bytes: Vec<u8> = Vec::new();
     let mut offset = 0u64;
     for (form, list) in &mut by_form {
@@ -182,8 +207,8 @@ pub fn compile(inp: &Inputs) -> Result<Outputs, BuildError> {
         forms_builder
             .insert(form.as_bytes(), pack_span(offset, list.len() as u64))
             .map_err(fst_err)?;
-        for r in list.iter() {
-            readings_bytes.extend_from_slice(r);
+        for (_, _, bytes) in list.iter() {
+            readings_bytes.extend_from_slice(bytes);
         }
         offset += list.len() as u64;
     }
@@ -191,7 +216,12 @@ pub fn compile(inp: &Inputs) -> Result<Outputs, BuildError> {
     let n_readings = offset as usize;
 
     // 4. morph_feats.bin: intestazione, posizioni dei lemmi, testo dei lemmi, letture.
-    let mut morph_feats = header(MAGIC_FEATS, lemma_list.len(), n_readings, "morph_feats.bin")?;
+    let mut morph_feats = header(
+        MAGIC_FEATS,
+        inp.build_id,
+        [lemma_list.len(), n_readings, 0],
+        "morph_feats.bin",
+    )?;
     let mut blob: Vec<u8> = Vec::new();
     let mut positions: Vec<u32> = vec![0];
     for l in &lemma_list {
@@ -205,10 +235,12 @@ pub fn compile(inp: &Inputs) -> Result<Outputs, BuildError> {
     morph_feats.extend_from_slice(&blob);
     morph_feats.extend_from_slice(&readings_bytes);
 
-    // 5. picto_index.bin: intestazione, fst delle chiavi, record.
+    // 5. picto_index.bin: intestazione, fst delle chiavi, record, testi dei singolari.
     let index = arasaac::index_entries(inp.pictograms);
     let mut keys_builder = fst::MapBuilder::memory();
     let mut records: Vec<u8> = Vec::new();
+    let mut strings: Vec<u8> = Vec::new();
+    let mut string_pos: HashMap<String, u32> = HashMap::new();
     let mut n_records = 0u64;
     for (key, list) in &index {
         if list.len() > 0xFFFF {
@@ -218,21 +250,39 @@ pub fn compile(inp: &Inputs) -> Result<Outputs, BuildError> {
             .insert(key.as_bytes(), pack_span(n_records, list.len() as u64))
             .map_err(fst_err)?;
         for e in list {
-            records.extend_from_slice(&e.to_bytes());
+            let mut entry = e.entry;
+            if let Some(singular) = &e.singular {
+                // Testo preceduto dalla lunghezza su 2 byte; nel record la posizione + 1 (0 = nessuno).
+                if !string_pos.contains_key(singular) {
+                    let len = u16::try_from(singular.len())
+                        .map_err(|_| BuildError::TooLarge("parola chiave singolare"))?;
+                    let pos = u32::try_from(strings.len())
+                        .ok()
+                        .and_then(|p| p.checked_add(1))
+                        .ok_or(BuildError::TooLarge("testi dei singolari"))?;
+                    strings.extend_from_slice(&len.to_le_bytes());
+                    strings.extend_from_slice(singular.as_bytes());
+                    string_pos.insert(singular.clone(), pos);
+                }
+                entry.singular = string_pos[singular];
+            }
+            records.extend_from_slice(&entry.to_bytes());
         }
         n_records += list.len() as u64;
     }
     let keys_fst = keys_builder.into_inner().map_err(fst_err)?;
     let mut picto_index = header(
         MAGIC_PICTO,
-        n_records as usize,
-        keys_fst.len(),
+        inp.build_id,
+        [n_records as usize, keys_fst.len(), strings.len()],
         "picto_index.bin",
     )?;
     picto_index.extend_from_slice(&keys_fst);
     picto_index.extend_from_slice(&records);
+    picto_index.extend_from_slice(&strings);
 
     let stats = Stats {
+        build_id: inp.build_id,
         rows: parsed.rows.len(),
         repaired_lines: parsed.repaired_lines,
         distinct_labels: cache.len(),

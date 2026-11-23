@@ -35,7 +35,8 @@ fn main() {
         times.push(ms);
         if i == 0 {
             println!(
-                "forme {} · lemmi {} · letture {} · chiavi pittogrammi {} · voci {} (prova: {n} risultati)",
+                "build {:016x} · forme {} · lemmi {} · letture {} · chiavi pittogrammi {} · voci {} (prova: {n} risultati)",
+                lex.morph.build_id(),
                 lex.morph.form_count(),
                 lex.morph.lemma_count(),
                 lex.morph.reading_count(),

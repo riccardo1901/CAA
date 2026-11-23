@@ -329,6 +329,7 @@ mod tests {
 
     fn morph(text: &str) -> MorphLexicon<Vec<u8>> {
         let o = compile(&Inputs {
+            build_id: 1,
             morphit: text,
             pictograms: &[],
             forms_extra: &[],

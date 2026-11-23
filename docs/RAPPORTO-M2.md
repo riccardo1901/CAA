@@ -8,11 +8,11 @@ le conclusioni qui sotto sono scritte a mano. Le liste complete delle chiavi sen
 
 | Criterio | Esito |
 | --- | --- |
-| Caricamento del lessico < 300 ms | **0,3–0,5 ms** (apertura dei 4 file mappati in memoria con il controllo di integrità degli automi + due ricerche, 5 prove, cache del disco già calda). Il lessico occupa 7,9 MB; con cache fredda il tempo dipende dalla lettura del disco ma è limitato dalla dimensione dei file. |
+| Caricamento del lessico < 300 ms | **0,3–0,6 ms** (apertura dei 4 file mappati in memoria con il controllo di integrità degli automi + due ricerche, 5 prove, cache del disco già calda). Il lessico occupa 7,9 MB; con cache fredda il tempo dipende dalla lettura del disco ma è limitato dalla dimensione dei file. |
 | Tutte le etichette mappate | **664 su 664**: la build sui dati veri si ferma con errore se trova un'etichetta non mappata, e un test legge le 664 etichette di `docs/M1-etichette-morphit.tsv`. |
 | Rapporto delle chiavi ARASAAC senza lemma | **1.539 chiavi** di una parola senza forma né lemma alla chiusura di M2; dopo il lavoro sulle lacune e la revisione (sezioni sotto) **1.450**, e 838 multiparola con almeno una parola sconosciuta. |
 
-Verifiche: 59 test verdi (motore 15, costruttore 40, archivio 4), `cargo fmt` e `clippy` puliti, build deterministica (stessi dati, stessi byte).
+Verifiche: 67 test verdi (motore 18, costruttore 44, archivio 5), `cargo fmt` e `clippy` puliti, build deterministica (stessi dati, stessi byte).
 
 ## Lavoro sulle lacune (dopo la chiusura di M2)
 
@@ -62,14 +62,14 @@ Dopo la chiusura di M2 un revisore indipendente ha riletto M0–M2 in sola lettu
 
 Altre correzioni: i file del lessico si scrivono in modo atomico (file temporaneo e rinomina), il commento sul `mmap` è stato corretto (un file troncato mentre è mappato dà SIGBUS su Linux e macOS), `tar` su Windows usa percorsi relativi e la cartella di estrazione si svuota, la CI verifica che `caa-engine` compili per WebAssembly (verificato anche qui), `.gitattributes` fissa i fine riga a LF. Forme italiane: `trasgender` è un refuso di ARASAAC per *transgender* (ora `transgender` più una voce in `lemma_picto.tsv`), *cheesecake* ha anche il femminile, *lilla* e *malva* anche come nomi.
 
-**Da decidere prima di M4** (cambiano il formato o la specifica, quindi non li ho toccati):
+**Decisioni prese dopo la revisione** (formato schema 2, applicate e provate):
 
-1. **Ordine delle letture di una forma:** oggi è casuale nei fatti (ordinato per byte, quindi per id del lemma): `porta` mette per prima *porgere*. Se in M4 vale "prima lettura", sbaglia. Serve un ordine esplicito.
-2. **Tipo ARASAAC perso quando si fondono le voci:** 40 pittogrammi hanno la stessa chiave con due tipi (`giallo` 4 e 2) e resta solo il primo.
-3. **Singolare delle voci `PLURAL_FORM` e chiavi con parentesi** (12, per esempio "castagno (albero)"): l'indice non permette di risalire al singolare, che la fase 3 richiede.
-4. **Etichette `WH` e `WH-CHE`:** `WH` → avverbio è l'unica lettura di *perché*, *quando*, *qualora*; `WH-CHE` → congiunzione perde il "che" relativo.
-5. **`normalize_key`:** non uniforma `‘`, `´` e `` ` `` e non toglie il trattino morbido e lo spazio di larghezza zero (testo incollato da Word e PDF). Cambiarla dopo obbliga a ricostruire il lessico.
-6. **File di build diverse mescolate:** un `morph.fst` di una build con un `morph_feats.bin` di un'altra viene accettato senza errore (le ricerche danno vuoto). Serve un identificativo di build nelle intestazioni.
+1. **Ordine delle letture:** per categoria e poi per lemma, solo per essere deterministico (prima era l'ordine casuale degli id dei lemmi). La scelta della lettura resta alla fase 7.
+2. **Tipi ARASAAC:** una chiave con più tipi li conserva tutti (insieme di bit); `giallo` ha ora i tipi 4 e 2.
+3. **Singolare e parentesi:** le voci dei plurali derivati ricordano la parola chiave singolare (`api` → `ape`), che la fase 3 usa come lemma; le chiavi con precisazione tra parentesi si registrano senza la parte tra parentesi (flag `DISAMBIGUATED`).
+4. **Etichette `WH` e `WH-CHE`:** rimandate a M5 (serve il treebank); annotate nelle questioni aperte di `SPEC.md`.
+5. **`normalize_key`:** uniforma anche ‘ ´ ` , toglie trattino morbido, spazio di larghezza zero, word joiner e BOM, e tratta "İ" come "i". Con il test scritto prima.
+6. **File di build diverse:** le intestazioni dei `.bin` portano un identificativo di build (hash dei dati di partenza), che sta anche nei due automi morfologici come chiave sentinella; `caa-store` verifica che morfologia e pittogrammi vengano dalla stessa build. Costo: il file dei pittogrammi passa da 464 a 644 KB (record da 12 byte invece di 8 e testi dei singolari).
 
 ## Scelte di formato (approvate)
 
@@ -79,8 +79,8 @@ I file si leggono direttamente dalla memoria mappata, senza ricostruire struttur
 | --- | --- | --- |
 | `morphit/morph.fst` | forma normalizzata → letture | `fst::Map`, valore = (posizione << 16) \| numero letture |
 | `morphit/lemmas.fst` | lemma normalizzato → id | `fst::Map` |
-| `morphit/morph_feats.bin` | testo dei lemmi e letture | intestazione `CAAF` + schema, posizioni dei lemmi, testo, letture da 12 byte |
-| `arasaac/picto_index.bin` | chiave normalizzata → pittogrammi | intestazione `CAAP` + schema, `fst` incorporato, record da 8 byte (id, tipo ARASAAC, flag, numero di chiavi) |
+| `morphit/morph_feats.bin` | testo dei lemmi e letture | intestazione `CAAF` (28 byte), posizioni dei lemmi, testo, letture da 12 byte |
+| `arasaac/picto_index.bin` | chiave normalizzata → pittogrammi | intestazione `CAAP` (28 byte), `fst` incorporato, record da 12 byte (id, insieme dei tipi ARASAAC, flag, numero di chiavi, singolare), testi dei singolari |
 | `overrides/*.tsv` | correzioni curate | testo, copiato e validato |
 | `manifest.json` | versioni e impronte delle fonti, conteggi, licenza di ogni file | JSON |
 
@@ -107,16 +107,16 @@ Due righe di Morph-it! (413202 e 413203, `seppur seppure ADV` e `CON`) sono sepa
 - righe riparate (separate da spazi invece che da tabulazioni): 2 (righe [413202, 413203])
 - etichette distinte, tutte mappate: 664
 - righe aggiunte da `forms_extra.tsv`: 272
-- forme distinte: 404931
-- lemmi distinti: 34693
-- letture (forma, lemma, tratti) distinte: 505048
+- forme distinte: 404930
+- lemmi distinti: 34692
+- letture (forma, lemma, tratti) distinte: 505047
 
 ## ARASAAC
 
 - pittogrammi: 13924
 - pittogrammi senza parola chiave italiana: 124
-- chiavi distinte nell'indice (con i plurali derivati): 19108
-- voci dell'indice (chiave, pittogramma): 29292
+- chiavi distinte nell'indice (con i plurali derivati): 19102
+- voci dell'indice (chiave, pittogramma): 29296
 - immagini WebP collegate: 13924
 - pittogrammi con parole chiave ma senza immagine: 0
 
@@ -128,11 +128,11 @@ Parole chiave di una sola parola, senza cifre (335 chiavi con cifre, di una o pi
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 0 | senza tipo | 194 | 136 | 70.1% | 16 | 1 | 90 |
 | 1 | nomi propri e luoghi | 371 | 164 | 44.2% | 0 | 0 | 142 |
-| 2 | nomi comuni | 4965 | 3830 | 77.1% | 18 | 0 | 3674 |
+| 2 | nomi comuni | 4966 | 3831 | 77.1% | 18 | 0 | 3676 |
 | 3 | verbi | 1137 | 1133 | 99.6% | 1123 | 28 | 21 |
 | 4 | aggettivi, numeri, avverbi | 954 | 942 | 98.7% | 1 | 0 | 321 |
 | 5 | frasi ed esclamazioni | 50 | 29 | 58.0% | 1 | 0 | 15 |
-| 6 | orari, mesi, altro | 179 | 137 | 76.5% | 0 | 0 | 50 |
+| 6 | orari, mesi, altro | 178 | 136 | 76.4% | 0 | 0 | 50 |
 | | **totale** | 7601 | 6151 | 80.9% | | | |
 
 Chiavi senza lemma: **1450** (elenco completo in `report/keys_without_lemma.tsv`). Esempi:
@@ -141,13 +141,13 @@ abaco · alioli · appendiabito · autenticazione · baryonyx · boscaiola · ca
 
 ## Multiparola
 
-- chiavi multiparola distinte (senza cifre): 6556
-- con tutte le parole note a Morph-it!: 5718 (87.2%)
-- con almeno una parola sconosciuta: 838 (elenco in `report/multiword_unknown_words.tsv`)
+- chiavi multiparola distinte (senza cifre): 6546
+- con tutte le parole note a Morph-it!: 5709 (87.2%)
+- con almeno una parola sconosciuta: 837 (elenco in `report/multiword_unknown_words.tsv`)
 
 ## File prodotti
 
-- `morphit/morph.fst`: 741013 byte
-- `morphit/morph_feats.bin`: 6517631 byte
-- `morphit/lemmas.fst`: 222041 byte
-- `arasaac/picto_index.bin`: 464066 byte
+- `morphit/morph.fst`: 746849 byte
+- `morphit/morph_feats.bin`: 6517626 byte
+- `morphit/lemmas.fst`: 222244 byte
+- `arasaac/picto_index.bin`: 644085 byte

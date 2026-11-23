@@ -62,6 +62,10 @@ pub fn open_lexicon(dir: &Path) -> Result<Lexicon, LoadError> {
         map(&dir.join("morphit/morph_feats.bin"))?,
     )?;
     let picto = PictoIndex::new(map(&dir.join("arasaac/picto_index.bin"))?)?;
+    // Morfologia e pittogrammi devono venire dalla stessa build del lessico.
+    if morph.build_id() != picto.build_id() {
+        return Err(LexiconError::BuildMismatch("le cartelle morphit/ e arasaac/").into());
+    }
     Ok(Lexicon { morph, picto })
 }
 
@@ -108,16 +112,56 @@ mod tests {
     }
 
     #[test]
+    fn parti_di_build_diverse_rifiutate() {
+        let fx = Path::new(env!("CARGO_MANIFEST_DIR")).join("../caa-lexicon-build/tests/fixtures");
+        let (a, b, ov) = (
+            tempfile::tempdir().unwrap(),
+            tempfile::tempdir().unwrap(),
+            tempfile::tempdir().unwrap(),
+        );
+        build(a.path());
+        // Seconda build con un file curato in più: dati e identificativo diversi.
+        for f in [
+            "forms_extra.tsv",
+            "lemma_picto.tsv",
+            "mwe_extra.tsv",
+            "function_words.tsv",
+            "blocklist.tsv",
+        ] {
+            std::fs::copy(fx.join("overrides").join(f), ov.path().join(f)).unwrap();
+        }
+        let mut extra = std::fs::read_to_string(ov.path().join("forms_extra.tsv")).unwrap();
+        extra.push_str("zampogna\tzampogna\tNOUN-F:s\tdiversa\n");
+        std::fs::write(ov.path().join("forms_extra.tsv"), extra).unwrap();
+        run(&Config {
+            raw: fx.join("raw"),
+            overrides: ov.path().to_path_buf(),
+            out: b.path().to_path_buf(),
+        })
+        .unwrap();
+        // Indice dei pittogrammi della build B dentro la cartella della build A.
+        std::fs::copy(
+            b.path().join("arasaac/picto_index.bin"),
+            a.path().join("arasaac/picto_index.bin"),
+        )
+        .unwrap();
+        let Err(e) = open_lexicon(a.path()) else {
+            panic!("doveva fallire")
+        };
+        assert!(e.to_string().contains("build diverse"), "{e}");
+    }
+
+    #[test]
     fn file_con_schema_diverso_rifiutato() {
         let tmp = tempfile::tempdir().unwrap();
         build(tmp.path());
         let p = tmp.path().join("arasaac/picto_index.bin");
         let mut bytes = std::fs::read(&p).unwrap();
-        bytes[4] = 7;
+        bytes[4] = 77;
         std::fs::write(&p, bytes).unwrap();
         let Err(e) = open_lexicon(tmp.path()) else {
             panic!("doveva fallire")
         };
-        assert!(e.to_string().contains("schema 7"), "{e}");
+        assert!(e.to_string().contains("schema 77"), "{e}");
     }
 }

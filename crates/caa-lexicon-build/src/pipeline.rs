@@ -165,8 +165,20 @@ pub fn run(cfg: &Config) -> Result<Summary, String> {
         ));
     }
 
+    // Identificativo della build: dai dati di partenza e dallo schema (stessi dati, stesso numero).
+    let mut id_hash = Sha256::new();
+    id_hash.update(SCHEMA.to_le_bytes());
+    id_hash.update(morphit_text.as_bytes());
+    id_hash.update(&arasaac_bytes);
+    for t in &texts {
+        id_hash.update((t.len() as u64).to_le_bytes());
+        id_hash.update(t.as_bytes());
+    }
+    let build_id = u64::from_le_bytes(id_hash.finalize()[..8].try_into().unwrap_or([0; 8]));
+
     // Compilazione e verifica che i file prodotti si rileggano.
     let out = compile(&Inputs {
+        build_id,
         morphit: &morphit_text,
         pictograms: &pictograms,
         forms_extra: &overrides.forms_extra,
@@ -270,6 +282,7 @@ pub fn run(cfg: &Config) -> Result<Summary, String> {
     let s = &out.stats;
     let manifest = json!({
         "schema": SCHEMA,
+        "build_id": format!("{build_id:016x}"),
         "builder_version": env!("CARGO_PKG_VERSION"),
         "built": date_of(SystemTime::now()),
         "sources": {

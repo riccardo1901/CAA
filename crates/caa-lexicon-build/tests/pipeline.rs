@@ -4,7 +4,9 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use caa_engine::lexicon::{picto_flags, LexiconError, MorphLexicon, PictoIndex};
+use caa_engine::lexicon::{
+    picto_flags, LexiconError, MorphLexicon, PictoIndex, HEADER_SIZE, SCHEMA,
+};
 use caa_engine::norm::normalize_key;
 use caa_engine::types::{Cat, Mood, Number, Tense, VerbKind};
 use caa_lexicon_build::compile::{compile, BuildError, Inputs};
@@ -66,6 +68,16 @@ fn lessico_di_esempio_si_costruisce_e_si_rilegge() {
     // Forma ambigua: 4 letture distinte (il doppione è eliminato).
     let porta = b.morph.lookup("porta");
     assert_eq!(porta.len(), 4);
+    // Ordine esplicito (revisione M0-M2): per categoria, poi per lemma. Non ha altro significato:
+    // la scelta della lettura spetta alla fase 7. Prima era l'ordine casuale degli id dei lemmi
+    // ("porta" cominciava con il participio di "porgere").
+    assert!(
+        porta
+            .windows(2)
+            .all(|w| w[0].cat.as_u8() <= w[1].cat.as_u8()),
+        "{porta:?}"
+    );
+    assert_eq!(porta[0].cat, Cat::Noun);
     assert_eq!(porta.iter().filter(|r| r.cat == Cat::Noun).count(), 1);
     assert_eq!(
         lemmas_of(&b, "porta")
@@ -116,6 +128,12 @@ fn lessico_di_esempio_si_costruisce_e_si_rilegge() {
     let api = b.picto.lookup("api");
     assert_eq!(api.len(), 1);
     assert!(api[0].has_flag(picto_flags::PLURAL_FORM));
+    // Il plurale ricorda la parola chiave singolare; la chiave propria no.
+    assert_eq!(b.picto.singular(&api[0]), Some("ape"));
+    assert_eq!(b.picto.singular(&b.picto.lookup("ape")[0]), None);
+    assert!(api[0].has_type(2) && !api[0].has_type(3));
+    // Le due parti della stessa build portano lo stesso identificativo.
+    assert_eq!(b.morph.build_id(), b.picto.build_id());
     assert_eq!(b.picto.lookup("occhiali")[0].id, 3329);
     assert!(b.picto.lookup("scuola media")[0].has_flag(picto_flags::MULTIWORD));
     let citta = b.picto.lookup("città");
@@ -152,7 +170,9 @@ fn rapporto_manifesto_e_file_accessori() {
     assert!(!multi.contains("scuola media"));
 
     let manifest: serde_json::Value = serde_json::from_str(&read("manifest.json")).unwrap();
-    assert_eq!(manifest["schema"], 1);
+    assert_eq!(manifest["schema"], SCHEMA);
+    // Identificativo di build: 16 cifre esadecimali.
+    assert_eq!(manifest["build_id"].as_str().unwrap().len(), 16);
     assert_eq!(manifest["sources"]["morphit"]["version"], "sconosciuta"); // la fixture non ha l'archivio
     assert_eq!(manifest["counts"]["images"], 9);
     assert_eq!(manifest["counts"]["pictograms"], 11);
@@ -217,9 +237,56 @@ fn la_build_si_puo_ripetere_sulla_stessa_cartella_senza_residui() {
 }
 
 #[test]
+fn file_di_build_diverse_non_si_mescolano() {
+    // Revisione M0-M2: un morph.fst di una build con un morph_feats.bin di un'altra veniva accettato
+    // e le ricerche davano vuoto senza errori. L'identificativo di build nelle intestazioni e nella
+    // chiave sentinella degli automi lo rende un errore.
+    let (a, b) = (tempfile::tempdir().unwrap(), tempfile::tempdir().unwrap());
+    run(&config(a.path())).unwrap();
+    // Seconda build con un file curato in più: dati diversi, identificativo diverso.
+    let ov = tempfile::tempdir().unwrap();
+    for f in [
+        "forms_extra.tsv",
+        "lemma_picto.tsv",
+        "mwe_extra.tsv",
+        "function_words.tsv",
+        "blocklist.tsv",
+    ] {
+        fs::copy(fixtures().join("overrides").join(f), ov.path().join(f)).unwrap();
+    }
+    let mut extra = fs::read_to_string(ov.path().join("forms_extra.tsv")).unwrap();
+    extra.push_str("zampogna\tzampogna\tNOUN-F:s\tdiversa\n");
+    fs::write(ov.path().join("forms_extra.tsv"), extra).unwrap();
+    run(&Config {
+        overrides: ov.path().to_path_buf(),
+        ..config(b.path())
+    })
+    .unwrap();
+
+    let r = |d: &Path, p: &str| fs::read(d.join(p)).unwrap();
+    let (la, lb) = (load(a.path()), load(b.path()));
+    assert_ne!(la.morph.build_id(), lb.morph.build_id());
+    // morph.fst e lemmas.fst della build A con morph_feats.bin della build B.
+    let mixed = MorphLexicon::new(
+        r(a.path(), "morphit/morph.fst"),
+        r(a.path(), "morphit/lemmas.fst"),
+        r(b.path(), "morphit/morph_feats.bin"),
+    );
+    assert!(matches!(mixed, Err(LexiconError::BuildMismatch(_))));
+    // Solo l'automa dei lemmi di un'altra build.
+    let mixed = MorphLexicon::new(
+        r(a.path(), "morphit/morph.fst"),
+        r(b.path(), "morphit/lemmas.fst"),
+        r(a.path(), "morphit/morph_feats.bin"),
+    );
+    assert!(matches!(mixed, Err(LexiconError::BuildMismatch(_))));
+}
+
+#[test]
 fn etichetta_non_mappata_ferma_la_build() {
     let pictograms = [];
     let err = compile(&Inputs {
+        build_id: 1,
         morphit: "a\ta\tPRE\nx\tx\tBOH\ny\ty\tALTRO\n",
         pictograms: &pictograms,
         forms_extra: &[],
@@ -237,6 +304,7 @@ fn etichetta_non_mappata_ferma_la_build() {
 #[test]
 fn riga_irreparabile_ferma_la_build() {
     let err = compile(&Inputs {
+        build_id: 1,
         morphit: "a\ta\tPRE\nrotta\n",
         pictograms: &[],
         forms_extra: &[],
@@ -317,7 +385,7 @@ fn lettori_rifiutano_file_corrotti() {
     else {
         panic!("schema non rifiutato")
     };
-    assert_eq!((found, expected), (99, 1));
+    assert_eq!((found, expected), (99, SCHEMA));
     // Automa non valido.
     assert!(matches!(
         MorphLexicon::new(vec![1, 2, 3], lem.clone(), feats.clone()),
@@ -347,8 +415,12 @@ fn lettori_rifiutano_file_corrotti() {
         ),
         "lemmas.fst"
     );
-    let fst_len = u32::from_le_bytes(picto[12..16].try_into().unwrap()) as usize;
-    for i in [16 + fst_len / 3, 16 + fst_len / 2, 16 + fst_len - 20] {
+    let fst_len = u32::from_le_bytes(picto[20..24].try_into().unwrap()) as usize; // secondo contatore
+    for i in [
+        HEADER_SIZE + fst_len / 3,
+        HEADER_SIZE + fst_len / 2,
+        HEADER_SIZE + fst_len - 20,
+    ] {
         let mut bad = picto.clone();
         bad[i] ^= 0xFF;
         assert!(
@@ -358,23 +430,52 @@ fn lettori_rifiutano_file_corrotti() {
     }
 }
 
+/// Intestazione valida (magic, schema, build) con tre contatori a piacere.
+fn header(magic: &[u8; 4], c: [u32; 3]) -> Vec<u8> {
+    let mut v = Vec::new();
+    v.extend_from_slice(magic);
+    v.extend_from_slice(&SCHEMA.to_le_bytes());
+    v.extend_from_slice(&0u64.to_le_bytes());
+    for x in c {
+        v.extend_from_slice(&x.to_le_bytes());
+    }
+    assert_eq!(v.len(), HEADER_SIZE);
+    v
+}
+
 #[test]
 fn intestazioni_con_conteggi_enormi_sono_errori_non_panic() {
-    // Intestazione valida con conteggi assurdi e file minuscolo: errore, mai panic.
-    let mut feats = Vec::new();
-    feats.extend_from_slice(b"CAAF");
-    feats.extend_from_slice(&1u32.to_le_bytes());
-    feats.extend_from_slice(&u32::MAX.to_le_bytes());
-    feats.extend_from_slice(&u32::MAX.to_le_bytes());
-    feats.extend_from_slice(&[0; 8]);
+    // Intestazioni valide con conteggi assurdi e file minuscolo: errore, mai panic.
     let tmp = tempfile::tempdir().unwrap();
     run(&config(tmp.path())).unwrap();
     let r = |p: &str| fs::read(tmp.path().join(p)).unwrap();
-    assert!(MorphLexicon::new(r("morphit/morph.fst"), r("morphit/lemmas.fst"), feats).is_err());
-    let mut picto = Vec::new();
-    picto.extend_from_slice(b"CAAP");
-    picto.extend_from_slice(&1u32.to_le_bytes());
-    picto.extend_from_slice(&u32::MAX.to_le_bytes());
-    picto.extend_from_slice(&u32::MAX.to_le_bytes());
-    assert!(PictoIndex::new(picto).is_err());
+    for counters in [
+        [u32::MAX, u32::MAX, 0],
+        [u32::MAX, 0, 0],
+        [0, u32::MAX, 0],
+        [1, 1, 0],
+    ] {
+        let mut feats = header(b"CAAF", counters);
+        feats.extend_from_slice(&[0; 8]);
+        let e = MorphLexicon::new(r("morphit/morph.fst"), r("morphit/lemmas.fst"), feats).err();
+        assert!(
+            matches!(
+                e,
+                Some(LexiconError::Truncated(_) | LexiconError::Corrupt(_))
+            ),
+            "{counters:?}: {e:?}"
+        );
+    }
+    for counters in [
+        [u32::MAX, u32::MAX, u32::MAX],
+        [u32::MAX, 0, 0],
+        [0, u32::MAX, 0],
+        [0, 0, u32::MAX],
+    ] {
+        let e = PictoIndex::new(header(b"CAAP", counters)).err();
+        assert!(
+            matches!(e, Some(LexiconError::Corrupt(_))),
+            "{counters:?}: {e:?}"
+        );
+    }
 }
