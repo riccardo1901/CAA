@@ -49,6 +49,22 @@ pub fn run_analysis<D: AsRef<[u8]>>(
     })
 }
 
+/// Esito dei test dorati di struttura (parole nascoste, segni, pittogrammi delle espressioni).
+pub fn run_structures<D: AsRef<[u8]>>(
+    engine: &Engine<D>,
+    text: &str,
+) -> Result<GoldenReport, Vec<String>> {
+    let cases = golden::parse_structures(text)?;
+    let failures = cases
+        .iter()
+        .filter_map(|c| golden::check_structure(engine, c).err())
+        .collect();
+    Ok(GoldenReport {
+        total: cases.len(),
+        failures,
+    })
+}
+
 /// Una parola di base: forma (lemma) e categoria indicativa.
 #[derive(Debug, Clone)]
 pub struct BaseWord {

@@ -165,7 +165,7 @@ flowchart TB
   B["Passata B · strutture (fasi 4–6)<br/>verbi pronominali, tempi composti, perifrasi<br/>multiparola sulla sequenza decisa"]
   R["Resa (fasi 8–10)<br/>pittogramma, plurale, passato, futuro<br/>visibilità delle parole funzionali, 8 alternative"]
   OUT["Token annotati, restituiti all'editor"]
-  LEX["Lessico compilato<br/>morph.fst, picto_index, mwe.trie, tagger.bin"]
+  LEX["Lessico compilato<br/>morph.fst, picto_index, mwe.bin, tagger.bin"]
   T["Scelte del docente<br/>scelte forzate, sensi bloccati, memoria delle correzioni"]
   IN --> PREP --> A --> B --> R --> OUT
   B -->|"ripete forzando una lettura se la sua p ≥ 0,2"| A
@@ -205,7 +205,7 @@ pub struct Token {
     pub surface: String,
     pub kind: TokenKind,               // Word, Number, Punct, Symbol, Unknown
     pub analysis: Option<Analysis>,    // lemma, categoria, tratti scelti
-    pub group: Option<GroupRef>,       // appartenenza a tempo composto o multiparola
+    pub group: Option<GroupRef>,       // appartenenza a tempo composto o multiparola (id, tipo, testa o membro)
     pub picto: Option<PictoRef>,       // id ARASAAC o simbolo personale
     pub modifiers: Modifiers,          // PLURAL | PAST | FUTURE (bitflag)
     pub display: Display,              // Full, Reduced, TextOnly, Hidden
@@ -427,7 +427,7 @@ Prodotti da `caa-lexicon-build`, caricati con mmap all'avvio, versionati con un 
 | `morph_feats.bin` | testo dei lemmi e tabella letture (lemma id, categoria, tratti) | record da 12 byte letti direttamente dal file mappato | Morph-it! |
 | `lemmas.fst` | stringhe dei lemmi ↔ id | `fst::Map` | Morph-it! |
 | `picto_index.bin` | chiave normalizzata → lista di (id pittogramma, insieme dei tipi ARASAAC, flag: prima chiave, plurale derivato, multiparola, plurale invariabile, precisazione tolta; numero chiavi; singolare per i plurali derivati) | `fst` incorporato + record da 12 byte + testi dei singolari | ARASAAC (BY-NC-SA) |
-| `mwe.trie` | sequenze di lemmi → pittogrammi (costruito in M4–M6: serve il motore per lemmatizzare) | trie serializzato | ARASAAC |
+| `mwe.bin` | sequenze di lemmi → pittogrammi (M6; serve il motore per lemmatizzare): `fst` sequenza di lemmi separati da spazio → record da 12 byte (pittogramma, parola chiave originale, flag, numero di parole chiave e di parole) | `fst` + record + testi | ARASAAC, in `arasaac/` |
 | `tagger.bin` | prior di lettura e trigrammi di categoria (M5): trigrammi e probabilità delle categorie in `f32`, `fst` forma → record (categoria, conteggio, lemma più frequente) | tabelle di log-probabilità + `fst` + record da 12 byte | treebank ISDT (CC BY-NC-SA 3.0), in `treebank/` |
 | `overrides/` | TSV curati | testo | nostra |
 
@@ -447,7 +447,7 @@ I file restano separati per licenza (vedi Fonti dati). Il join avviene in memori
 6. Scrive i file e un `manifest.json` con versioni delle fonti, data, numero di schema, conteggi (forme, lemmi, pittogrammi, chiavi senza pittogramma, pittogrammi senza chiave italiana).
 7. Stampa un **rapporto di copertura**: quante parole chiave ARASAAC italiane non hanno un lemma in Morph-it! (le parole di una parola con una chiave ARASAAC sono coperte dalla fase 3, punto 2; in `forms_extra.tsv` vanno le eccezioni e le forme coniugate dei verbi).
 
-Il passo 4 (trie delle multiparola) non fa parte di M2: dipende dal motore e arriva con M4–M6. Il passo 5 (statistiche del tagger) è di M5 e c'è.
+Il passo 4 (multiparola, `mwe.bin`) non fa parte di M2: dipende dal motore ed è di M6, e c'è. Il passo 5 (statistiche del tagger) è di M5 e c'è.
 
 ### Prestazioni e incrementalità
 
@@ -704,7 +704,7 @@ Dodici milestone in ordine di dipendenza. Ognuna si chiude solo quando il criter
     - *Accettazione*: `cargo test` e `npm run build` verdi; l'app si apre con una finestra vuota.
 2. **M1 — Acquisizione dati.** Script che scaricano le parole chiave italiane e le immagini ARASAAC e Morph-it!, con verifica degli endpoint reali. Conversione immagini in WebP 500 px.
     - *Accettazione*: dati in `data/raw/` (fuori da git), rapporto con conteggi; elenco delle etichette Morph-it! distinte; mappatura reale delle categorie ARASAAC verificata su esempi.
-3. **M2 — Build del lessico.** `caa-lexicon-build` produce i file della sezione Strutture dati, con rapporto di copertura (senza `mwe.trie` e `tagger.bin`, che arrivano con M4–M6 e M5).
+3. **M2 — Build del lessico.** `caa-lexicon-build` produce i file della sezione Strutture dati, con rapporto di copertura (senza `mwe.bin` e `tagger.bin`, che arrivano con M6 e M5).
     - *Accettazione*: caricamento < 300 ms; tutte le etichette mappate; rapporto delle chiavi ARASAAC senza lemma.
 4. **M3 — Prototipo editor.** ProseMirror con simboli finti (un'immagine fissa per parola) e le due soluzioni di resa A e B.
     - *Accettazione*: tutte le prove della sezione Editor superate da una delle due soluzioni, su un PC Windows della scuola. *Esito*: superata dalla soluzione A su un PC Windows personale (Edge/WebView2 157); la prova su un PC della scuola entra nel pilota (M11).
@@ -713,7 +713,7 @@ Dodici milestone in ordine di dipendenza. Ognuna si chiude solo quando il criter
 6. **M5 — Disambiguazione.** Statistiche del tagger dal treebank, Viterbi, forward-backward, regole di contesto, confidenza.
     - *Accettazione*: test dorati 1, 2, 9, 10, 17, 18, 19 verdi. *Esito* (`docs/RAPPORTO-M5.md`): 7 su 7 (48 casi di analisi in `lexicon/golden/analisi.tsv`); categoria giusta 94,8% sul treebank di sviluppo e 94,9% sulla prova (78,0% con la scelta fissa di M4); i 3 casi che non passano sono in `analisi_limiti.tsv`.
 7. **M6 — Strutture verbali e multiparola.** Clitici, pronominali, tempi composti, perifrasi, trie delle multiparola, seconda passata.
-    - *Accettazione*: tutti i 20 test dorati verdi.
+    - *Accettazione*: tutti i 20 test dorati verdi. *Esito* (`docs/RAPPORTO-M6.md`): 20 su 20 in `lexicon/golden/strutture.tsv`; i casi 1, 2, 16, 17 e 18 sono scritti dopo aver controllato l'indice (ARASAAC ha i pittogrammi "aprire la porta", "portare a scuola", "avere fame", "salire le scale", "mettere il sale"); "c'era una volta" è in blocklist per il caso 9; tokenizzazione e analisi restano 48 su 48, copertura 96,7%.
 8. **M7 — Valutazione.** `caa-eval`, formato corpus, comando "Esporta come caso di test", primi 10 testi annotati.
     - *Accettazione*: rapporto completo con metriche ed errori raggruppati per causa; prima taratura dei pesi.
 9. **M8 — Integrazione.** Motore collegato all'editor via comandi Tauri, cache per paragrafo, menu alternative, ricerca, simboli personali, modificatori grafici, politica parole funzionali.

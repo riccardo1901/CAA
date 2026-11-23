@@ -186,3 +186,36 @@ fn tagger_sul_treebank_di_sviluppo() {
     assert!(pct(r.errors_flagged, r.errors) >= 33.0);
     assert!(pct(r.correct_flagged, r.correct_cat) <= 5.0);
 }
+
+// --- M6: strutture verbali e multiparola ---------------------------------------------------
+
+#[test]
+fn file_delle_strutture_e_valido() {
+    // Solo formato e numero dei casi: gira anche senza dati.
+    let cases =
+        caa_engine::golden::parse_structures(&repo("lexicon/golden/strutture.tsv")).unwrap();
+    assert_eq!(cases.len(), 20, "i 20 casi di SPEC.md");
+}
+
+#[test]
+fn i_venti_casi_dorati_di_struttura_sui_dati_veri() {
+    let Some(dir) = data_dir() else {
+        eprintln!("data/build non presente: prova saltata");
+        return;
+    };
+    if !dir.join("arasaac/mwe.bin").exists() {
+        eprintln!("arasaac/mwe.bin non presente: prova saltata");
+        return;
+    }
+    let engine = open_engine(&dir).unwrap_or_else(|e| panic!("{e}"));
+    assert!(engine.mwe().is_some());
+    let r = caa_eval::run_structures(&engine, &repo("lexicon/golden/strutture.tsv")).unwrap();
+    assert_eq!(r.total, 20);
+    assert!(
+        r.failures.is_empty(),
+        "{} su {} falliti:\n{}",
+        r.failures.len(),
+        r.total,
+        r.failures.join("\n")
+    );
+}

@@ -6,6 +6,7 @@
 //! caa-eval velocita  [--lexicon DIR]                   tempo per un paragrafo di ~100 parole
 //! caa-eval tagger    [--lexicon DIR] [--conllu FILE]   scelta di categoria e lemma contro un treebank
 //! caa-eval analisi   [--lexicon DIR] [--analisi FILE]  test dorati di analisi (categoria e lemma)
+//! caa-eval strutture [--lexicon DIR] [--strutture FILE]  test dorati di struttura (gruppi, segni)
 //! caa-eval tara      [--lexicon DIR] [--conllu FILE]   taratura dei pesi e della confidenza (usa solo il file di sviluppo)
 //! caa-eval mostra FRASE [--lexicon DIR]                cosa decide il motore su una frase
 //! ```
@@ -15,7 +16,8 @@ use std::process::ExitCode;
 
 use caa_engine::treebank::parse_conllu;
 use caa_eval::{
-    ablate, calibrate, coverage, evaluate_tagger, parse_base, run_analysis, run_golden, speed, tune,
+    ablate, calibrate, coverage, evaluate_tagger, parse_base, run_analysis, run_golden,
+    run_structures, speed, tune,
 };
 use caa_store::open_engine;
 
@@ -29,6 +31,7 @@ Comandi:\n\
   velocita   tempo di simbolizzazione di un paragrafo di circa 100 parole\n\
   tagger     categoria e lemma scelti dal motore contro un treebank (opzione --conllu FILE)\n\
   analisi    test dorati di analisi: categoria e lemma scelti (opzione --analisi FILE)\n\
+  strutture  test dorati di struttura: parole nascoste, segni, espressioni (opzione --strutture FILE)\n\
   tara       cerca i pesi migliori e la temperatura della confidenza (opzione --conllu FILE)\n\
   mostra     lettura, categoria e pittogramma di ogni parola di una frase\n\
 \n\
@@ -43,6 +46,7 @@ fn main() -> ExitCode {
     let mut lexicon = PathBuf::from("data/build");
     let mut golden = PathBuf::from("lexicon/golden/tokenizzazione.tsv");
     let mut analysis = PathBuf::from("lexicon/golden/analisi.tsv");
+    let mut structures = PathBuf::from("lexicon/golden/strutture.tsv");
     let mut base = PathBuf::from("lexicon/lessico_base.tsv");
     let mut conllu = PathBuf::from("data/raw/treebank/isdt/it_isdt-ud-dev.conllu");
     let mut sentence = String::new();
@@ -54,6 +58,7 @@ fn main() -> ExitCode {
             "--lexicon" => &mut lexicon,
             "--golden" => &mut golden,
             "--analisi" => &mut analysis,
+            "--strutture" => &mut structures,
             "--base" => &mut base,
             "--conllu" => &mut conllu,
             other => {
@@ -237,6 +242,26 @@ fn main() -> ExitCode {
                 Err(e) => return fail(&e),
             };
             match run_analysis(&engine, &text) {
+                Ok(r) => {
+                    println!("{} casi, {} falliti", r.total, r.failures.len());
+                    for f in &r.failures {
+                        println!("{f}");
+                    }
+                    if r.failures.is_empty() {
+                        ExitCode::SUCCESS
+                    } else {
+                        ExitCode::FAILURE
+                    }
+                }
+                Err(errors) => fail(&errors.join("\n")),
+            }
+        }
+        "strutture" => {
+            let text = match read(&structures) {
+                Ok(t) => t,
+                Err(e) => return fail(&e),
+            };
+            match run_structures(&engine, &text) {
                 Ok(r) => {
                     println!("{} casi, {} falliti", r.total, r.failures.len());
                     for f in &r.failures {

@@ -73,6 +73,9 @@ cargo run --release -q -p caa-eval -- tagger             # categoria e lemma con
 cargo run --release -q -p caa-eval -- analisi            # test dorati di analisi (lexicon/golden/analisi.tsv)
 cargo run --release -q -p caa-eval -- tara               # taratura, ablazione, calibrazione (solo su dev)
 
+# Strutture (M6): clitici, tempi composti, pronominali, multiparola (serve data/build con arasaac/mwe.bin)
+cargo run --release -q -p caa-eval -- strutture          # i 20 test dorati di SPEC.md, parola per parola
+
 # Build del lessico: data/raw + lexicon/overrides -> data/build (fuori da git, ~15 s)
 cargo run --release -p caa-lexicon-build
 #   rapporto di copertura:  data/build/report/report.md

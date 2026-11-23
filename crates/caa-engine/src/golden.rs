@@ -239,6 +239,202 @@ pub fn check_analysis<D: AsRef<[u8]>>(
     }
 }
 
+// ---------------------------------------------------------------------------------------
+// Test dorati di struttura (M6): per ogni parola, cosa viene mostrato
+// ---------------------------------------------------------------------------------------
+
+/// Cosa ci si aspetta di una parola della frase.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StructItem {
+    /// `~`: la parola è nascosta (ausiliare, clitico, membro di un'espressione).
+    pub hidden: bool,
+    pub lemma: Option<String>,
+    /// Segni attesi (bit di [`crate::engine::Modifiers`]).
+    pub modifiers: u8,
+    /// Parola chiave ARASAAC del pittogramma (con `_` al posto degli spazi).
+    pub picto_key: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct StructureCase {
+    pub line: usize,
+    pub sentence: String,
+    pub items: Vec<StructItem>,
+}
+
+/// Legge `strutture.tsv`: `frase<TAB>elemento …`, un elemento per parola (la punteggiatura non
+/// conta). Elemento: `~` (nascosta) oppure `lemma[+PLURALE][+PASSATO][+FUTURO][=chiave_arasaac]`.
+pub fn parse_structures(text: &str) -> Result<Vec<StructureCase>, Vec<String>> {
+    let mut cases = Vec::new();
+    let mut errors = Vec::new();
+    for (i, raw) in text.lines().enumerate() {
+        let line = raw.trim_end_matches('\r');
+        if line.trim().is_empty() || line.starts_with('#') {
+            continue;
+        }
+        let n = i + 1;
+        let Some((sentence, rest)) = line.split_once('\t') else {
+            errors.push(format!("riga {n}: manca la tabulazione"));
+            continue;
+        };
+        let mut items = Vec::new();
+        for raw_item in rest.split_whitespace() {
+            if raw_item == "~" {
+                items.push(StructItem {
+                    hidden: true,
+                    lemma: None,
+                    modifiers: 0,
+                    picto_key: None,
+                });
+                continue;
+            }
+            let (head, picto_key) = match raw_item.split_once('=') {
+                Some((h, k)) => (h, Some(k.replace('_', " "))),
+                None => (raw_item, None),
+            };
+            let mut parts = head.split('+');
+            let lemma = parts.next().unwrap_or("").to_string();
+            let mut modifiers = 0u8;
+            for m in parts {
+                match m {
+                    "PLURALE" => modifiers |= crate::engine::Modifiers::PLURAL,
+                    "PASSATO" => modifiers |= crate::engine::Modifiers::PAST,
+                    "FUTURO" => modifiers |= crate::engine::Modifiers::FUTURE,
+                    other => errors.push(format!("riga {n}: segno sconosciuto {other:?}")),
+                }
+            }
+            if lemma.is_empty() {
+                errors.push(format!("riga {n}: elemento senza lemma: {raw_item:?}"));
+                continue;
+            }
+            items.push(StructItem {
+                hidden: false,
+                lemma: Some(lemma),
+                modifiers,
+                picto_key,
+            });
+        }
+        if items.is_empty() {
+            errors.push(format!("riga {n}: nessun elemento"));
+            continue;
+        }
+        cases.push(StructureCase {
+            line: n,
+            sentence: sentence.to_string(),
+            items,
+        });
+    }
+    if errors.is_empty() {
+        Ok(cases)
+    } else {
+        Err(errors)
+    }
+}
+
+/// Verifica un caso di struttura; l'errore mostra cosa ha deciso il motore per ogni parola.
+pub fn check_structure<D: AsRef<[u8]>>(
+    engine: &Engine<D>,
+    case: &StructureCase,
+) -> Result<(), String> {
+    use crate::engine::{Display, Modifiers};
+    let tokens = engine.symbolize_text(&case.sentence);
+    let words: Vec<&Token> = tokens
+        .iter()
+        .filter(|t| {
+            matches!(
+                t.kind,
+                TokenKind::Word | TokenKind::Unknown | TokenKind::Number
+            )
+        })
+        .collect();
+    let describe = |t: &Token| {
+        let lemma = t
+            .analysis
+            .as_ref()
+            .map_or("?".to_string(), |a| a.lemma.to_lowercase());
+        let mut mods = String::new();
+        for (flag, name) in [
+            (Modifiers::PLURAL, "+PLURALE"),
+            (Modifiers::PAST, "+PASSATO"),
+            (Modifiers::FUTURE, "+FUTURO"),
+        ] {
+            if t.modifiers.contains(flag) {
+                mods += name;
+            }
+        }
+        let picto = t.picto.map_or(String::new(), |p| format!("#{}", p.id));
+        if t.display == Display::Hidden {
+            "~".to_string()
+        } else {
+            format!("{lemma}{mods}{picto}")
+        }
+    };
+    let got: Vec<String> = words.iter().map(|t| describe(t)).collect();
+    let mut problems = Vec::new();
+    if words.len() != case.items.len() {
+        problems.push(format!(
+            "{} parole attese, {} trovate",
+            case.items.len(),
+            words.len()
+        ));
+    }
+    for (w, e) in words.iter().zip(&case.items) {
+        let hidden = w.display == Display::Hidden;
+        if hidden != e.hidden {
+            problems.push(format!(
+                "{}: atteso {}, ottenuto {}",
+                w.surface,
+                if e.hidden { "nascosta" } else { "visibile" },
+                if hidden { "nascosta" } else { "visibile" }
+            ));
+            continue;
+        }
+        if e.hidden {
+            continue;
+        }
+        let lemma = w.analysis.as_ref().map(|a| a.lemma.to_lowercase());
+        if e.lemma.as_deref() != lemma.as_deref() {
+            problems.push(format!(
+                "{}: lemma atteso {:?}, ottenuto {:?}",
+                w.surface, e.lemma, lemma
+            ));
+        }
+        if w.modifiers.0 != e.modifiers {
+            problems.push(format!(
+                "{}: segni attesi {}, ottenuti {}",
+                w.surface, e.modifiers, w.modifiers.0
+            ));
+        }
+        if let Some(key) = &e.picto_key {
+            let ok = w.picto.is_some_and(|p| {
+                engine
+                    .picto_index()
+                    .lookup(&crate::norm::normalize_key(key))
+                    .iter()
+                    .any(|x| x.id == p.id)
+            });
+            if !ok {
+                problems.push(format!(
+                    "{}: il pittogramma {:?} non e' di {key:?}",
+                    w.surface,
+                    w.picto.map(|p| p.id)
+                ));
+            }
+        }
+    }
+    if problems.is_empty() {
+        Ok(())
+    } else {
+        Err(format!(
+            "riga {}: {:?}\n  ottenuto: {}\n  {}",
+            case.line,
+            case.sentence,
+            got.join(" "),
+            problems.join("\n  ")
+        ))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
