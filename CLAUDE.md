@@ -47,6 +47,12 @@ cargo clippy --workspace --all-targets -- -D warnings
 npm install
 npm run build
 
+# Prove automatiche dell'editor (Playwright + Chromium; M3). Prima volta fuori dal container:
+#   npx playwright install --with-deps chromium
+npx playwright test                  # resa A (quella scelta); in CI senza @perf
+npm run test:e2e:confronto           # resa A e B
+npx playwright test --grep @perf     # velocità (dipende dalla macchina)
+
 # App in sviluppo (richiede Rust, Node e, su Windows, WebView2)
 npm run tauri dev
 

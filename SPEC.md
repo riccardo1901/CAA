@@ -544,7 +544,7 @@ Un solo schermo: barra degli strumenti in alto, foglio al centro, nessun pannell
 ### Modello del documento (ProseMirror)
 
 - **Nodi**: `doc` → `heading` (2 livelli) | `paragraph`; testo inline.
-- **Mark di formattazione**: grassetto, colore del testo, dimensione del testo.
+- **Mark di formattazione**: grassetto, colore del testo, dimensione del testo. La formattazione si applica sempre a **parole intere** (M3): il comando estende la selezione alle parole, e una rete di sicurezza riallinea le parole miste (incolla, annulla) alla formattazione del primo carattere.
 - **Mark `pick`** sulla parola: la scelta esplicita del docente (`picto`, `source` = arasaac | custom | none | textOnly, più lettura opzionale). È un mark, quindi segue il testo durante le modifiche e rientra in annulla/ripeti senza codice aggiuntivo.
 - **Mark `group`**: unione manuale di più parole in un simbolo, o divisione forzata di una multiparola.
 - I pittogrammi calcolati dal motore **non** stanno nel documento: sono decorazioni, rigenerate dal testo.
@@ -557,6 +557,8 @@ Il comportamento del cursore con parole impilate sotto un'immagine è l'unico pu
 - **B — widget + contenitore inline-flex**: un'immagine vera inserita come widget prima della parola, in un contenitore che tiene insieme immagine e parola.
 
 **Prove di accettazione:** frecce sinistra/destra e su/giù senza salti; selezione col mouse su più righe; doppio clic seleziona la parola; a capo automatico che non separa mai simbolo e parola; copia e incolla; correttore ortografico di sistema; digitazione veloce senza scatti su 3 pagine di testo. Mi aspetto che A vinca; se nessuna passa, la riserva è un editor a celle (ogni parola un blocco) con un campo di testo nascosto per la digitazione.
+
+**Esito di M3** (`docs/RAPPORTO-M3.md`): vince la soluzione **A**, che supera tutte le prove (in Chromium e su Windows con WebView2); la B fallisce a capo, freccia su/giù e clic sul simbolo. Il clic sul simbolo (menu alternative, M8) si risolve dall'elemento colpito (`span` della parola e `posAtDOM`), non da `posAtCoords`.
 
 ### Interazioni
 
@@ -703,7 +705,7 @@ Dodici milestone in ordine di dipendenza. Ognuna si chiude solo quando il criter
 3. **M2 — Build del lessico.** `caa-lexicon-build` produce i file della sezione Strutture dati, con rapporto di copertura (senza `mwe.trie` e `tagger.bin`, che arrivano con M4–M6 e M5).
     - *Accettazione*: caricamento < 300 ms; tutte le etichette mappate; rapporto delle chiavi ARASAAC senza lemma.
 4. **M3 — Prototipo editor.** ProseMirror con simboli finti (un'immagine fissa per parola) e le due soluzioni di resa A e B.
-    - *Accettazione*: tutte le prove della sezione Editor superate da una delle due soluzioni, su un PC Windows della scuola.
+    - *Accettazione*: tutte le prove della sezione Editor superate da una delle due soluzioni, su un PC Windows della scuola. *Esito*: superata dalla soluzione A su un PC Windows personale (Edge/WebView2 157); la prova su un PC della scuola entra nel pilota (M11).
 5. **M4 — Motore, fasi 1–3 e 8.** Normalizzazione, tokenizzazione, letture (compresa la lettura da chiave ARASAAC per le parole sconosciute a Morph-it!), scelta del pittogramma senza contesto (prima lettura).
     - *Accettazione*: test dorati di tokenizzazione ed elisione verdi; ogni parola del lessico scolastico di base riceve un pittogramma.
 6. **M5 — Disambiguazione.** Statistiche del tagger dal treebank, Viterbi, forward-backward, regole di contesto, confidenza.
