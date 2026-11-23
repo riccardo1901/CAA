@@ -28,6 +28,21 @@ jobs:
       - run: npm install
       - run: npm run build
 
+  editor:
+    name: Editor — prove automatiche (Chromium)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install
+      - name: Browser per le prove
+        run: npx playwright install --with-deps chromium
+      # Le prove di velocità (@perf) dipendono dalla macchina: si eseguono a mano.
+      - run: npx playwright test --grep-invert @perf
+
   windows:
     name: Windows — test, build, app
     runs-on: windows-latest
