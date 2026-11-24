@@ -5,7 +5,7 @@ import { benchmark, checkSymbolHits, checkWrap } from "./checks";
 import { createEditor, currentMode, replaceDoc } from "./editor/editor";
 import { engineStats, onEngineUpdate, setEngine, setPolicy } from "./editor/engineSymbols";
 import { engineInfo, inTauri, tauriClient, type EngineClient, type EngineInfo, type Policy } from "./engine/client";
-import { installMenu } from "./menu";
+import { createSidebar, installSidebar } from "./sidebar";
 import { createBars } from "./toolbar";
 import { symbolKey, type Mode } from "./editor/symbolPlugin";
 import { setSymbols } from "./editor/symbols";
@@ -17,6 +17,7 @@ let view: EditorView;
 let size = 68;
 let layoutEl: HTMLElement;
 let panelEl: HTMLElement;
+let sideEl: HTMLElement | null = null;
 let root: HTMLElement;
 
 export function replaceDocument(doc: PMNode): void {
@@ -35,14 +36,17 @@ let engineModeOn = false;
 function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): void {
   // Una volta sola: i pulsanti e gli ascoltatori delle barre non si devono accumulare.
   if (engineModeOn) {
-    if (client) {
+    if (client && sideEl) {
       setEngine(view, client);
-      installMenu(view, client);
+      installSidebar(view, client, sideEl);
     }
     return;
   }
   engineModeOn = true;
   panelEl.remove();
+  // La barra dei simboli sostituisce il pannello di prova: fissa a destra, si riempie quando si agisce su una parola.
+  sideEl = createSidebar();
+  layoutEl.appendChild(sideEl);
   const app = document.createElement("div");
   app.className = "app";
   // "Nuovo" e "Testo di esempio" buttano via il documento aperto (il salvataggio arriva con M9): si chiede conferma
@@ -60,7 +64,7 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
   view.dispatch(view.state.tr.setMeta(symbolKey, { mode: "off" }));
   if (client) {
     setEngine(view, client);
-    installMenu(view, client);
+    installSidebar(view, client, sideEl);
   }
   bars.refresh();
 }

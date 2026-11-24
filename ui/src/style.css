@@ -216,29 +216,32 @@ body { margin: 0; }
 .statusbar .link { cursor: pointer; }
 .statusbar .link:hover { text-decoration: underline; }
 
-/* ---- Menu delle alternative (M8b) ---- */
-.pmenu {
-  position: fixed;
-  z-index: 50;
-  width: 380px;
-  max-width: calc(100vw - 16px);
-  max-height: calc(100vh - 16px);
+/* ---- Barra laterale dei simboli (M8b) ---- */
+.side {
+  flex: none;
+  width: 340px;
+  box-sizing: border-box;
   overflow: auto;
-  padding: 10px;
-  background: #fff;
-  border: 1px solid #9a9aa8;
-  border-radius: 8px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+  padding: 12px 14px;
+  background: #fafafa;
+  border-left: 1px solid #c8c8d0;
   font: 14px system-ui, sans-serif;
   color: #1c1c28;
+  outline: none;
 }
+.side:focus-within { box-shadow: inset 3px 0 0 #2a5db0; }
+.side-empty h2 { font-size: 17px; margin: 0 0 8px; }
+.side-empty p { color: #555; margin: 6px 0; }
+.pm-keys { color: #666; font-size: 12px; margin: 10px 0 0; }
+/* La parola di cui la barra mostra le alternative. */
+.cur { background: #fff3c4; box-shadow: 0 0 0 2px #e0b030; border-radius: 6px; }
 .pm-head { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
 .pm-now img { width: 48px; height: 48px; object-fit: contain; display: block; }
 .pm-titles { display: flex; flex-direction: column; min-width: 0; }
 .pm-titles strong { font-size: 17px; }
 .pm-why { color: #555; font-size: 12.5px; }
 .pm-status { color: #555; min-height: 1.2em; margin-bottom: 4px; }
-.pm-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.pm-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .pm-cell {
   position: relative;
   display: flex;
@@ -261,4 +264,17 @@ body { margin: 0; }
 .pm-btn { padding: 5px 9px; border: 1px solid #9a9aa8; border-radius: 4px; background: #fff; font: inherit; cursor: pointer; }
 .pm-btn:hover { background: #eef3fb; border-color: #2a5db0; }
 .pm-search { width: 100%; box-sizing: border-box; margin-top: 8px; padding: 6px 8px; font: inherit; }
+.pm-search[hidden] { display: none; }
 .pm-all { display: block; margin-top: 8px; color: #333; }
+
+/* ---- Contorno: una "card" per ogni coppia simbolo-parola (impostazione dell'editor) ---- */
+.cards .w:not(.wc):not(.txt) {
+  box-sizing: border-box;
+  border: 2px solid #8a94a8;
+  border-radius: 12px;
+  margin: 3px 2px;
+  padding-left: 4px;
+  padding-right: 4px;
+  padding-bottom: 2px;
+}
+.cards .w.hid:not(.wc) { border-color: #c4c9d4; }

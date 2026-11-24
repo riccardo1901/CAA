@@ -1,5 +1,6 @@
 // Barra degli strumenti (politica delle parole funzionali, dimensione dei simboli) e barra di stato
 // (parole da controllare, numero di parole, stato del motore).
+import { redo, redoDepth, undo, undoDepth } from "prosemirror-history";
 import type { EditorView } from "prosemirror-view";
 import type { EngineInfo, Policy } from "./engine/client";
 import { engineStats, setPolicy } from "./editor/engineSymbols";
@@ -53,7 +54,22 @@ export function createBars(
   const sampleBtn = el("button", "", "Testo di esempio");
   sampleBtn.type = "button";
   sampleBtn.addEventListener("click", sampleDocument);
-  doc.append(newBtn, " ", sampleBtn);
+  // Annulla e Ripeti anche con il mouse (Ctrl+Z, Ctrl+Y o Ctrl+Maiusc+Z da tastiera).
+  const undoBtn = el("button", "", "Annulla");
+  undoBtn.type = "button";
+  undoBtn.title = "Ctrl+Z";
+  undoBtn.addEventListener("click", () => {
+    undo(view.state, view.dispatch);
+    view.focus();
+  });
+  const redoBtn = el("button", "", "Ripeti");
+  redoBtn.type = "button";
+  redoBtn.title = "Ctrl+Y o Ctrl+Maiusc+Z";
+  redoBtn.addEventListener("click", () => {
+    redo(view.state, view.dispatch);
+    view.focus();
+  });
+  doc.append(newBtn, " ", sampleBtn, " ", undoBtn, " ", redoBtn);
 
   const policyLabel = el("label", "", "Parole funzionali: ");
   const select = el("select");
@@ -68,6 +84,33 @@ export function createBars(
     refresh();
   });
   policyLabel.appendChild(select);
+
+  // Contorno: ogni coppia simbolo-parola in una "card" (impostazione dell'editor, ricordata sul computer).
+  const cardsLabel = el("label", "", " ");
+  const cards = el("input");
+  cards.type = "checkbox";
+  cards.setAttribute("aria-label", "Contorna simbolo e parola");
+  let saved = false;
+  try {
+    saved = localStorage.getItem("caa.cards") === "1";
+  } catch {
+    /* senza memoria del browser si parte senza contorno */
+  }
+  const applyCards = (on: boolean): void => {
+    document.querySelector(".sheet")?.classList.toggle("cards", on);
+  };
+  cards.checked = saved;
+  applyCards(saved);
+  cards.addEventListener("change", () => {
+    applyCards(cards.checked);
+    try {
+      localStorage.setItem("caa.cards", cards.checked ? "1" : "0");
+    } catch {
+      /* non è grave: la scelta vale finché l'app è aperta */
+    }
+    view.focus();
+  });
+  cardsLabel.append(cards, " Contorna simbolo e parola");
 
   const sizes = el("div");
   sizes.append("Simboli: ");
@@ -84,7 +127,7 @@ export function createBars(
     return b;
   });
 
-  toolbar.append(doc, el("span", "grow"), policyLabel, sizes);
+  toolbar.append(doc, el("span", "grow"), cardsLabel, policyLabel, sizes);
 
   const wordsInfo = el("span");
   const doubtInfo = el("span", "link");
@@ -97,6 +140,8 @@ export function createBars(
   statusbar.append(doubtInfo, wordsInfo, errorInfo, el("span", "grow"), policyInfo, engineInfoEl);
 
   function refresh(): void {
+    undoBtn.disabled = undoDepth(view.state) === 0;
+    redoBtn.disabled = redoDepth(view.state) === 0;
     const s = engineStats(view);
     sizeButtons.forEach((b, i) => b.classList.toggle("on", SIZES[i][1] === getSize()));
     wordsInfo.textContent = `${s.words} parole`;

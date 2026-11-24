@@ -1,18 +1,20 @@
-// Collegamento fra l'editor e il menu delle alternative (M8b). L'editor si crea prima del menu: qui
-// c'è il punto d'incontro (il menu si registra quando parte il motore) e il plugin del clic sul simbolo.
-import { Plugin } from "prosemirror-state";
+// Collegamento fra l'editor e la barra laterale dei simboli (M8b). L'editor si crea prima della barra:
+// qui c'è il punto d'incontro (la barra si registra quando parte il motore), il plugin del clic sul
+// simbolo e l'evidenziazione della parola di cui la barra mostra le alternative.
+import { Plugin, PluginKey } from "prosemirror-state";
 import type { EditorView } from "prosemirror-view";
+import { Decoration, DecorationSet } from "prosemirror-view";
 
 export const hooks: {
-  /** Apre il menu per la parola al cursore (Alt+↓). */
+  /** Mostra nella barra la parola al cursore (Alt+↓). */
   openAtCursor: (() => boolean) | null;
-  /** Va alla prossima parola da controllare e apre il menu (F8, clic sul contatore). */
+  /** Va alla prossima parola da controllare e la mostra nella barra (F8, clic sul contatore). */
   next: (() => boolean) | null;
-  /** Apre il menu per la parola alla posizione indicata (clic sul simbolo). */
+  /** Mostra nella barra la parola alla posizione indicata (clic sul simbolo). */
   openAt: ((pos: number) => boolean) | null;
 } = { openAtCursor: null, next: null, openAt: null };
 
-/** Altezza (px) della zona del simbolo in una parola: il clic lì apre il menu, sul testo sposta il cursore. */
+/** Altezza (px) della zona del simbolo in una parola: il clic lì mostra le alternative, sul testo sposta il cursore. */
 function symbolHeight(view: EditorView): number {
   return parseFloat(getComputedStyle(view.dom).getPropertyValue("--sym")) || 0;
 }
@@ -36,4 +38,43 @@ export function symbolClickPlugin(): Plugin {
       },
     },
   });
+}
+
+const curKey = new PluginKey<DecorationSet>("focusWord");
+
+/** Evidenzia la parola mostrata nella barra; segue il testo mentre si scrive e sparisce se la parola sparisce. */
+export function focusWordPlugin(): Plugin<DecorationSet> {
+  return new Plugin<DecorationSet>({
+    key: curKey,
+    state: {
+      init: () => DecorationSet.empty,
+      apply(tr, set) {
+        const m = tr.getMeta(curKey) as { range: [number, number] | null } | undefined;
+        if (m) {
+          return m.range
+            ? DecorationSet.create(tr.doc, [Decoration.inline(m.range[0], m.range[1], { class: "cur" }, { inclusiveStart: false, inclusiveEnd: false })])
+            : DecorationSet.empty;
+        }
+        return tr.docChanged ? set.map(tr.mapping, tr.doc) : set;
+      },
+    },
+    props: { decorations: (state) => curKey.getState(state) },
+  });
+}
+
+export function setFocusWord(view: EditorView, range: [number, number] | null): void {
+  view.dispatch(view.state.tr.setMeta(curKey, { range }).setMeta("addToHistory", false));
+}
+
+/** La parola evidenziata, con la posizione di adesso. */
+export function focusWordRange(view: EditorView): { from: number; to: number } | null {
+  const found = curKey.getState(view.state)?.find() ?? [];
+  return found.length > 0 ? { from: found[0].from, to: found[0].to } : null;
+}
+
+/** Porta la parola in mezzo allo schermo (anche se il foglio è lungo). */
+export function revealPos(view: EditorView, pos: number): void {
+  const { node } = view.domAtPos(pos);
+  const e = node.nodeType === 3 ? node.parentElement : (node as HTMLElement);
+  (e?.closest(".w") ?? e)?.scrollIntoView({ block: "center" });
 }

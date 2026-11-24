@@ -6,7 +6,7 @@ import { EditorState } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { normalizeMarks, normalizeState, toggleBoldWords } from "./wordMarks";
 import { engineKey, engineSymbolPlugin } from "./engineSymbols";
-import { hooks, symbolClickPlugin } from "./menuHooks";
+import { focusWordPlugin, hooks, symbolClickPlugin } from "./menuHooks";
 import { symbolPlugin, symbolKey, type Mode } from "./symbolPlugin";
 
 export function createEditor(mount: HTMLElement, doc: PMNode, mode: Mode = "A"): EditorView {
@@ -17,9 +17,10 @@ export function createEditor(mount: HTMLElement, doc: PMNode, mode: Mode = "A"):
       keymap({
         "Mod-z": undo,
         "Mod-y": redo,
+        "Ctrl-y": redo,
         "Shift-Mod-z": redo,
         "Mod-b": toggleBoldWords,
-        // Menu delle alternative (M8b).
+        // Barra laterale dei simboli (M8b).
         "Alt-ArrowDown": () => hooks.openAtCursor?.() ?? false,
         F8: () => hooks.next?.() ?? false,
       }),
@@ -28,6 +29,7 @@ export function createEditor(mount: HTMLElement, doc: PMNode, mode: Mode = "A"):
       symbolPlugin(mode),
       engineSymbolPlugin(),
       symbolClickPlugin(),
+      focusWordPlugin(),
     ],
   }));
   // Lingua italiana e correttore ortografico di sistema (prova 6 di M3).
