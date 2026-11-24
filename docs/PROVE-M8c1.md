@@ -10,8 +10,9 @@ Serve solo l'app nuova (`caa-app.exe` della CI); il pacchetto dati è lo stesso 
 | 4 | Alla riga **Preposizioni** scegli **Solo testo**; poi torna a **Simbolo**. | Le preposizioni (di, a, in, con… e «nella», «sul»…) perdono il simbolo, poi lo riprendono. Le preposizioni **non** hanno l'opzione «Nascosto». |
 | 5 | Alla riga **Congiunzioni** scegli **Solo testo** (e, ma, o…); poi **«che»** → **Nascosto**. | Le congiunzioni restano senza simbolo; «che» diventa attenuato. |
 | 6 | Clicca **Chiudi**. Poi cambia **Parole funzionali** su **Completo** e poi su **Essenziale**. | La tabella si chiude. Con «Completo» e «Essenziale» tutto torna come prima di questa prova (articoli piccoli in Completo, nascosti in Essenziale). Il pulsante **Modifica…** compare solo con «Personalizzato». |
-| 7 | Rimetti **Personalizzato**. | Le scelte che avevi fatto (articoli nascosti, congiunzioni solo testo…) sono ancora lì. Clicca **Modifica…** per riaprire la tabella. |
-| 8 | Dopo una modifica della tabella, clicca il simbolo di una parola e cambia il simbolo dalla barra laterale. | Funziona come prima; la tabella non cambia. |
+| 7 | Rimetti **Personalizzato**. | La tabella **non** si riapre da sola (solo la prima volta). Le scelte che avevi fatto (articoli nascosti, congiunzioni solo testo…) sono ancora lì. Clicca **Modifica…** per riaprire la tabella. |
+| 8 | Con gli articoli **Nascosti**, clicca la zona del simbolo di un articolo (la parte alta della parola attenuata) e scegli un'immagine dalla barra laterale. Poi prova su una parola normale. | La barra si riempie anche per le parole nascoste. La tua scelta vince sulla tabella: quell'articolo ora ha il simbolo, gli altri restano nascosti. Su una parola normale funziona come prima. |
+| 9 | Con **Essenziale**, su un articolo nascosto scegli **Solo testo** o **Nessun simbolo**. | L'articolo si vede come testo normale (senza simbolo). Gli ausiliari dei tempi composti («ho» in «ho mangiato») non si possono scegliere: il simbolo sta sul verbo. |
 
 ## Come mi riporti il risultato
 

@@ -28,7 +28,7 @@ export function symbolClickPlugin(): Plugin {
           const ev = event as MouseEvent;
           if (!hooks.openAt || ev.button !== 0 || ev.shiftKey || ev.ctrlKey || ev.metaKey || ev.altKey) return false;
           const el = (ev.target as HTMLElement | null)?.closest?.(".w") as HTMLElement | null;
-          if (!el || !view.dom.contains(el) || el.classList.contains("wc") || el.classList.contains("txt") || el.classList.contains("hid")) return false;
+          if (!el || !view.dom.contains(el) || el.classList.contains("wc") || el.classList.contains("txt")) return false;
           const rect = el.getBoundingClientRect();
           if (ev.clientY - rect.top >= symbolHeight(view)) return false;
           const opened = hooks.openAt(view.posAtDOM(el, 0));

@@ -443,9 +443,12 @@ function tokenInfo(view: EditorView, st: State, paraPos: number, node: PMNode, t
   };
 }
 
-/** Parole su cui si può scegliere il simbolo: non punteggiatura e non nascoste dalla politica. */
+/**
+ * Parole su cui si può scegliere il simbolo: non la punteggiatura e non i membri di un gruppo nascosti
+ * (l'ausiliare di "ho mangiato": il simbolo sta sul verbo). Le parole nascoste solo dalla politica sì.
+ */
 function pickable(t: TokenDto): boolean {
-  return t.kind !== "punct" && t.display !== "hidden" && t.s < t.e;
+  return t.kind !== "punct" && t.s < t.e && (t.display !== "hidden" || t.group === 0);
 }
 
 /** La parola alla posizione `pos` (se il cursore è alla fine di una parola vale quella), se il motore ha già risposto. */

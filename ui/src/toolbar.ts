@@ -163,9 +163,14 @@ export function createBars(
     setPolicy(view, custom ? tablePolicy(table) : (select.value as Policy));
     refresh();
   };
+  // La tabella si apre da sola la prima volta che si sceglie «Personalizzato»; poi c'è «Modifica…».
+  let tableShown = false;
   select.addEventListener("change", () => {
     applyPolicy();
-    if (select.value === "custom") dialog.show();
+    if (select.value === "custom" && !tableShown) {
+      tableShown = true;
+      dialog.show();
+    }
   });
   editBtn.addEventListener("click", () => dialog.show());
   policyLabel.append(select, " ", editBtn);

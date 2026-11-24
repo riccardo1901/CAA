@@ -939,24 +939,62 @@ fn un_blocco_di_senso_toglie_il_dubbio_anche_se_il_simbolo_e_gia_quello() {
 }
 
 #[test]
-fn nessun_simbolo_non_rende_visibile_una_parola_nascosta() {
-    // In Essenziale l'articolo e' nascosto: "nessun simbolo" scelto dal docente non lo riporta in vista.
+fn una_scelta_del_docente_su_una_parola_nascosta_dalla_politica_la_mostra() {
+    // In Essenziale l'articolo e' nascosto dalla politica; se il docente interviene su quella parola
+    // la sua scelta vince: con un pittogramma si vede, con "nessun simbolo" resta come solo testo.
     let prefs = DocPrefs {
         function_policy: FunctionPolicy::Essential,
     };
-    let forced = [ForcedPick {
-        span_utf16: (0, 2),
-        picto: 0,
-    }];
-    let t = engine("", "").symbolize(&Request {
-        text: "la porta",
-        prefs: &prefs,
-        forced: &forced,
-        sense_locks: &SenseLocks::default(),
-        memory: &UserMemory::default(),
-    });
-    assert_eq!(t[0].display, Display::Hidden);
-    assert_eq!(t[0].picto, None);
+    let run = |picto: u32| {
+        let forced = [ForcedPick {
+            span_utf16: (0, 2),
+            picto,
+        }];
+        engine("", "").symbolize(&Request {
+            text: "la porta",
+            prefs: &prefs,
+            forced: &forced,
+            sense_locks: &SenseLocks::default(),
+            memory: &UserMemory::default(),
+        })
+    };
+    assert_eq!(run(0)[0].display, Display::TextOnly);
+    assert_eq!(run(0)[0].picto, None);
+    let shown = &run(104)[0];
+    assert_eq!(shown.display, Display::Full);
+    assert_eq!(shown.picto.map(|p| p.id), Some(104));
+    // Senza intervento resta nascosto.
+    assert_eq!(
+        engine("", "").symbolize(&Request {
+            text: "la porta",
+            prefs: &prefs,
+            forced: &[],
+            sense_locks: &SenseLocks::default(),
+            memory: &UserMemory::default(),
+        })[0]
+            .display,
+        Display::Hidden
+    );
+}
+
+#[test]
+fn una_scelta_non_scopre_i_membri_di_un_gruppo() {
+    // "ho" e' l'ausiliare di "ho mangiato": nascosto dal gruppo, non dalla politica.
+    let prefs = DocPrefs::default();
+    for picto in [0, 104] {
+        let forced = [ForcedPick {
+            span_utf16: (0, 2),
+            picto,
+        }];
+        let t = engine("", "").symbolize(&Request {
+            text: "ho mangiato",
+            prefs: &prefs,
+            forced: &forced,
+            sense_locks: &SenseLocks::default(),
+            memory: &UserMemory::default(),
+        });
+        assert_eq!(t[0].display, Display::Hidden, "picto {picto}");
+    }
 }
 
 // ---- M8c-1: politica personalizzata per categoria ----

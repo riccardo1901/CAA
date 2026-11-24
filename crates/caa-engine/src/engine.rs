@@ -506,15 +506,18 @@ fn apply_choices(tokens: &mut [Token], locks: &SenseLocks, forced: &[ForcedPick]
         if let Some(f) = forced.iter().find(|f| f.span_utf16 == t.span_utf16) {
             t.confidence = 1.0;
             t.reason.picto = PictoReason::Teacher;
+            // Un membro di un gruppo (ausiliare di "ho mangiato", parte di una multiparola) resta
+            // nascosto: il suo simbolo sta sulla testa. Una parola nascosta solo dalla politica
+            // (articoli in "Essenziale") invece si mostra: l'intervento del docente vince.
+            let member = t.group.is_some_and(|g| g.role == GroupRole::Member);
             if f.picto == 0 {
                 t.picto = None;
-                // Una parola nascosta dalla politica (articoli in "Essenziale") resta nascosta.
-                if t.display != Display::Hidden {
+                if !member {
                     t.display = Display::TextOnly;
                 }
             } else {
                 t.picto = Some(PictoRef { id: f.picto });
-                if t.display != Display::Hidden {
+                if !member {
                     t.display = Display::Full;
                 }
             }

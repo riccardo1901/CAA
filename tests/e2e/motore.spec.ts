@@ -721,7 +721,27 @@ test("«Personalizzato»: una tabella per categoria, subito visibile e ricordata
   await expect(page.getByRole("button", { name: "Modifica…" })).toBeHidden();
   await page.selectOption("select[aria-label='Politica delle parole funzionali']", "custom");
   await expect(page.locator(".w.hid")).toHaveCount(2);
-  await page.getByRole("button", { name: "Chiudi" }).click();
+  // La tabella si apre da sola solo la prima volta; poi serve «Modifica…».
+  await expect(dialog).toBeHidden();
   await page.getByRole("button", { name: "Modifica…" }).click();
   await expect(dialog.getByLabel("Articoli")).toHaveValue("hidden");
+});
+
+test("una parola nascosta dalla politica si può correggere dalla barra", async ({ page }) => {
+  await open(page, "La casa il pane.");
+  await page.selectOption("select[aria-label='Politica delle parole funzionali']", "essential");
+  await expect(page.locator(".w.hid")).toHaveCount(2);
+  // Clic sulla zona del simbolo di una parola nascosta: la barra si riempie.
+  await clickSymbol(page, "La");
+  await expect(page.locator(".pm-head")).toContainText("La");
+  await expect(page.locator(".pm-cell")).toHaveCount(8);
+  await page.locator(".pm-all input").uncheck();
+  await page.locator(".pm-cell").nth(1).click();
+  // La scelta del docente vince sulla politica: ora "La" ha un simbolo; "il" resta nascosto.
+  await expect(page.locator(".w.hid")).toHaveCount(1);
+  await expect(page.locator(".w[style*='--img']", { hasText: /^La$/ })).toHaveCount(1);
+  // Anche con Alt+↓ sulla parola nascosta rimasta.
+  await page.evaluate(() => (window as any).caaProto.setCaret(10));
+  await page.keyboard.press("Alt+ArrowDown");
+  await expect(page.locator(".pm-head")).toContainText("il");
 });
