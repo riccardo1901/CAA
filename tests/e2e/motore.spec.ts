@@ -9,7 +9,7 @@ const MOCK = `
   const calls = [];
   const svg = (id) => 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10" fill="hsl(' + (id % 360) + ',60%,60%)"/></svg>');
   const RE = /\\p{L}[\\p{L}\\p{M}]*['’]?|\\d+(?:[.,:]\\d+)*|[^\\s\\p{L}\\d]/gu;
-  function tokens(text, policy) {
+  function tokens(text, policy, forced, locks) {
     const out = [];
     for (const m of text.matchAll(RE)) {
       const w = m[0], s = m.index, e = s + w.length;
@@ -23,13 +23,25 @@ const MOCK = `
       if (lw === 'ferri') t.mods = 1;
       if (lw === 'andremo') t.mods = 4;
       if (lw === 'andati') t.mods = 3;
+      if (!punct) { t.lemma = lw; t.cat = 'NOUN'; t.teacher = false; t.why = 'nome, prova'; }
+      else { t.lemma = ''; t.cat = ''; t.teacher = false; t.why = ''; }
+      const lock = locks.find((l) => l.lemma === t.lemma && l.cat === t.cat);
+      if (lock) { t.picto = lock.picto; t.image = true; t.display = 'full'; t.placeholder = false; }
+      const f = forced.find((x) => x.s === s && x.e === e);
+      if (f) {
+        t.teacher = true; t.confidence = 1; t.doubtful = false;
+        if (f.picto === 0) { t.picto = null; t.image = false; t.display = 'text'; t.placeholder = false; }
+        else { t.picto = f.picto; t.image = true; t.display = 'full'; t.placeholder = false; }
+      }
       out.push(t);
     }
     return out;
   }
-  window.__mock = { calls, delay: 4, fail: 0 };
+  window.__mock = { calls, delay: 4, fail: 0, alts: [], searches: [] };
   return {
-    symbolize: (texts, policy) => { calls.push({ texts, policy }); return new Promise((r, rej) => setTimeout(() => { if (window.__mock.fail > 0) { window.__mock.fail--; rej(new Error('motore guasto')); } else r(texts.map((t) => tokens(t, policy))); }, window.__mock.delay)); },
+    symbolize: (paras, policy, locks) => { calls.push({ texts: paras.map((p) => p.text), paras, locks, policy }); return new Promise((r, rej) => setTimeout(() => { if (window.__mock.fail > 0) { window.__mock.fail--; rej(new Error('motore guasto')); } else r(paras.map((p) => tokens(p.text, policy, p.forced, locks))); }, window.__mock.delay)); },
+    alternatives: (para, policy, locks, s, e) => { window.__mock.alts.push({ para, s, e }); return new Promise((r) => setTimeout(() => r([1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => ({ picto: 1000 + i, keyword: 'alt' + i, reason: 'altro senso', image: i !== 3 }))), 3)); },
+    search: (q) => { window.__mock.searches.push(q); return new Promise((r) => setTimeout(() => r(q === 'zzz' ? [] : [{ picto: 9001, keyword: q + 'a', reason: 'cercato', image: true }, { picto: 9002, keyword: q + 'b', reason: 'cercato', image: true }]), 3)); },
     url: (id) => svg(id),
   };
 })()
@@ -258,4 +270,215 @@ test("dopo «Testo di esempio» o «Nuovo» i simboli del motore tornano (e la p
   await page.locator(".ProseMirror").click();
   await page.keyboard.type("casa mare");
   await expect(page.locator(".w[style*='--img']")).toHaveCount(2);
+});
+
+// ---- M8b: menu delle alternative, scelte come mark, blocchi di senso, parole da controllare ----
+
+const imgOf = (page: Page, word: string) =>
+  page.locator(".w", { hasText: new RegExp(`^${word}$`) }).first().getAttribute("style");
+
+/** Clic sulla zona del simbolo della parola (la parte alta dell'elemento). */
+async function clickSymbol(page: Page, word: string, nth = 0): Promise<void> {
+  await page.locator(".w", { hasText: new RegExp(`^${word}$`) }).nth(nth).click({ position: { x: 20, y: 8 } });
+}
+
+const docPicks = (page: Page) =>
+  page.evaluate(() => {
+    const out: Array<Record<string, unknown>> = [];
+    (window as any).caaProto.view.state.doc.descendants((n: any) => {
+      for (const m of n.marks ?? []) if (m.type.name === "pick") out.push({ text: n.text, ...m.attrs });
+    });
+    return out;
+  });
+
+test("clic sul simbolo apre il menu con le alternative; clic sul testo no", async ({ page }) => {
+  await open(page, "Marco mangia pane");
+  const word = page.locator(".w", { hasText: /^pane$/ });
+  const box = await word.boundingBox();
+  await word.click({ position: { x: 20, y: box!.height - 4 } }); // sul testo, sotto il simbolo
+  await expect(page.locator(".pmenu")).toHaveCount(0);
+  await clickSymbol(page, "pane");
+  await expect(page.locator(".pmenu")).toBeVisible();
+  await expect(page.locator(".pm-head")).toContainText("pane");
+  await expect(page.locator(".pm-head")).toContainText("nome, prova");
+  // 9 alternative dal motore, 8 in griglia; quella senza immagine mostra il segnaposto.
+  await expect(page.locator(".pm-cell")).toHaveCount(8);
+  await expect(page.locator(".pm-cell").nth(2).locator(".pm-noimg")).toHaveCount(1);
+  await expect(page.locator(".pm-num").first()).toHaveText("1");
+  await expect(page.getByRole("button", { name: "Nessun simbolo" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Solo testo" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Cerca…" })).toBeVisible();
+  await expect(page.locator(".pm-all input")).toBeChecked();
+  // Esc chiude e il cursore torna nel testo.
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".pmenu")).toHaveCount(0);
+  // Le alternative sono state chieste per la parola giusta.
+  const alts = await page.evaluate(() => (window as any).__mock.alts as Array<{ para: { text: string }; s: number; e: number }>);
+  expect(alts[0].para.text.slice(alts[0].s, alts[0].e)).toBe("pane");
+});
+
+test("una scelta cambia il simbolo, è un solo passo di annulla e si può ripetere", async ({ page }) => {
+  await open(page, "Marco mangia pane");
+  const before = await imgOf(page, "pane");
+  await clickSymbol(page, "pane");
+  await page.locator(".pm-cell").nth(1).click();
+  await expect(page.locator(".pmenu")).toHaveCount(0);
+  await expect.poll(() => imgOf(page, "pane")).not.toBe(before);
+  const chosen = await imgOf(page, "pane");
+  expect(chosen).toContain(encodeURIComponent("hsl(" + (1002 % 360)));
+  const picks = await docPicks(page);
+  expect(picks).toHaveLength(1);
+  expect(picks[0]).toMatchObject({ text: "pane", word: "pane", picto: 1002, lock: 1, lemma: "pane", cat: "NOUN" });
+  // Annulla: torna il simbolo di prima; ripeti: torna la scelta.
+  await page.locator(".ProseMirror").click();
+  await page.keyboard.press("Control+z");
+  await expect.poll(() => imgOf(page, "pane")).toBe(before);
+  expect(await docPicks(page)).toHaveLength(0);
+  await page.keyboard.press("Control+y");
+  await expect.poll(() => imgOf(page, "pane")).toBe(chosen);
+  // Il motore ha ricevuto la scelta del paragrafo.
+  const last = await page.evaluate(() => {
+    const c = (window as any).__mock.calls;
+    return c[c.length - 1];
+  });
+  expect(last.paras[0].forced).toEqual([{ s: 13, e: 17, picto: 1002 }]);
+  expect(last.locks).toEqual([{ lemma: "pane", cat: "NOUN", picto: 1002 }]);
+});
+
+test("«usa per tutto il testo»: tutte le parole uguali, o solo quella", async ({ page }) => {
+  await open(page, "pane e pane\npane");
+  const first = await imgOf(page, "pane");
+  await clickSymbol(page, "pane", 0);
+  await page.locator(".pm-cell").nth(3).click();
+  // Attiva (predefinita): le tre occorrenze, anche in un altro paragrafo, prendono il simbolo scelto.
+  await expect.poll(async () => (await page.locator(".w", { hasText: /^pane$/ }).evaluateAll((els) => els.map((e) => e.getAttribute("style")))).filter((s) => s === first).length).toBe(0);
+  const styles = await page.locator(".w", { hasText: /^pane$/ }).evaluateAll((els) => els.map((e) => e.getAttribute("style")));
+  expect(new Set(styles).size).toBe(1);
+  // Con la casella spenta cambia solo una occorrenza (e l'altro blocco resta com'era).
+  await clickSymbol(page, "pane", 1);
+  await page.locator(".pm-all input").uncheck();
+  await page.locator(".pm-cell").nth(0).click();
+  await expect.poll(async () => new Set(await page.locator(".w", { hasText: /^pane$/ }).evaluateAll((els) => els.map((e) => e.getAttribute("style")))).size).toBe(2);
+  expect(await docPicks(page)).toHaveLength(2);
+  // Una scelta con blocco su un'altra occorrenza scioglie il blocco precedente: resta un solo lock.
+  await clickSymbol(page, "pane", 2);
+  await page.locator(".pm-cell").nth(4).click();
+  await expect.poll(async () => (await docPicks(page)).filter((p) => p.lock === 1).length).toBe(1);
+});
+
+test("tastiera: Alt+↓ apre il menu, 1–8 sceglie, Esc chiude", async ({ page }) => {
+  await open(page, "Marco mangia pane");
+  await page.evaluate(() => (window as any).caaProto.setCaret(15));
+  await page.keyboard.press("Alt+ArrowDown");
+  await expect(page.locator(".pmenu")).toBeVisible();
+  await expect(page.locator(".pm-head")).toContainText("pane");
+  await expect(page.locator(".pm-cell")).toHaveCount(8);
+  await page.keyboard.press("3");
+  await expect(page.locator(".pmenu")).toHaveCount(0);
+  expect((await docPicks(page))[0]).toMatchObject({ picto: 1003, word: "pane" });
+  await page.waitForFunction(() => (window as any).caaProto.engineStats().pending === 0);
+  // Il cursore è rimasto nel testo e Esc chiude senza scegliere.
+  await page.keyboard.press("Alt+ArrowDown");
+  await expect(page.locator(".pmenu")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".pmenu")).toHaveCount(0);
+  expect(await docPicks(page)).toHaveLength(1);
+});
+
+test("«Nessun simbolo», «Solo testo» e «Automatico»", async ({ page }) => {
+  await open(page, "Marco mangia pane");
+  await clickSymbol(page, "pane");
+  await page.getByRole("button", { name: "Nessun simbolo" }).click();
+  // Spazio del simbolo vuoto, senza segnaposto tratteggiato.
+  await expect(page.locator(".w.ns:not(.ph):not(.txt)", { hasText: /^pane$/ })).toHaveCount(1);
+  const boxNone = await page.locator(".w.ns", { hasText: /^pane$/ }).boundingBox();
+  expect(boxNone!.height).toBeGreaterThan(40);
+  // Solo testo: la parola perde lo spazio del simbolo.
+  await clickSymbol(page, "pane");
+  await page.getByRole("button", { name: "Solo testo" }).click();
+  await expect(page.locator(".w.txt", { hasText: /^pane$/ })).toHaveCount(1);
+  const boxText = await page.locator(".w.txt").boundingBox();
+  expect(boxText!.height).toBeLessThan(boxNone!.height / 2);
+  // Una parola «solo testo» non ha la zona del simbolo: si apre con Alt+↓. «Automatico» toglie la scelta.
+  await page.evaluate(() => (window as any).caaProto.setCaret(15));
+  await page.keyboard.press("Alt+ArrowDown");
+  await page.getByRole("button", { name: "Automatico" }).click();
+  await expect(page.locator(".w.txt")).toHaveCount(0);
+  await expect(page.locator(".w[style*='--img']", { hasText: /^pane$/ })).toHaveCount(1);
+  expect(await docPicks(page)).toHaveLength(0);
+});
+
+test("«Cerca…»: scrivendo si cercano pittogrammi, Invio sceglie il primo", async ({ page }) => {
+  await open(page, "Marco mangia pane");
+  await clickSymbol(page, "pane");
+  await page.getByRole("button", { name: "Cerca…" }).click();
+  await expect(page.locator(".pm-search")).toBeFocused();
+  // Le cifre si scrivono nella ricerca: non scelgono le alternative.
+  await page.keyboard.type("zzz");
+  await expect(page.locator(".pm-status")).toHaveText("Nessun simbolo trovato");
+  await expect(page.locator(".pm-cell")).toHaveCount(0);
+  await page.locator(".pm-search").fill("ma1");
+  await expect(page.locator(".pm-cell")).toHaveCount(2);
+  await expect(page.locator(".pm-num")).toHaveCount(0);
+  expect(await docPicks(page)).toHaveLength(0);
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".pmenu")).toHaveCount(0);
+  expect((await docPicks(page))[0]).toMatchObject({ picto: 9001 });
+});
+
+test("F8 e il contatore portano alla prossima parola da controllare", async ({ page }) => {
+  await open(page, "La sera dubbio.\nMarco dubbio.");
+  await page.waitForFunction(() => (window as any).caaProto.engineStats().pending === 0);
+  await page.evaluate(() => (window as any).caaProto.setCaret(1));
+  await page.keyboard.press("F8");
+  await expect(page.locator(".pmenu")).toBeVisible();
+  await expect(page.locator(".pm-head")).toContainText("dubbio");
+  expect(await page.evaluate(() => (window as any).caaProto.selection().head)).toBe(9);
+  await page.keyboard.press("Escape");
+  // Seconda parola dubbia (altro paragrafo), poi giro completo.
+  await page.keyboard.press("F8");
+  expect(await page.evaluate(() => (window as any).caaProto.selection().head)).toBe(24);
+  await page.keyboard.press("Escape");
+  await page.locator(".statusbar .link").click();
+  await expect(page.locator(".pmenu")).toBeVisible();
+  expect(await page.evaluate(() => (window as any).caaProto.selection().head)).toBe(9);
+  await page.keyboard.press("Escape");
+  // Scegliere un simbolo toglie il dubbio: il contatore scende.
+  await page.keyboard.press("F8");
+  await page.locator(".pm-all input").uncheck();
+  await page.keyboard.press("1");
+  await expect(page.locator(".statusbar")).toContainText("1 parola da controllare");
+});
+
+test("se la parola cambia, la scelta non vale più", async ({ page }) => {
+  await open(page, "Marco mangia pane");
+  const before = await imgOf(page, "pane");
+  await clickSymbol(page, "pane");
+  await page.locator(".pm-all input").uncheck();
+  await page.locator(".pm-cell").nth(1).click();
+  await expect.poll(() => imgOf(page, "pane")).not.toBe(before);
+  // Scrivo una lettera in fondo: la parola è un'altra e il motore non riceve più la scelta.
+  await page.evaluate(() => (window as any).caaProto.setCaret((window as any).caaProto.docSize() - 1));
+  await page.keyboard.type("x");
+  await expect(page.locator(".w[style*='--img']", { hasText: /^panex$/ })).toHaveCount(1);
+  const last = await page.evaluate(() => {
+    const c = (window as any).__mock.calls;
+    return c[c.length - 1];
+  });
+  expect(last.paras[0].text).toBe("Marco mangia panex");
+  expect(last.paras[0].forced).toEqual([]);
+});
+
+test("il menu si apre in meno di 100 ms @perf", async ({ page }) => {
+  await open(page, "Marco mangia pane");
+  const times: number[] = [];
+  for (let i = 0; i < 5; i++) {
+    const t0 = Date.now();
+    await clickSymbol(page, "pane");
+    await page.locator(".pm-cell").first().waitFor();
+    times.push(Date.now() - t0);
+    await page.keyboard.press("Escape");
+  }
+  times.sort((a, b) => a - b);
+  expect(times[2], `tempi ${times.join(" ")}`).toBeLessThan(100);
 });

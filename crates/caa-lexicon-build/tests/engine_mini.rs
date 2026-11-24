@@ -889,3 +889,38 @@ fn il_docente_puo_scegliere_un_simbolo_per_una_parola_sconosciuta() {
         (Some(104), Display::Full, PictoReason::Teacher)
     );
 }
+
+#[test]
+fn la_ricerca_libera_trova_per_chiave_e_per_prefisso() {
+    let e = engine("", "");
+    let ids = |q: &str, n: usize| -> Vec<u32> {
+        e.search_pictos(q, n).iter().map(|c| c.picto.id).collect()
+    };
+    // Chiave esatta: tutti i pittogrammi della parola, in ordine di id.
+    assert_eq!(ids("pane", 8), vec![104, 116]);
+    // Prefisso: prima la chiave piu' corta ("pasta"), poi "pastelli"; maiuscole e spazi non contano.
+    assert_eq!(ids("  PAst ", 8), vec![124, 125]);
+    // Esatta prima del prefisso e nessun doppione ("pane" e' anche prefisso di nulla altro, "pa" no).
+    let pa = ids("pa", 8);
+    assert!(
+        pa.contains(&104) && pa.contains(&116) && pa.contains(&124),
+        "{pa:?}"
+    );
+    let mut sorted = pa.clone();
+    sorted.sort_unstable();
+    sorted.dedup();
+    assert_eq!(sorted.len(), pa.len());
+    // Tetto, query vuota, nessun risultato.
+    assert_eq!(ids("pa", 2).len(), 2);
+    assert!(ids("", 8).is_empty() && ids("   ", 8).is_empty());
+    assert!(ids("zzzz", 8).is_empty());
+    // Ogni risultato dice quale parola chiave l'ha trovato.
+    let c = e.search_pictos("pagn", 8);
+    assert_eq!((c[0].picto.id, c[0].keyword.as_str()), (116, "pagnotta"));
+    // Se la parola non e' una chiave si prova il lemma: "mangiato" -> "mangiare".
+    assert!(
+        ids("mangiato", 8).contains(&110),
+        "{:?}",
+        ids("mangiato", 8)
+    );
+}

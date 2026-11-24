@@ -3,6 +3,7 @@
 import type { EditorView } from "prosemirror-view";
 import type { EngineInfo, Policy } from "./engine/client";
 import { engineStats, setPolicy } from "./editor/engineSymbols";
+import { hooks } from "./editor/menuHooks";
 
 const SIZES: Array<[string, number]> = [
   ["Piccolo", 45],
@@ -86,7 +87,10 @@ export function createBars(
   toolbar.append(doc, el("span", "grow"), policyLabel, sizes);
 
   const wordsInfo = el("span");
-  const doubtInfo = el("span");
+  const doubtInfo = el("span", "link");
+  doubtInfo.title = "Vai alla prossima parola da controllare (F8)";
+  doubtInfo.setAttribute("role", "button");
+  doubtInfo.addEventListener("click", () => hooks.next?.());
   const policyInfo = el("span");
   const engineInfoEl = el("span");
   const errorInfo = el("span");

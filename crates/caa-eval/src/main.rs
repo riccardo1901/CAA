@@ -426,8 +426,10 @@ fn main() -> ExitCode {
                 }
             };
             add_dir("corpus/testi", "txt", &mut texts);
+            let mut sample: Vec<String> = Vec::new();
             if let Ok(t) = std::fs::read_to_string("docs/testo-esempio.txt") {
-                texts.push(t);
+                texts.push(t.clone());
+                sample.push(t);
             }
             if let Ok(t) = std::fs::read_to_string(&base) {
                 if let Ok(words) = parse_base(&t) {
@@ -447,7 +449,9 @@ fn main() -> ExitCode {
             if texts.is_empty() {
                 return fail("non trovo i testi (corpus/testi, docs/testo-esempio.txt, lessico di base): lancia il comando dalla radice del repository");
             }
-            let ids = caa_eval::picto_ids_for_texts(&engine, &texts, &extra);
+            let mut ids = caa_eval::picto_ids_for_texts(&engine, &texts, &extra);
+            // Il menu delle alternative (M8b) mostra le immagini: quelle delle parole del testo di esempio.
+            ids.extend(caa_eval::alternative_ids_for_texts(&engine, &sample, 8));
             let copy = |rel: &str| -> Result<(), String> {
                 let from = lexicon.join(rel);
                 let to = out.join(rel);

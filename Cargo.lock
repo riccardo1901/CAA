@@ -230,6 +230,7 @@ dependencies = [
  "caa-engine",
  "caa-store",
  "serde",
+ "serde_json",
  "tauri",
  "tauri-build",
 ]

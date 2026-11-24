@@ -3,10 +3,13 @@
 
 use std::path::{Path, PathBuf};
 
-use caa_engine::engine::{Display, FunctionPolicy, GroupRole, Token};
+use caa_engine::engine::{
+    Candidate, Display, ForcedPick, FunctionPolicy, GroupRole, PictoReason, ReadingReason,
+    SenseLocks, Token,
+};
 use caa_engine::tokenize::TokenKind;
 use caa_engine::types::Cat;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 /// Limiti di una richiesta di simbolizzazione (revisione M8a): senza tetto, un grande incolla
 /// bloccherebbe il motore per secondi e produrrebbe decine di MB di risposta.
@@ -27,6 +30,89 @@ pub fn check_request(texts: &[String]) -> Result<(), String> {
         ));
     }
     Ok(())
+}
+
+/// Tetti sulle scelte del docente in una richiesta (M8b): sono dati dell'interfaccia, ma un
+/// documento enorme o un errore non devono bloccare il motore.
+pub const MAX_FORCED: usize = 20_000;
+pub const MAX_LOCKS: usize = 5_000;
+/// Risultati al massimo di una ricerca libera.
+pub const SEARCH_LIMIT: usize = 24;
+
+pub fn check_choices(forced: usize, locks: usize) -> Result<(), String> {
+    if forced > MAX_FORCED {
+        return Err(format!("troppe scelte nel testo ({forced} > {MAX_FORCED})"));
+    }
+    if locks > MAX_LOCKS {
+        return Err(format!("troppi blocchi di senso ({locks} > {MAX_LOCKS})"));
+    }
+    Ok(())
+}
+
+/// Una scelta del docente su una parola (come arriva dalla pagina). `picto` 0 = nessun simbolo.
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct ForcedDto {
+    pub s: u32,
+    pub e: u32,
+    pub picto: u32,
+}
+
+/// Un paragrafo con le scelte fatte sulle sue parole.
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct ParaDto {
+    pub text: String,
+    #[serde(default)]
+    pub forced: Vec<ForcedDto>,
+}
+
+/// Blocco di senso: il lemma (con la categoria, come "NOUN") prende sempre quel pittogramma.
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct LockDto {
+    pub lemma: String,
+    pub cat: String,
+    pub picto: u32,
+}
+
+pub fn to_forced(v: &[ForcedDto]) -> Vec<ForcedPick> {
+    v.iter()
+        .filter(|f| f.s < f.e)
+        .map(|f| ForcedPick {
+            span_utf16: (f.s, f.e),
+            picto: f.picto,
+        })
+        .collect()
+}
+
+/// Blocchi di senso dalla pagina; quelli con categoria sconosciuta o pittogramma 0 si ignorano.
+pub fn to_locks(v: &[LockDto]) -> SenseLocks {
+    let mut locks = SenseLocks::default();
+    for l in v {
+        if let (Some(cat), true) = (Cat::from_name(&l.cat), l.picto > 0) {
+            locks.insert(&l.lemma, cat, l.picto);
+        }
+    }
+    locks
+}
+
+/// Un'alternativa per il menu.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct CandidateDto {
+    pub picto: u32,
+    pub keyword: String,
+    pub reason: String,
+    /// L'immagine è disponibile nei dati.
+    pub image: bool,
+}
+
+pub fn candidates_dto(c: &[Candidate], has_image: &dyn Fn(u32) -> bool) -> Vec<CandidateDto> {
+    c.iter()
+        .map(|c| CandidateDto {
+            picto: c.picto.id,
+            keyword: c.keyword.clone(),
+            reason: c.reason.clone(),
+            image: has_image(c.picto.id),
+        })
+        .collect()
 }
 
 /// Sotto questa confidenza la parola si sottolinea (SPEC.md, fase 7).
@@ -90,6 +176,67 @@ pub struct TokenDto {
     pub doubtful: bool,
     /// Parola piena senza pittogramma: l'editor mostra il segnaposto tratteggiato.
     pub placeholder: bool,
+    /// Lemma e categoria ("NOUN"…) della lettura scelta: servono per il blocco di senso.
+    pub lemma: String,
+    pub cat: &'static str,
+    /// La scelta viene dal docente (non si controlla e non ha segnaposto).
+    pub teacher: bool,
+    /// Perché il motore ha deciso così, in una riga (menu delle alternative).
+    pub why: String,
+}
+
+fn cat_label(c: Cat) -> &'static str {
+    match c {
+        Cat::Noun => "nome",
+        Cat::Propn => "nome proprio",
+        Cat::Verb => "verbo",
+        Cat::Aux => "ausiliare",
+        Cat::Modal => "verbo modale",
+        Cat::Adj => "aggettivo",
+        Cat::Adv => "avverbio",
+        Cat::Art => "articolo",
+        Cat::Adp => "preposizione",
+        Cat::ArtAdp => "preposizione articolata",
+        Cat::Pron => "pronome",
+        Cat::Clitic => "pronome clitico",
+        Cat::Det => "determinante",
+        _ => "parola",
+    }
+}
+
+/// La ragione della scelta del motore in italiano, per il menu ("nome, dal contesto · simbolo dal
+/// lemma").
+pub fn explain(t: &Token) -> String {
+    let reading = match t.reason.reading {
+        ReadingReason::Punctuation => "punteggiatura",
+        ReadingReason::Literal => "testo",
+        ReadingReason::OnlyReading => "unica lettura possibile",
+        ReadingReason::BaselinePick => "lettura più probabile",
+        ReadingReason::Tagger => "dal contesto della frase",
+        ReadingReason::Capital => "maiuscola: nome proprio",
+        ReadingReason::ArasaacKey => "parola del lessico dei pittogrammi",
+        ReadingReason::Typo => "forse un errore di battitura",
+        ReadingReason::SuffixGuess => "forma sconosciuta, ipotesi dal finale",
+        ReadingReason::NoReading => "parola sconosciuta",
+    };
+    let picto = match t.reason.picto {
+        PictoReason::NoSymbol => "nessun simbolo disponibile",
+        PictoReason::Curated => "scelta curata",
+        PictoReason::ExactForm => "parola esatta",
+        PictoReason::Singular => "dal singolare",
+        PictoReason::Lemma => "dalla forma base",
+        PictoReason::PluralForm => "dal plurale",
+        PictoReason::IgnoringCategory => "da un'altra categoria grammaticale",
+        PictoReason::NumberWord => "numero",
+        PictoReason::Pronominal => "verbo pronominale",
+        PictoReason::Multiword => "espressione di più parole",
+        PictoReason::Teacher => "scelto da te",
+        PictoReason::SenseLock => "stesso senso già scelto nel testo",
+    };
+    match &t.analysis {
+        Some(a) => format!("{}, {reading} · simbolo: {picto}", cat_label(a.cat)),
+        None => format!("{reading} · simbolo: {picto}"),
+    }
 }
 
 fn is_content(cat: Cat) -> bool {
@@ -117,6 +264,7 @@ pub fn to_dto(tokens: &[Token], has_image: &dyn Fn(u32) -> bool) -> Vec<TokenDto
             let content = t.analysis.as_ref().is_some_and(|a| is_content(a.cat));
             let word = matches!(t.kind, TokenKind::Word | TokenKind::Unknown);
             let hidden = t.display == Display::Hidden;
+            let teacher = t.reason.picto == PictoReason::Teacher;
             TokenDto {
                 s: t.span_utf16.0,
                 e: t.span_utf16.1,
@@ -130,10 +278,20 @@ pub fn to_dto(tokens: &[Token], has_image: &dyn Fn(u32) -> bool) -> Vec<TokenDto
                 confidence: t.confidence,
                 doubtful: word && !hidden && t.confidence < DOUBT_THRESHOLD,
                 // Una parola piena visibile senza simbolo (o con simbolo non disponibile).
+                // (non se il docente ha scelto "nessun simbolo": è una scelta, non una mancanza).
                 placeholder: word
                     && !hidden
+                    && !(teacher && picto.is_none())
                     && (content || t.kind == TokenKind::Unknown)
                     && (picto.is_none() || !image),
+                lemma: t
+                    .analysis
+                    .as_ref()
+                    .map(|a| a.lemma.clone())
+                    .unwrap_or_default(),
+                cat: t.analysis.as_ref().map_or("", |a| a.cat.name()),
+                teacher,
+                why: explain(t),
             }
         })
         .collect()
@@ -339,6 +497,83 @@ mod tests {
         assert_eq!((d.group, d.head, d.mods), (4, true, 3));
     }
 
+    #[test]
+    fn scelte_e_blocchi_dalla_pagina() {
+        let para: ParaDto = serde_json::from_str(r#"{"text":"pane"}"#).unwrap();
+        assert!(para.forced.is_empty());
+        let para: ParaDto = serde_json::from_str(
+            r#"{"text":"pane","forced":[{"s":0,"e":4,"picto":7},{"s":3,"e":3,"picto":1}]}"#,
+        )
+        .unwrap();
+        // L'intervallo vuoto si scarta; 0 resta (nessun simbolo).
+        let forced = to_forced(&para.forced);
+        assert_eq!(forced.len(), 1);
+        assert_eq!((forced[0].span_utf16, forced[0].picto), ((0, 4), 7));
+        let locks = to_locks(&[
+            LockDto {
+                lemma: "Pesca".into(),
+                cat: "NOUN".into(),
+                picto: 5,
+            },
+            LockDto {
+                lemma: "x".into(),
+                cat: "BOH".into(),
+                picto: 6,
+            },
+            LockDto {
+                lemma: "y".into(),
+                cat: "NOUN".into(),
+                picto: 0,
+            },
+        ]);
+        assert_eq!(locks.get("pesca", Cat::Noun), Some(5));
+        assert_eq!(locks.get("x", Cat::Noun), None);
+        assert_eq!(locks.get("y", Cat::Noun), None);
+        assert!(check_choices(MAX_FORCED, MAX_LOCKS).is_ok());
+        assert!(check_choices(MAX_FORCED + 1, 0).is_err());
+        assert!(check_choices(0, MAX_LOCKS + 1).is_err());
+    }
+
+    #[test]
+    fn scelta_del_docente_niente_segnaposto_e_motivo_in_italiano() {
+        let mut t = token(
+            TokenKind::Word,
+            Some(Cat::Noun),
+            None,
+            Display::TextOnly,
+            1.0,
+        );
+        // Senza scelta: segnaposto. Con "nessun simbolo" scelto dal docente: niente.
+        assert!(to_dto(std::slice::from_ref(&t), &|_| true)[0].placeholder);
+        t.reason.picto = PictoReason::Teacher;
+        let d = &to_dto(&[t], &|_| true)[0];
+        assert!(d.teacher && !d.placeholder);
+        assert_eq!((d.lemma.as_str(), d.cat), ("x", "NOUN"));
+        assert!(
+            d.why.contains("nome") && d.why.contains("scelto da te"),
+            "{}",
+            d.why
+        );
+        let unknown = token(TokenKind::Unknown, None, None, Display::TextOnly, 0.0);
+        let u = &to_dto(&[unknown], &|_| true)[0];
+        assert_eq!((u.lemma.as_str(), u.cat), ("", ""));
+    }
+
+    #[test]
+    fn alternative_per_la_pagina() {
+        use caa_engine::engine::PictoRef;
+        let c = [Candidate {
+            picto: PictoRef { id: 8 },
+            keyword: "pane".into(),
+            reason: "altro senso".into(),
+        }];
+        let v = candidates_dto(&c, &|id| id != 8);
+        assert_eq!(
+            (v[0].picto, v[0].image, v[0].keyword.as_str()),
+            (8, false, "pane")
+        );
+    }
+
     /// Con i dati veri (`data/build`, fuori da git): se mancano la prova si salta.
     #[test]
     fn con_il_motore_vero() {
@@ -374,5 +609,58 @@ mod tests {
             .iter()
             .filter(|t| t.kind == "punct")
             .all(|t| !t.placeholder && !t.doubtful));
+
+        // M8b: alternative, scelta del docente e ricerca con il lessico vero.
+        use caa_engine::engine::{DocPrefs, ForcedPick, Request, SenseLocks, UserMemory};
+        let prefs = DocPrefs::default();
+        let memory = UserMemory::default();
+        let text = "Il pane e la pesca.";
+        let req = |forced: &[ForcedPick], locks: &SenseLocks| -> Vec<TokenDto> {
+            to_dto(
+                &engine.symbolize(&Request {
+                    text,
+                    prefs: &prefs,
+                    forced,
+                    sense_locks: locks,
+                    memory: &memory,
+                }),
+                &has,
+            )
+        };
+        let none = SenseLocks::default();
+        let base = req(&[], &none);
+        let span = |t: &TokenDto| (t.s, t.e);
+        let pane = base.iter().find(|t| t.lemma == "pane").unwrap();
+        let alts = engine.alternatives(
+            &Request {
+                text,
+                prefs: &prefs,
+                forced: &[],
+                sense_locks: &none,
+                memory: &memory,
+            },
+            span(pane),
+        );
+        assert!(!alts.is_empty(), "il pane ha almeno un'altra immagine");
+        // Scegliere la prima alternativa la mette al posto del simbolo e toglie il segnaposto.
+        let pick = [ForcedPick {
+            span_utf16: span(pane),
+            picto: alts[0].picto.id,
+        }];
+        let after = req(&pick, &none);
+        let p2 = after.iter().find(|t| t.lemma == "pane").unwrap();
+        assert!(p2.teacher && p2.picto == Some(alts[0].picto.id) && !p2.doubtful);
+        // "Nessun simbolo": niente immagine e niente segnaposto.
+        let nothing = [ForcedPick {
+            span_utf16: span(pane),
+            picto: 0,
+        }];
+        let p3 = req(&nothing, &none)
+            .into_iter()
+            .find(|t| t.lemma == "pane")
+            .unwrap();
+        assert!(p3.picto.is_none() && !p3.placeholder && p3.teacher);
+        // La ricerca trova per inizio di parola.
+        assert!(!engine.search_pictos("pan", 24).is_empty());
     }
 }

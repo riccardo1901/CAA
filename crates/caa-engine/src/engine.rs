@@ -829,6 +829,40 @@ impl<D: AsRef<[u8]>> Engine<D> {
         self.alternatives_of(t)
     }
 
+    /// Ricerca libera di un pittogramma ("Cerca…" nel menu): per parola chiave esatta, poi per
+    /// prefisso. Se non trova nulla prova i lemmi della parola ("mele" → "mela"). Non applica la
+    /// lista dei bloccati: il docente cerca apposta.
+    pub fn search_pictos(&self, query: &str, limit: usize) -> Vec<Candidate> {
+        let q = normalize_key(query);
+        let mut out: Vec<Candidate> = Vec::new();
+        let mut seen = std::collections::HashSet::new();
+        let mut run = |key: &str, out: &mut Vec<Candidate>| {
+            for (k, e) in self.picto.search(key, limit.saturating_mul(3)) {
+                if out.len() < limit && seen.insert(e.id) {
+                    out.push(Candidate {
+                        picto: PictoRef { id: e.id },
+                        reason: format!("cercato «{query}»"),
+                        keyword: k,
+                    });
+                }
+            }
+        };
+        run(&q, &mut out);
+        if out.is_empty() {
+            for r in self.morph.lookup(&q) {
+                if let Some(l) = self.morph.lemma(r.lemma_id) {
+                    run(&normalize_key(l), &mut out);
+                }
+            }
+        }
+        out
+    }
+
+    /// Le alternative di un token già calcolato (senza rifare la simbolizzazione).
+    pub fn alternatives_of_token(&self, t: &Token) -> Vec<Candidate> {
+        self.alternatives_of(t)
+    }
+
     fn alternatives_of(&self, t: &Token) -> Vec<Candidate> {
         const MAX: usize = 8;
         let Some(chosen) = &t.analysis else {

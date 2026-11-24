@@ -201,3 +201,64 @@ body { margin: 0; }
   border-bottom: 1px solid #e0c46a;
   font-size: 14px;
 }
+
+/* ---- Solo testo (scelta del docente): la parola perde lo spazio del simbolo ---- */
+.w.txt {
+  display: inline;
+  min-width: 0;
+  padding-top: 0;
+}
+.w.txt::before,
+.w.txt::after { content: none !important; }
+.pk { text-decoration: none; }
+
+/* ---- Contatore delle parole da controllare: si può cliccare ---- */
+.statusbar .link { cursor: pointer; }
+.statusbar .link:hover { text-decoration: underline; }
+
+/* ---- Menu delle alternative (M8b) ---- */
+.pmenu {
+  position: fixed;
+  z-index: 50;
+  width: 380px;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 16px);
+  overflow: auto;
+  padding: 10px;
+  background: #fff;
+  border: 1px solid #9a9aa8;
+  border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+  font: 14px system-ui, sans-serif;
+  color: #1c1c28;
+}
+.pm-head { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
+.pm-now img { width: 48px; height: 48px; object-fit: contain; display: block; }
+.pm-titles { display: flex; flex-direction: column; min-width: 0; }
+.pm-titles strong { font-size: 17px; }
+.pm-why { color: #555; font-size: 12.5px; }
+.pm-status { color: #555; min-height: 1.2em; margin-bottom: 4px; }
+.pm-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.pm-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 2px 4px;
+  border: 1px solid #c8c8d0;
+  border-radius: 6px;
+  background: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+.pm-cell:hover, .pm-cell:focus-visible { border-color: #2a5db0; background: #eef3fb; }
+.pm-cell img, .pm-noimg { width: 72px; height: 72px; object-fit: contain; }
+.pm-noimg { display: flex; align-items: center; justify-content: center; border: 2px dashed #b4b4c0; border-radius: 8px; color: #888; box-sizing: border-box; }
+.pm-kw { font-size: 12px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pm-num { position: absolute; top: 2px; left: 4px; font-size: 11px; font-weight: 700; color: #2a5db0; }
+.pm-fixed { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.pm-btn { padding: 5px 9px; border: 1px solid #9a9aa8; border-radius: 4px; background: #fff; font: inherit; cursor: pointer; }
+.pm-btn:hover { background: #eef3fb; border-color: #2a5db0; }
+.pm-search { width: 100%; box-sizing: border-box; margin-top: 8px; padding: 6px 8px; font: inherit; }
+.pm-all { display: block; margin-top: 8px; color: #333; }

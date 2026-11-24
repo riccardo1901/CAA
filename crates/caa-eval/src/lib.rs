@@ -87,6 +87,42 @@ pub fn picto_ids_for_texts<D: AsRef<[u8]>>(
     ids
 }
 
+/// Pittogrammi delle alternative del menu (M8b) per ogni parola dei testi: servono al pacchetto di
+/// prova perché il menu mostri le immagini. Al massimo `per_word` alternative per parola.
+pub fn alternative_ids_for_texts<D: AsRef<[u8]>>(
+    engine: &Engine<D>,
+    texts: &[String],
+    per_word: usize,
+) -> std::collections::BTreeSet<u32> {
+    use caa_engine::engine::{DocPrefs, Request, SenseLocks, UserMemory};
+    let (prefs, locks, memory) = (
+        DocPrefs::default(),
+        SenseLocks::default(),
+        UserMemory::default(),
+    );
+    let mut ids = std::collections::BTreeSet::new();
+    for text in texts {
+        for sentence in corpus::split_sentences(text) {
+            let req = Request {
+                text: &sentence,
+                prefs: &prefs,
+                forced: &[],
+                sense_locks: &locks,
+                memory: &memory,
+            };
+            for t in engine.symbolize(&req) {
+                if t.analysis.is_none() || t.kind != TokenKind::Word {
+                    continue;
+                }
+                for c in engine.alternatives_of_token(&t).into_iter().take(per_word) {
+                    ids.insert(c.picto.id);
+                }
+            }
+        }
+    }
+    ids
+}
+
 /// Una parola di base: forma (lemma) e categoria indicativa.
 #[derive(Debug, Clone)]
 pub struct BaseWord {

@@ -6,15 +6,16 @@ mod bridge;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use caa_engine::engine::{DocPrefs, ForcedPick, Request, SenseLocks, UserMemory};
+use caa_engine::engine::{DocPrefs, Request, UserMemory};
 use caa_store::{open_engine, MappedEngine};
 use serde::Serialize;
 use tauri::http::Response;
 use tauri::State;
 
 use bridge::{
-    check_request, data_candidates, find_data_dir, image_path, parse_picto_path, parse_policy,
-    to_dto, TokenDto,
+    candidates_dto, check_choices, check_request, data_candidates, find_data_dir, image_path,
+    parse_picto_path, parse_policy, to_dto, to_forced, to_locks, CandidateDto, LockDto, ParaDto,
+    TokenDto, SEARCH_LIMIT,
 };
 
 /// Il motore e la cartella dei dati, caricati una volta all'avvio.
@@ -76,39 +77,97 @@ fn engine_info(state: State<'_, Arc<Backend>>) -> EngineInfo {
     }
 }
 
-/// Simbolizza più paragrafi in una chiamata sola. `async`: il comando gira su un thread a parte e non
-/// blocca l'interfaccia mentre il motore lavora (con testi lunghi richiede decine di millisecondi).
-#[tauri::command(async)]
-fn symbolize(
-    state: State<'_, Arc<Backend>>,
-    texts: Vec<String>,
-    policy: String,
-) -> Result<Vec<Vec<TokenDto>>, String> {
-    check_request(&texts)?;
-    let engine = state.engine.as_ref().ok_or_else(|| {
+fn engine_of(state: &Backend) -> Result<&MappedEngine, String> {
+    state.engine.as_ref().ok_or_else(|| {
         state
             .error
             .clone()
             .unwrap_or_else(|| "motore non caricato".into())
-    })?;
+    })
+}
+
+fn image_check(state: &Backend) -> impl Fn(u32) -> bool {
     let dir = state.dir.clone();
+    move |id: u32| dir.as_ref().is_some_and(|d| image_path(d, id).is_file())
+}
+
+/// Simbolizza più paragrafi in una chiamata sola. `async`: il comando gira su un thread a parte e non
+/// blocca l'interfaccia mentre il motore lavora (con testi lunghi richiede decine di millisecondi).
+/// `paras` porta le scelte del docente per paragrafo, `locks` i blocchi di senso del documento.
+#[tauri::command(async)]
+fn symbolize(
+    state: State<'_, Arc<Backend>>,
+    paras: Vec<ParaDto>,
+    policy: String,
+    locks: Vec<LockDto>,
+) -> Result<Vec<Vec<TokenDto>>, String> {
+    let texts: Vec<String> = paras.iter().map(|p| p.text.clone()).collect();
+    check_request(&texts)?;
+    check_choices(paras.iter().map(|p| p.forced.len()).sum(), locks.len())?;
+    let engine = engine_of(&state)?;
     let prefs = DocPrefs {
         function_policy: parse_policy(&policy),
     };
-    let has_image = move |id: u32| dir.as_ref().is_some_and(|d| image_path(d, id).is_file());
-    Ok(texts
+    let sense_locks = to_locks(&locks);
+    let has_image = image_check(&state);
+    Ok(paras
         .iter()
-        .map(|text| {
+        .map(|p| {
+            let forced = to_forced(&p.forced);
             let tokens = engine.symbolize(&Request {
-                text,
+                text: &p.text,
                 prefs: &prefs,
-                forced: &[] as &[ForcedPick],
-                sense_locks: &SenseLocks::default(),
+                forced: &forced,
+                sense_locks: &sense_locks,
                 memory: &UserMemory::default(),
             });
             to_dto(&tokens, &has_image)
         })
         .collect())
+}
+
+/// Le alternative per la parola `[s, e)` del paragrafo (menu del simbolo), con le scelte attuali.
+#[tauri::command(async)]
+fn alternatives(
+    state: State<'_, Arc<Backend>>,
+    para: ParaDto,
+    policy: String,
+    locks: Vec<LockDto>,
+    s: u32,
+    e: u32,
+) -> Result<Vec<CandidateDto>, String> {
+    check_request(std::slice::from_ref(&para.text))?;
+    check_choices(para.forced.len(), locks.len())?;
+    let engine = engine_of(&state)?;
+    let prefs = DocPrefs {
+        function_policy: parse_policy(&policy),
+    };
+    let forced = to_forced(&para.forced);
+    let found = engine.alternatives(
+        &Request {
+            text: &para.text,
+            prefs: &prefs,
+            forced: &forced,
+            sense_locks: &to_locks(&locks),
+            memory: &UserMemory::default(),
+        },
+        (s, e),
+    );
+    Ok(candidates_dto(&found, &image_check(&state)))
+}
+
+/// "Cerca…" nel menu: pittogrammi per parola chiave (esatta o per inizio di parola).
+#[tauri::command(async)]
+fn search_pictos(
+    state: State<'_, Arc<Backend>>,
+    query: String,
+) -> Result<Vec<CandidateDto>, String> {
+    if query.len() > 200 {
+        return Err("ricerca troppo lunga".into());
+    }
+    let engine = engine_of(&state)?;
+    let found = engine.search_pictos(&query, SEARCH_LIMIT);
+    Ok(candidates_dto(&found, &image_check(&state)))
 }
 
 fn main() {
@@ -133,7 +192,12 @@ fn main() {
                     .unwrap_or_else(|_| Response::new(Vec::new())),
             }
         })
-        .invoke_handler(tauri::generate_handler![engine_info, symbolize])
+        .invoke_handler(tauri::generate_handler![
+            engine_info,
+            symbolize,
+            alternatives,
+            search_pictos
+        ])
         .run(tauri::generate_context!())
         .expect("errore durante l'avvio dell'applicazione");
 }

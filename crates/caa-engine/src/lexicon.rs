@@ -451,6 +451,50 @@ impl<D: AsRef<[u8]>> PictoIndex<D> {
             .collect()
     }
 
+    /// Ricerca per il docente (M8b): prima le voci della chiave esatta, poi quelle delle chiavi che
+    /// iniziano con `query` (le più corte per prime). Chiave già normalizzata; al massimo `limit`
+    /// voci (con duplicati per pittogramma: li toglie chi chiama).
+    pub fn search(&self, query: &str, limit: usize) -> Vec<(String, PictoEntry)> {
+        use fst::automaton::{Automaton, Str};
+        use fst::{IntoStreamer, Streamer};
+        let mut out: Vec<(String, PictoEntry)> = Vec::new();
+        if query.is_empty() || limit == 0 {
+            return out;
+        }
+        out.extend(
+            self.lookup(query)
+                .into_iter()
+                .map(|e| (query.to_string(), e)),
+        );
+        let mut keys: Vec<String> = Vec::new();
+        let mut stream = self
+            .keys
+            .search(Str::new(query).starts_with())
+            .into_stream();
+        // Tetto sulle chiavi lette: un prefisso di una lettera ne ha migliaia.
+        while let Some((k, _)) = stream.next() {
+            if k != query.as_bytes() {
+                keys.push(String::from_utf8_lossy(k).into_owned());
+                if keys.len() >= 500 {
+                    break;
+                }
+            }
+        }
+        keys.sort_by(|a, b| {
+            a.chars()
+                .count()
+                .cmp(&b.chars().count())
+                .then_with(|| a.cmp(b))
+        });
+        for k in keys {
+            if out.len() >= limit {
+                break;
+            }
+            out.extend(self.lookup(&k).into_iter().map(|e| (k.clone(), e)));
+        }
+        out
+    }
+
     /// Parola chiave singolare di una voce `PLURAL_FORM` ("ape" per la chiave "api").
     pub fn singular(&self, entry: &PictoEntry) -> Option<&str> {
         let offset = (entry.singular as usize).checked_sub(1)?;

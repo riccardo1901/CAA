@@ -5,6 +5,7 @@ import { benchmark, checkSymbolHits, checkWrap } from "./checks";
 import { createEditor, currentMode, replaceDoc } from "./editor/editor";
 import { engineStats, onEngineUpdate, setEngine, setPolicy } from "./editor/engineSymbols";
 import { engineInfo, inTauri, tauriClient, type EngineClient, type EngineInfo, type Policy } from "./engine/client";
+import { installMenu } from "./menu";
 import { createBars } from "./toolbar";
 import { symbolKey, type Mode } from "./editor/symbolPlugin";
 import { setSymbols } from "./editor/symbols";
@@ -34,7 +35,10 @@ let engineModeOn = false;
 function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): void {
   // Una volta sola: i pulsanti e gli ascoltatori delle barre non si devono accumulare.
   if (engineModeOn) {
-    if (client) setEngine(view, client);
+    if (client) {
+      setEngine(view, client);
+      installMenu(view, client);
+    }
     return;
   }
   engineModeOn = true;
@@ -54,7 +58,10 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
   onEngineUpdate(bars.refresh);
   // I simboli finti del prototipo si spengono sempre: col motore non servono e costano tempo a ogni battuta.
   view.dispatch(view.state.tr.setMeta(symbolKey, { mode: "off" }));
-  if (client) setEngine(view, client);
+  if (client) {
+    setEngine(view, client);
+    installMenu(view, client);
+  }
   bars.refresh();
 }
 
