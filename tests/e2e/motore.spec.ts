@@ -312,7 +312,9 @@ test("clic sul simbolo riempie la barra laterale con le alternative; clic sul te
   await expect(page.locator(".pm-num").first()).toHaveText("1");
   await expect(page.getByRole("button", { name: "Nessun simbolo" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Solo testo" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Cerca…" })).toBeVisible();
+  // La ricerca sta in alto nella barra, sopra la parola.
+  await expect(page.locator(".side > .pm-search")).toBeVisible();
+  expect(await page.evaluate(() => document.querySelector(".side")!.firstElementChild!.classList.contains("pm-search"))).toBe(true);
   await expect(page.locator(".pm-all input")).toBeChecked();
   // Esc riporta il cursore nel testo; la barra resta sulla parola.
   await page.keyboard.press("Escape");
@@ -422,10 +424,11 @@ test("«Nessun simbolo», «Solo testo» e «Automatico»", async ({ page }) => 
   expect(await docPicks(page)).toHaveLength(0);
 });
 
-test("«Cerca…»: scrivendo si cercano pittogrammi, Invio sceglie il primo", async ({ page }) => {
+test("ricerca: la barra è in alto, i risultati sotto, Invio sceglie il primo", async ({ page }) => {
   await open(page, "Marco mangia pane");
   await clickSymbol(page, "pane");
-  await page.getByRole("button", { name: "Cerca…" }).click();
+  await expect(page.locator(".pm-cell")).toHaveCount(8);
+  await page.locator(".pm-search").click();
   await expect(page.locator(".pm-search")).toBeFocused();
   // Le cifre si scrivono nella ricerca: non scelgono le alternative.
   await page.keyboard.type("zzz");
@@ -435,6 +438,12 @@ test("«Cerca…»: scrivendo si cercano pittogrammi, Invio sceglie il primo", a
   await expect(page.locator(".pm-cell")).toHaveCount(2);
   await expect(page.locator(".pm-num")).toHaveCount(0);
   expect(await docPicks(page)).toHaveLength(0);
+  // Cancellando la ricerca tornano le alternative della parola.
+  await page.locator(".pm-search").fill("");
+  await expect(page.locator(".pm-cell")).toHaveCount(8);
+  await expect(page.locator(".pm-num")).toHaveCount(8);
+  await page.locator(".pm-search").fill("ma1");
+  await expect(page.locator(".pm-cell")).toHaveCount(2);
   await page.keyboard.press("Enter");
   await expect.poll(async () => (await docPicks(page))[0]).toMatchObject({ picto: 9001 });
 });
@@ -568,4 +577,43 @@ test("impostazione «Contorna simbolo e parola»: una card per ogni coppia, rico
   await expect(page.locator(".sheet.cards")).toHaveCount(1);
   await page.getByLabel("Contorna simbolo e parola").uncheck();
   await expect(page.locator(".sheet.cards")).toHaveCount(0);
+});
+
+test("la spunta «usa per tutto il testo» resta com'è dopo una scelta", async ({ page }) => {
+  await open(page, "pane e casa");
+  await clickSymbol(page, "pane");
+  await page.locator(".pm-all input").uncheck();
+  await page.locator(".pm-cell").nth(1).click();
+  await expect(page.locator(".pm-why")).toContainText("scelto da te");
+  await expect(page.locator(".pm-all input")).not.toBeChecked();
+  // Anche su un'altra parola resta spenta, finché non la riaccendi.
+  await clickSymbol(page, "casa");
+  await expect(page.locator(".pm-all input")).not.toBeChecked();
+  await expect(page.locator(".w.cur")).toHaveText("casa"); // passando da una parola all'altra la barra non si svuota
+  await page.locator(".pm-all input").check();
+  await page.locator(".pm-cell").nth(2).click();
+  await expect(page.locator(".pm-all input")).toBeChecked();
+});
+
+test("F8 ripetuto passa di parola in parola anche con il fuoco nella barra", async ({ page }) => {
+  await open(page, "La sera dubbio.\nMarco dubbio.\nUn dubbio ancora.");
+  await page.waitForFunction(() => (window as any).caaProto.engineStats().pending === 0);
+  await page.evaluate(() => (window as any).caaProto.setCaret(1));
+  const head = () => page.evaluate(() => (window as any).caaProto.selection().head);
+  await page.keyboard.press("F8");
+  expect(await head()).toBe(9);
+  expect(await page.evaluate(() => document.activeElement?.classList.contains("side"))).toBe(true);
+  await page.keyboard.press("F8");
+  expect(await head()).toBe(24);
+  await page.keyboard.press("F8");
+  expect(await head()).toBe(36);
+  await page.keyboard.press("F8");
+  expect(await head()).toBe(9); // giro completo
+  // Il clic sul contatore, ripetuto, fa lo stesso.
+  await page.locator(".statusbar .link").click();
+  expect(await head()).toBe(24);
+  await page.locator(".statusbar .link").click();
+  expect(await head()).toBe(36);
+  // Una sola parola evidenziata alla volta.
+  await expect(page.locator(".w.cur")).toHaveCount(1);
 });

@@ -33,10 +33,12 @@ const EMPTY_HINT = [
 ];
 
 let unsubscribe: (() => void) | null = null;
+let removeF8: (() => void) | null = null;
 
 /** Collega la barra all'editor e al motore. Si può richiamare con un motore nuovo. */
 export function installSidebar(view: EditorView, client: EngineClient, root: HTMLElement): void {
   unsubscribe?.();
+  removeF8?.();
   let target: TokenAt | null = null;
   let shownWord = "";
   let sig = "";
@@ -44,6 +46,8 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
   let candidates: CandidateDto[] = [];
   let results: CandidateDto[] = [];
   let searching = false;
+  // La casella «usa per tutto il testo» resta come l'ha messa il docente anche quando la barra si ridisegna.
+  let lockAll = true;
 
   const signature = (t: TokenAt): string => `${t.token.picto}|${t.token.display}|${t.pick}|${t.token.why}|${t.token.lemma}`;
 
@@ -84,7 +88,10 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
 
     const all = el("input");
     all.type = "checkbox";
-    all.checked = true;
+    all.checked = lockAll;
+    all.addEventListener("change", () => {
+      lockAll = all.checked;
+    });
     const canLock = t.token.lemma !== "" && t.token.cat !== "";
     all.disabled = !canLock;
     const allLabel = el("label", "pm-all");
@@ -130,20 +137,23 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
     button("Solo testo", "Parola senza spazio per il simbolo", () => choose({ kind: "text" }));
     if (t.pick !== null) button("Automatico", "Torna alla scelta del motore", () => choose({ kind: "auto" }));
 
+    // Ricerca libera: la barra è in alto, i risultati prendono il posto delle alternative.
     const search = el("input", "pm-search");
     search.type = "search";
     search.placeholder = "Cerca un simbolo…";
     search.setAttribute("aria-label", "Cerca un simbolo");
-    search.hidden = true;
     let timer: ReturnType<typeof setTimeout> | null = null;
     const runSearch = (): void => {
       const q = search.value.trim();
       if (q === "") {
+        // Query vuota: tornano le alternative della parola.
         results = [];
-        status.textContent = "Scrivi una parola";
-        grid.replaceChildren();
+        searching = false;
+        status.textContent = candidates.length ? "" : "Nessuna altra alternativa: puoi cercare un simbolo";
+        render(candidates, true);
         return;
       }
+      searching = true;
       client.search(q).then(
         (r) => {
           if (generation !== mine || search.value.trim() !== q) return;
@@ -157,6 +167,7 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
       );
     };
     search.addEventListener("input", () => {
+      if (search.value.trim() !== "") searching = true;
       if (timer) clearTimeout(timer);
       timer = setTimeout(runSearch, 150);
     });
@@ -166,16 +177,9 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
         choose({ kind: "picto", id: results[0].picto });
       }
     });
-    button("Cerca…", "Cerca un pittogramma per parola", () => {
-      searching = true;
-      search.hidden = false;
-      status.textContent = "Scrivi una parola";
-      grid.replaceChildren();
-      search.focus();
-    });
 
     const keys = el("p", "pm-keys", "1–8 sceglie · Esc torna al testo · F8 prossima parola da controllare");
-    root.replaceChildren(head, status, grid, fixed, search, allLabel, keys);
+    root.replaceChildren(search, head, status, grid, fixed, allLabel, keys);
     if (focusSide) root.focus();
 
     client.alternatives(t.para, t.policy, t.locks, t.token.s, t.token.e).then(
@@ -208,6 +212,15 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
     }
   };
 
+  // F8 funziona anche con il fuoco nella barra (nel testo lo prende la tastiera dell'editor, che lo segna come gestito).
+  const onF8 = (e: KeyboardEvent): void => {
+    if (e.key !== "F8" || e.defaultPrevented) return;
+    e.preventDefault();
+    hooks.next?.();
+  };
+  document.addEventListener("keydown", onF8);
+  removeF8 = () => document.removeEventListener("keydown", onF8);
+
   /** La parola è cambiata (scelta fatta, testo modificato, politica): aggiorna o svuota la barra. */
   function refresh(): void {
     if (!target) return;
@@ -228,6 +241,9 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
   unsubscribe = onEngineUpdate(refresh);
 
   const activate = (t: TokenAt, focusSide: boolean): void => {
+    // Cambiando l'evidenziazione l'editor si aggiorna e chiama `refresh`: con la parola vecchia ancora
+    // "in mostra" lo scambierebbe per una parola cambiata e svuoterebbe la barra.
+    target = null;
     setFocusWord(view, [t.from, t.to]);
     show(t, focusSide);
   };
