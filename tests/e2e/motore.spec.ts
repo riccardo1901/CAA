@@ -100,10 +100,10 @@ test("barra di stato: parole e parole da controllare", async ({ page }) => {
 test("la politica Essenziale nasconde gli articoli e Completo li riduce", async ({ page }) => {
   await open(page, "La casa il pane.");
   await expect(page.locator(".w.red")).toHaveCount(2);
-  await page.selectOption("select", "essential");
+  await page.selectOption("select[aria-label='Politica delle parole funzionali']", "essential");
   await expect(page.locator(".w.hid")).toHaveCount(2);
   await expect(page.locator(".w.red")).toHaveCount(0);
-  await page.selectOption("select", "complete");
+  await page.selectOption("select[aria-label='Politica delle parole funzionali']", "complete");
   await expect(page.locator(".w.red")).toHaveCount(2);
 });
 
@@ -216,7 +216,7 @@ test("il segno passato + plurale ha lo spazio e le parole nascoste non mostrano 
   const content = await page.evaluate(() => getComputedStyle([...document.querySelectorAll(".w.mp.mpast")][0], "::after").content);
   expect(content).toBe('"\u25C0 +"');
   // Una parola nascosta con segni non disegna il segno.
-  await page.selectOption("select", "essential");
+  await page.selectOption("select[aria-label='Politica delle parole funzionali']", "essential");
   await page.waitForFunction(() => (window as any).caaProto.engineStats().pending === 0);
   const hiddenBadge = await page.evaluate(() => {
     const el = document.querySelector(".w.hid");
@@ -259,13 +259,13 @@ test("dal tasto al simbolo, con un documento di 200 paragrafi @perf", async ({ p
 });
 test("dopo «Testo di esempio» o «Nuovo» i simboli del motore tornano (e la politica resta)", async ({ page }) => {
   await open(page, "Marco mangia pane");
-  await page.selectOption("select", "essential");
+  await page.selectOption("select[aria-label='Politica delle parole funzionali']", "essential");
   // «Testo di esempio»: sostituisce tutto il documento.
   await page.getByRole("button", { name: "Testo di esempio" }).click();
   await expect(page.locator(".w[style*='--img']").first()).toBeVisible();
   await page.waitForFunction(() => (window as any).caaProto.engineStats().pending === 0);
   expect((await stats(page)).words).toBeGreaterThan(50);
-  expect(await page.locator("select").inputValue()).toBe("essential");
+  expect(await page.locator("select[aria-label='Politica delle parole funzionali']").inputValue()).toBe("essential");
   // La politica Essenziale e' ancora quella che arriva al motore.
   const policies = await page.evaluate(() => (window as any).__mock.calls.map((c: { policy: string }) => c.policy));
   expect(policies[policies.length - 1]).toBe("essential");
