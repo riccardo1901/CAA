@@ -19,6 +19,9 @@ pub struct View {
     pub key: String,
     /// Il lessico ha anche una lettura aggettivale della forma (un participio come "chiuso").
     pub also_adjective: bool,
+    /// Tratti delle altre letture finite dello stesso lemma ("sono" è 1a singolare e 3a plurale: il
+    /// tagger ne sceglie una, ma la concordanza col riflessivo o con "ci" vale per tutte).
+    pub alts: Vec<Feats>,
 }
 
 /// Segno di tempo da sovrapporre al pittogramma della testa.
@@ -149,6 +152,11 @@ fn skip_adverbs(views: &[View], from: usize) -> usize {
     j
 }
 
+/// Come [`reflexive_agrees`], con la lettura scelta o con una delle altre dello stesso lemma.
+pub fn reflexive_agrees_view(clitic: &View, verb: &View) -> bool {
+    reflexive_agrees(clitic, &verb.feats) || verb.alts.iter().any(|f| reflexive_agrees(clitic, f))
+}
+
 /// Il clitico riflessivo prima del gruppo concorda in persona e numero con l'ausiliare o il verbo.
 pub fn reflexive_agrees(clitic: &View, verb: &Feats) -> bool {
     if !clitic.word || clitic.cat != Cat::Clitic {
@@ -200,6 +208,8 @@ pub fn verbal_groups(views: &[View]) -> Vec<VerbalGroup> {
                     let ok = v.lemma == "avere"
                         || passive
                         || ESSERE_VERBS.contains(&views[head].lemma.as_str())
+                        // "Mi sono divertito": un riflessivo che concorda basta, anche senza complemento.
+                        || (v.lemma == "essere" && i > 0 && reflexive_agrees_view(&views[i - 1], v))
                         || !views[head].also_adjective
                         || complement_after(views, head);
                     if ok {
@@ -242,10 +252,7 @@ pub fn verbal_groups(views: &[View]) -> Vec<VerbalGroup> {
                 // Il riflessivo nei tempi composti vuole "essere" ("ci siamo lavati"); con "avere"
                 // "ci" è un avverbio ("ci abbiamo lavato la macchina").
                 let reflexive_ok = g.kind == VerbalKind::Progressive || v.lemma == "essere";
-                if reflexive_ok
-                    && i > 0
-                    && !used[i - 1]
-                    && reflexive_agrees(&views[i - 1], &v.feats)
+                if reflexive_ok && i > 0 && !used[i - 1] && reflexive_agrees_view(&views[i - 1], v)
                 {
                     g.reflexive = Some(i - 1);
                 }
@@ -285,6 +292,7 @@ mod tests {
             },
             key: key.into(),
             also_adjective: false,
+            alts: Vec::new(),
         }
     }
     fn fin(lemma: &str, key: &str, tense: Tense, person: u8) -> View {
@@ -538,5 +546,17 @@ mod tests {
             plain(Cat::Adj, "bravo", "bravo"),
         ]);
         assert_eq!((g[0].head, g[0].tense), (1, Tense3::Past));
+    }
+
+    #[test]
+    fn essere_con_riflessivo_forma_il_gruppo_anche_senza_complemento() {
+        let mut divertito = part("divertire", "divertito");
+        divertito.also_adjective = true;
+        let mi = plain(Cat::Clitic, "mi", "mi");
+        let sono = fin("essere", "sono", Tense::Pres, 1);
+        let g = verbal_groups(&[mi.clone(), sono.clone(), divertito.clone()]);
+        assert_eq!((g.len(), g[0].reflexive), (1, Some(0)));
+        // Senza riflessivo e senza complemento resta "essere" + aggettivo.
+        assert!(verbal_groups(&[sono, divertito]).is_empty());
     }
 }

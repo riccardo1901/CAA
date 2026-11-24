@@ -6,7 +6,7 @@
 # frase: Un giorno il gatto Briciola è salito sul tetto e non è riuscito a scendere.
 Un	ART	un	8474	-	Full
 giorno	NOUN	giorno	7022|26799|37371	-	Full
-il	ART	il	8476	-	Full
+il	ART	il	8476|7158	-	Full
 gatto	NOUN	gatto	2406|7114|9879|9881	-	Full
 Briciola	PROPN	briciola	-	-	TextOnly
 è	AUX	essere	-	-	Hidden
@@ -17,7 +17,7 @@ e	CONJ	e	11399	-	Full
 non	ADV	non	5526|5525	-	Full
 è	AUX	essere	-	-	Hidden
 riuscito	VERB	riuscire	11750|35949	PAST	Full
-a	ADP	a	7041	-	Full
+a	ADP	a	7041|7034|27564|27387|7070	-	Full
 scendere	VERB	scendere	2654|6053|8035|34807|37244	-	Full
 .	PUNCT	.	-	-	TextOnly
 
@@ -31,7 +31,7 @@ paura	NOUN	paura	10261|35571|39248|39668	-	Full
 .	PUNCT	.	-	-	TextOnly
 
 # frase: Il nonno ha preso la scala e ha provato a raggiungerlo, ma la scala era troppo corta.
-Il	ART	il	8476	-	Full
+Il	ART	il	8476|7158	-	Full
 nonno	NOUN	nonno	2244|4560|23717|23718	-	Full
 ha	AUX	avere	-	-	Hidden
 preso	VERB	prendere	10148|4606|32773|39414	PAST	Full
@@ -40,7 +40,7 @@ scala	NOUN	scala	2743	-	Full
 e	CONJ	e	11399	-	Full
 ha	AUX	avere	-	-	Hidden
 provato	VERB	provare	26144	PAST	Full
-a	ADP	a	7041	-	Full
+a	ADP	a	7041|7034|27564|27387|7070	-	Full
 raggiungerlo	VERB	raggiungere	24208	-	Full
 ,	PUNCT	,	-	-	TextOnly
 ma	CONJ	ma	11377	-	Full
@@ -64,12 +64,12 @@ I	ART	il	8477	-	Full
 pompieri	NOUN	pompiere	2664|6066|11193	PLURAL	Full
 sono	AUX	essere	-	-	Hidden
 arrivati	VERB	arrivare	11708|13356|16805|16807	PAST	Full
-con	ADP	con	7064	-	Full
+con	ADP	con	7064|39801	-	Full
 un	ART	un	8474	-	Full
 camion	NOUN	camion	6956|2306|4925|6982	-	Full
 rosso	ADJ	rosso	2808	-	Full
 e	CONJ	e	11399	-	Full
-una	ART	una	8474	-	Full
+una	ART	una	8474|27385|8277	-	Full
 scala	NOUN	scala	2743	-	Full
 lunghissima	ADJ	lungo	4675|26162	-	Full
 .	PUNCT	.	-	-	TextOnly
@@ -84,7 +84,7 @@ piano	ADV	piano	4676	-	Full
 e	CONJ	e	11399	-	Full
 ha	AUX	avere	-	-	Hidden
 preso	VERB	prendere	10148|4606|32773|39414	PAST	Full
-il	ART	il	8476	-	Full
+il	ART	il	8476|7158	-	Full
 gatto	NOUN	gatto	2406|7114|9879|9881	-	Full
 tra	ADP	tra	7765	-	Full
 le	ART	la	8477	-	Full
@@ -117,10 +117,10 @@ applaudito	VERB	applaudire	4563|36682	PAST	Full
 .	PUNCT	.	-	-	TextOnly
 
 # frase: Da quel giorno il gatto non sale più sul tetto.
-Da	ADP	da	7077|7074	-	Full
+Da	ADP	da	7077|7074|7212	-	Full
 quel	DET	quello	6906	-	Full
 giorno	NOUN	giorno	7022|26799|37371	-	Full
-il	ART	il	8476	-	Full
+il	ART	il	8476|7158	-	Full
 gatto	NOUN	gatto	2406|7114|9879|9881	-	Full
 non	ADV	non	5526|5525	-	Full
 sale	VERB	salire	2795|6617|8226	-	Full

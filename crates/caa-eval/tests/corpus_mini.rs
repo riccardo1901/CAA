@@ -59,7 +59,12 @@ fn ogni_causa_e_riconosciuta() {
         let name = row.split('\t').next().unwrap();
         let (bad, lemma_bad) = match cause {
             Cause::WrongSense => (row.replace("104|116", "999"), false),
-            Cause::WrongReading => (row.replace("\tmangiare\t", "\tbere\t"), true),
+            // con l'uscita giusta la lettura sbagliata non conta: serve anche un pittogramma diverso
+            Cause::WrongReading => (
+                row.replace("\tmangiare\t", "\tbere\t")
+                    .replace("110", "999"),
+                true,
+            ),
             _ => (row.to_string(), false),
         };
         let _ = lemma_bad;
@@ -95,21 +100,37 @@ fn la_confidenza_e_gli_errori_si_raggruppano() {
 }
 
 #[test]
-fn una_frase_con_altri_token_si_salta_e_si_dichiara() {
+fn una_frase_con_altri_token_conta_come_errore_e_si_dichiara() {
+    // Una frase saltata non deve far scendere le correzioni per 100 parole: ogni sua parola e' un errore.
     let m = run("Ho\tAUX\tavere\t-\t-\tHidden\n.\tPUNCT\t.\t-\t-\tTextOnly\n");
-    assert_eq!((m.skipped_sentences, m.words), (1, 0));
+    assert_eq!((m.skipped_sentences, m.words, m.wrong), (1, 1, 1));
+    assert_eq!(m.errors[0].cause, Cause::Tokenization);
 }
 
 #[test]
-fn il_lemma_pronominale_dell_annotatore_equivale_a_quello_del_motore() {
-    // L'annotatore scrive "lavarsi" per "mi lavo"; il motore tiene "lavare" (il pronominale sta
-    // nel pittogramma). Non e' un errore di lettura.
+fn conta_l_uscita_non_la_lettura() {
+    // Lemma annotato diverso ma risultato giusto (pittogramma, segni, visibilita'): nessuna correzione.
+    // La lettura sbagliata si vede nella metrica del lemma, non in quella delle correzioni.
+    let rows = RIGHT.replace("pane\tNOUN\tpane", "pane\tNOUN\tpano");
+    let m = run(&rows);
+    assert_eq!(m.wrong, 0, "{:?}", m.errors);
+    assert!(m.lemma_ok < m.lemma_words);
+}
+
+#[test]
+fn un_pittogramma_non_mostrato_non_conta_come_mostrato() {
+    // "che" ha un pittogramma ma nella politica Completo si mostra solo il testo: se l'annotatore
+    // voleva il simbolo, e' una correzione; se voleva solo testo, no.
     let engine = common::engine("", "");
-    let g = parse_text(
-        "# testo: t\n# genere: storia\n# gruppo: sviluppo\n\n# frase: Mi lavo.\nMi\tCLITIC\tmi\t-\t-\tHidden\nlavo\tVERB\tlavarsi\t127\t-\tFull\n.\tPUNCT\t.\t-\t-\tTextOnly\n",
-    )
-    .unwrap();
-    let m = evaluate(&engine, &[&g]);
-    assert_eq!((m.words, m.wrong), (2, 0), "{:?}", m.errors);
-    assert_eq!((m.lemma_ok, m.lemma_words), (1, 1));
+    let g = |row: &str| {
+        parse_text(&format!(
+            "# testo: t\n# genere: storia\n# gruppo: sviluppo\n\n# frase: che\n{row}"
+        ))
+        .unwrap()
+    };
+    let vuole_simbolo = g("che\tCONJ\tche\t138\t-\tFull\n");
+    let m = evaluate(&engine, &[&vuole_simbolo]);
+    assert_eq!(m.wrong, 1, "{:?}", m.errors);
+    let vuole_testo = g("che\tCONJ\tche\t-\t-\tTextOnly\n");
+    assert_eq!(evaluate(&engine, &[&vuole_testo]).wrong, 0);
 }

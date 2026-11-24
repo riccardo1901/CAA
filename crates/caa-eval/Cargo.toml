@@ -12,3 +12,4 @@ caa-store = { path = "../caa-store" }
 
 [dev-dependencies]
 caa-lexicon-build = { path = "../caa-lexicon-build" }
+tempfile = "3"

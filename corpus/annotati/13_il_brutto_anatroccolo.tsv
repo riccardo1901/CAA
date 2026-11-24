@@ -1,13 +1,14 @@
 # testo: 13_il_brutto_anatroccolo
 # genere: favola
-# gruppo: prova
+# gruppo: sviluppo
+# nota: era di prova in M7, consumata dalla revisione
 # origine: scritto per il progetto (sintetico)
 
 # frase: In una fattoria una mamma anatra covava le sue uova.
-In	ADP	in	7034	-	Full
-una	ART	una	8474	-	Full
+In	ADP	in	7034|5388|5355	-	Full
+una	ART	una	8474|27385|8277	-	Full
 fattoria	NOUN	fattoria	32482	-	Full
-una	ART	una	8474	-	Full
+una	ART	una	8474|27385|8277	-	Full
 mamma	NOUN	mamma	2458	-	Full
 anatra	NOUN	anatra	28477|2563|28479	-	Full
 covava	VERB	covare	24117	PAST	Full
@@ -27,7 +28,7 @@ cinque	NUM	cinque	2631	-	Full
 anatroccoli	NOUN	anatroccolo	2563	PLURAL	Full
 gialli	ADJ	giallo	2648	-	Full
 e	CONJ	e	11399	-	Full
-uno	PRON	uno	4889|2627|7291	-	Full
+uno	PRON	uno	4889|2627|7291|8474	-	Full
 più	ADV	più	4658	-	Full
 grande	ADJ	grande	-	-	Hidden
 ,	PUNCT	,	-	-	TextOnly
@@ -40,21 +41,21 @@ goffo	ADJ	goffo	-	-	TextOnly
 Gli	ART	il	8477	-	Full
 altri	ADJ	altro	17056	-	Full
 animali	NOUN	animale	6901	-	Full
-lo	CLITIC	lo	8476|31670	-	Full
+lo	CLITIC	lo	8476|31670|6480|6481	-	Full
 prendevano	VERB	prendere	26704	PAST	Full
 in	ADP	in	-	-	Hidden
 giro	NOUN	giro	-	-	Hidden
 :	PUNCT	:	-	-	TextOnly
 "	PUNCT	"	-	-	TextOnly
-Che	ADV	che	11351	-	Full
+Che	ADV	che	-	-	TextOnly
 brutto	ADJ	brutto	4648|26090	-	Full
 !	PUNCT	!	-	-	TextOnly
 
 # frase: Non somiglia a nessuno!".
 Non	ADV	non	5526	-	Full
 somiglia	VERB	somigliare	37590	-	Full
-a	ADP	a	7041	-	Full
-nessuno	PRON	nessuno	11314|26941	-	Full
+a	ADP	a	7041|7034|27564|27387|7070	-	Full
+nessuno	PRON	nessuno	11314|26941|5800	-	Full
 !	PUNCT	!	-	-	TextOnly
 "	PUNCT	"	-	-	TextOnly
 .	PUNCT	.	-	-	TextOnly
@@ -75,19 +76,19 @@ lontano	ADV	lontano	30385|36759	-	Full
 Passò	VERB	passare	-	PAST	TextOnly
 l'	ART	il	8476	-	Full
 inverno	NOUN	inverno	5493	-	Full
-da	ADP	da	7077	-	Full
+da	ADP	da	7077|7074|7212	-	Full
 solo	ADJ	solo	39247|7253	-	Full
 ,	PUNCT	,	-	-	TextOnly
-al	ARTADP	a	11709	-	Full
+al	ARTADP	a	11709|3021	-	Full
 freddo	NOUN	freddo	26865|35589|35557	-	Full
 ,	PUNCT	,	-	-	TextOnly
-in	ADP	in	7034	-	Full
-una	ART	una	8474	-	Full
+in	ADP	in	7034|5388|5355	-	Full
+una	ART	una	8474|27385|8277	-	Full
 palude	NOUN	palude	26290	-	Full
 .	PUNCT	.	-	-	TextOnly
 
 # frase: Quando arrivò la primavera, vide dei bellissimi cigni bianchi sul lago.
-Quando	CONJ	quando	22621	-	Full
+Quando	CONJ	quando	22621|24053	-	Full
 arrivò	VERB	arrivare	11708|13356	PAST	Full
 la	ART	la	8476	-	Full
 primavera	NOUN	primavera	5553	-	Full
@@ -97,7 +98,7 @@ dei	ART	di	8475	-	Full
 bellissimi	ADJ	bello	4660|11194|26114	-	Full
 cigni	NOUN	cigno	2337	PLURAL	Full
 bianchi	ADJ	bianco	8043|2662	-	Full
-sul	ARTADP	su	5451	-	Full
+sul	ARTADP	su	5451|7814	-	Full
 lago	NOUN	lago	6022	-	Full
 .	PUNCT	.	-	-	TextOnly
 
@@ -108,7 +109,7 @@ timidamente	ADV	timidamente	8707|31750|37791	-	Full
 ,	PUNCT	,	-	-	TextOnly
 ma	CONJ	ma	11377	-	Full
 guardò	VERB	guardare	2474|16907	PAST	Full
-il	ART	il	8476	-	Full
+il	ART	il	8476|7158	-	Full
 suo	DET	suo	12272	-	Full
 riflesso	NOUN	riflesso	8682|8683|34551	-	Full
 nell'	ARTADP	in	7034	-	Full
@@ -133,12 +134,12 @@ magnifico	ADJ	magnifico	4660|11194|26114	-	Full
 # frase: I cigni lo accolsero con gioia e lui non fu più solo.
 I	ART	il	8477	-	Full
 cigni	NOUN	cigno	2337	PLURAL	Full
-lo	CLITIC	lo	8476|31670	-	Full
+lo	CLITIC	lo	8476|31670|6480|6481	-	Full
 accolsero	VERB	accogliere	39677	PAST	Full
-con	ADP	con	7064	-	Full
+con	ADP	con	7064|39801	-	Full
 gioia	NOUN	gioia	8582	-	Full
 e	CONJ	e	11399	-	Full
-lui	PRON	lui	31670	-	Full
+lui	PRON	lui	31670|6480|6481	-	Full
 non	ADV	non	5526	-	Full
 fu	VERB	essere	5581	PAST	Full
 più	ADV	più	26913|5508	-	Full

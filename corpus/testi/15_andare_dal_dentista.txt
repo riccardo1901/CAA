@@ -1,5 +1,6 @@
 # genere: storia_sociale
-# gruppo: prova
+# gruppo: sviluppo
+# nota: era di prova in M7, consumata dalla revisione
 # origine: scritto per il progetto (sintetico)
 A volte vado dal dentista. Il dentista è un dottore che si prende cura dei denti.
 Nella sala d'aspetto mi siedo e aspetto il mio turno. Posso guardare un libro o giocare con la mamma.

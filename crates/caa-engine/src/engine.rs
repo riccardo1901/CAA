@@ -8,7 +8,9 @@ use std::cmp::Reverse;
 use std::fmt;
 
 use crate::curated::Curated;
-use crate::groups::{reflexive_agrees, tense_mark, verbal_groups, Tense3, VerbalKind, View};
+use crate::groups::{
+    reflexive_agrees, reflexive_agrees_view, tense_mark, verbal_groups, Tense3, VerbalKind, View,
+};
 use crate::lexicon::{picto_flags, MorphLexicon, PictoEntry, PictoIndex};
 use crate::mwe::MweIndex;
 use crate::norm::normalize_key;
@@ -416,6 +418,11 @@ fn articulated_base(lemma: &str) -> Option<&'static str> {
     })
 }
 
+/// "essere" alla terza persona nella lettura scelta o in un'altra (sono = 1a sing. o 3a plur.).
+fn third_person(v: &View) -> bool {
+    v.feats.person == Some(3) || v.alts.iter().any(|f| f.person == Some(3))
+}
+
 /// Il clitico attaccato (mi/ti/ci/vi) concorda in persona e numero con la forma verbale.
 fn attached_reflexive_agrees(piece: &str, verb: &Feats) -> bool {
     let clitic = View {
@@ -425,6 +432,7 @@ fn attached_reflexive_agrees(piece: &str, verb: &Feats) -> bool {
         feats: Feats::default(),
         key: piece.to_string(),
         also_adjective: false,
+        alts: Vec::new(),
     };
     reflexive_agrees(&clitic, verb)
 }
@@ -771,18 +779,25 @@ impl<D: AsRef<[u8]>> Engine<D> {
             };
             members.sort_unstable();
             let mut lemmas = self.lemma_set(&key);
-            let chosen = if group.is_some_and(|g| g.kind == GroupKind::Pronominal) {
-                pronominal_lemma(&a.lemma).unwrap_or_else(|| normalize_key(&a.lemma))
+            let plain = normalize_key(&a.lemma);
+            // Un verbo pronominale ("mi lavo") prova prima "lavarsi" se ARASAAC lo ha, poi "lavare";
+            // senza "mettersi" in ARASAAC resta "mettere" ("si mette le scarpe" = "mettere le scarpe").
+            let pronominal = if group.is_some_and(|g| g.kind == GroupKind::Pronominal) {
+                pronominal_lemma(&a.lemma).filter(|p| self.picto_for_key(p).is_some())
             } else {
-                normalize_key(&a.lemma)
+                None
             };
-            if !lemmas.contains(&chosen) {
-                lemmas.insert(0, chosen.clone());
+            let mut preferred: Vec<String> = pronominal.into_iter().collect();
+            preferred.push(plain.clone());
+            for l in preferred.iter().rev() {
+                if !lemmas.contains(l) {
+                    lemmas.insert(0, l.clone());
+                }
             }
             if t.confidence >= 0.6 {
-                lemmas = vec![chosen];
-            } else if let Some(pos) = lemmas.iter().position(|l| *l == chosen) {
-                lemmas.swap(0, pos);
+                lemmas = preferred;
+            } else {
+                lemmas.sort_by_key(|l| preferred.iter().position(|p| p == l).unwrap_or(usize::MAX));
             }
             units.push(Some(Unit {
                 tokens: members,
@@ -995,6 +1010,15 @@ impl<D: AsRef<[u8]>> Engine<D> {
                     feats: a.map_or(Feats::default(), |a| a.feats),
                     key: normalize_key(&t.surface),
                     also_adjective: t.readings.iter().any(|r| r.cat == Cat::Adj),
+                    alts: a.map_or(Vec::new(), |a| {
+                        t.readings
+                            .iter()
+                            .filter(|r| {
+                                r.lemma == a.lemma && r.feats.person.is_some() && r.feats != a.feats
+                            })
+                            .map(|r| r.feats)
+                            .collect()
+                    }),
                 }
             })
             .collect();
@@ -1020,17 +1044,50 @@ impl<D: AsRef<[u8]>> Engine<D> {
             };
             // Verbo pronominale ("mi sono lavato" = lavarsi): serve il pittogramma di "lavarsi".
             let mut members = g.hidden.clone();
-            if let Some(c) = g.reflexive {
-                // Il riflessivo della stessa persona non si mostra mai; il pittogramma è quello di
-                // "lavarsi" se ARASAAC lo ha, altrimenti resta quello del verbo.
+            let lemma = views[g.head].lemma.clone();
+            let pronominal = self.pronominal_picto(&lemma);
+            // "essersi lavato": il "si" attaccato all'ausiliare è il riflessivo.
+            let aux_si = g.hidden.first().is_some_and(|&h| {
+                tokens[h]
+                    .analysis
+                    .as_ref()
+                    .is_some_and(|a| a.feats.enclitic.is_some_and(|e| e.pieces() == ["si"]))
+            });
+            // Il riflessivo della stessa persona non si mostra: "mi/ti/si" sempre, "ci/vi" solo se
+            // ARASAAC ha il verbo pronominale (altrimenti "ci" può essere "lì": "ci abbiamo messo").
+            let weak = g
+                .reflexive
+                .is_some_and(|c| matches!(views[c].lemma.as_str(), "ci" | "vi"));
+            let reflexive = g.reflexive.filter(|_| !weak || pronominal.is_some());
+            if reflexive.is_some() || aux_si {
                 kind = GroupKind::Pronominal;
-                members.push(c);
-                let lemma = views[g.head].lemma.clone();
-                if let Some(picto) = self.pronominal_picto(&lemma) {
+                members.extend(reflexive);
+                if let Some(picto) = pronominal {
                     let head = &mut tokens[g.head];
                     head.picto = Some(PictoRef { id: picto });
                     head.display = Display::Full;
                     head.reason.picto = PictoReason::Pronominal;
+                }
+            } else if views[g.head].lemma == "essere" {
+                // "c'è stato": ci + essere (3a persona) + stato = "esserci" al passato.
+                if let Some(&aux) = g.hidden.first() {
+                    let ci = aux > 0
+                        && views[aux].lemma == "essere"
+                        && third_person(&views[aux])
+                        && views[aux - 1].word
+                        && views[aux - 1].cat == Cat::Clitic
+                        && views[aux - 1].lemma == "ci"
+                        && !in_group[aux - 1];
+                    if ci {
+                        kind = GroupKind::Pronominal;
+                        members.push(aux - 1);
+                        if let Some(picto) = self.picto_for_key("esserci") {
+                            let head = &mut tokens[g.head];
+                            head.picto = Some(PictoRef { id: picto });
+                            head.display = Display::Full;
+                            head.reason.picto = PictoReason::Pronominal;
+                        }
+                    }
                 }
             }
             for &m in &members {
@@ -1045,9 +1102,14 @@ impl<D: AsRef<[u8]>> Engine<D> {
         }
         // "c'è", "ci sono", "c'era": "ci" + essere alla terza persona è "esserci"; "ci" non si mostra.
         for i in 1..tokens.len() {
+            // "ci è utile" (= a noi) non è "esserci": dopo il verbo non deve venire un aggettivo.
+            let adjective_next = views
+                .get(i + 1)
+                .is_some_and(|n| n.word && n.cat == Cat::Adj);
             let essere = views[i].word
                 && views[i].lemma == "essere"
-                && views[i].feats.person == Some(3)
+                && third_person(&views[i])
+                && !adjective_next
                 && views[i - 1].word
                 && views[i - 1].cat == Cat::Clitic
                 && views[i - 1].lemma == "ci";
@@ -1072,8 +1134,15 @@ impl<D: AsRef<[u8]>> Engine<D> {
             if in_group[i] || in_group[i - 1] || !views[i].word || views[i].cat != Cat::Verb {
                 continue;
             }
-            if !reflexive_agrees(&views[i - 1], &views[i].feats)
+            if !reflexive_agrees_view(&views[i - 1], &views[i])
                 || views[i].feats.mood == Some(Mood::Impr)
+            {
+                continue;
+            }
+            // "ci andiamo" (= lì): "ci" e "vi" si nascondono come riflessivi solo se esiste il verbo
+            // pronominale in ARASAAC ("ci siamo lavati"); "mi", "ti", "si" sempre.
+            if matches!(views[i - 1].lemma.as_str(), "ci" | "vi")
+                && self.pronominal_picto(&views[i].lemma).is_none()
             {
                 continue;
             }
@@ -1541,17 +1610,19 @@ impl<D: AsRef<[u8]>> Engine<D> {
         let blocked = |id: u32| self.curated.is_blocked(&[key, lemma_key.as_str()], id);
         // 5. pittogramma preferito per lemma e categoria
         // Prima la riga che nomina la forma ("i" articolo, non la lettera "i"), poi quella del lemma.
-        if let Some(id) = self
-            .curated
-            .preferred(key, a.cat)
-            .or_else(|| self.curated.preferred(&lemma_key, a.cat))
-        {
+        let by_form = self.curated.preferred(key, a.cat);
+        if let Some(id) = by_form.or_else(|| self.curated.preferred(&lemma_key, a.cat)) {
             if !blocked(id) {
                 return Some(PictoChoice {
                     id,
                     reason: PictoReason::Curated,
                     penalty: 0.0,
-                    matched: lemma_key.clone(),
+                    // Una riga della forma ("occhiali") non e' un singolare da pluralizzare.
+                    matched: if by_form.is_some() {
+                        key.to_string()
+                    } else {
+                        lemma_key.clone()
+                    },
                     derived_plural: false,
                 });
             }

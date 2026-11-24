@@ -89,7 +89,8 @@ export function createBars(
   const doubtInfo = el("span");
   const policyInfo = el("span");
   const engineInfoEl = el("span");
-  statusbar.append(doubtInfo, wordsInfo, el("span", "grow"), policyInfo, engineInfoEl);
+  const errorInfo = el("span");
+  statusbar.append(doubtInfo, wordsInfo, errorInfo, el("span", "grow"), policyInfo, engineInfoEl);
 
   function refresh(): void {
     const s = engineStats(view);
@@ -97,6 +98,9 @@ export function createBars(
     wordsInfo.textContent = `${s.words} parole`;
     doubtInfo.textContent = s.doubtful === 1 ? "1 parola da controllare" : `${s.doubtful} parole da controllare`;
     doubtInfo.classList.toggle("warn", s.doubtful > 0);
+    // Il motore ha dato errore e sta riprovando: lo si dice, altrimenti i simboli mancano senza spiegazione.
+    errorInfo.textContent = s.error ? "Il motore non risponde: riprovo…" : s.pending > 0 ? "Analisi in corso…" : "";
+    errorInfo.classList.toggle("warn", !!s.error);
     policyInfo.textContent = `Parole funzionali: ${select.selectedOptions[0]?.textContent ?? ""}`;
     engineInfoEl.textContent = info?.ok
       ? `Motore attivo${info.tagger ? "" : " (senza tagger)"}${info.expressions ? "" : " (senza espressioni)"}`

@@ -67,6 +67,21 @@ lavato\tlavare\tVER:part+past+s+m
 lavo\tlavare\tVER:ind+pres+1+s
 mangerò\tmangiare\tVER:ind+fut+1+s
 andato\tandare\tVER:part+past+s+m
+sono\tessere\tAUX:ind+pres+3+p
+sono\tessere\tVER:ind+pres+3+p
+utile\tutile\tADJ:pos+m+s
+stato\tessere\tVER:part+past+s+m
+ci\tci\tPRO-PERS-CLI-1-M-P
+si\tsi\tSI
+divertito\tdivertire\tVER:part+past+s+m
+divertito\tdivertito\tADJ:pos+m+s
+essere\tessere\tAUX:inf+pres
+mette\tmettere\tVER:ind+pres+3+s
+mettere\tmettere\tVER:inf+pres
+scarpe\tscarpa\tNOUN-F:p
+scarpa\tscarpa\tNOUN-F:s
+andiamo\tandare\tVER:ind+pres+1+p
+siamo\tessere\tAUX:ind+pres+1+p
 che\tche\tWH-CHE
 lava\tlavare\tVER:impr+pres+2+s
 voglio\tvolere\tVER:ind+pres+1+s
@@ -124,7 +139,9 @@ pub const ARASAAC: &str = r#"[
  {"_id":133,"keywords":[{"type":3,"keyword":"lavarsi i denti"}]},
  {"_id":134,"keywords":[{"type":2,"keyword":"dente"}]},
  {"_id":135,"keywords":[{"type":5,"keyword":"le tre"}]},
- {"_id":136,"keywords":[{"type":3,"keyword":"esserci"}]}
+ {"_id":136,"keywords":[{"type":3,"keyword":"esserci"}]},
+ {"_id":137,"keywords":[{"type":3,"keyword":"mettere le scarpe"}]},
+ {"_id":138,"keywords":[{"type":6,"keyword":"che"}]}
 ]"#;
 
 pub fn engine(lemma_picto: &str, blocklist: &str) -> Engine<Vec<u8>> {

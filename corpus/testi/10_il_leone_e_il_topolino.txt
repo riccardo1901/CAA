@@ -1,5 +1,6 @@
 # genere: favola
-# gruppo: prova
+# gruppo: sviluppo
+# nota: era di prova in M7, consumata dalla revisione
 # origine: scritto per il progetto (sintetico)
 Un leone dormiva nella foresta. Un topolino gli corse sulla schiena e il leone si svegliò di colpo.
 Il leone prese il topolino con la zampa e stava per mangiarlo. "Lasciami andare", pregò il topolino, "un giorno ti aiuterò!".

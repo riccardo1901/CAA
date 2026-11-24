@@ -1,6 +1,7 @@
 # testo: 02_il_compleanno_di_sara
 # genere: storia
-# gruppo: prova
+# gruppo: sviluppo
+# nota: era di prova in M7, consumata dalla revisione
 # origine: scritto per il progetto (sintetico)
 
 # frase: Oggi Sara compie sette anni.
@@ -21,20 +22,20 @@ ha	AUX	avere	-	-	Hidden
 trovato	VERB	trovare	24741|24742|24773|24774	PAST	Full
 un	ART	un	8474	-	Full
 pacco	NOUN	pacco	38946	-	Full
-sul	ARTADP	su	5451	-	Full
+sul	ARTADP	su	5451|7814	-	Full
 tavolo	NOUN	tavolo	3129|6562	-	Full
-della	ARTADP	di	11712	-	Full
+della	ARTADP	di	11712|7074	-	Full
 cucina	NOUN	cucina	33070	-	Full
 .	PUNCT	.	-	-	TextOnly
 
 # frase: Il papà ha acceso le candeline sulla torta al cioccolato.
-Il	ART	il	8476	-	Full
+Il	ART	il	8476|7158	-	Full
 papà	NOUN	papà	2497|31146	-	Full
 ha	AUX	avere	-	-	Hidden
 acceso	VERB	accendere	6486|4639	PAST	Full
 le	ART	il	8477	-	Full
 candeline	NOUN	candelina	6242|37302	PLURAL	Full
-sulla	ARTADP	su	5451	-	Full
+sulla	ARTADP	su	5451|7814	-	Full
 torta	NOUN	torta	29226	-	Full
 al	ARTADP	a	-	-	Hidden
 cioccolato	NOUN	cioccolato	-	-	Hidden
@@ -64,14 +65,14 @@ sono	AUX	essere	-	-	Hidden
 arrivati	VERB	arrivare	11708|13356|16805|16807	PAST	Full
 gli	ART	il	8477	-	Full
 amici	NOUN	amico	2255|25792	-	Full
-con	ADP	con	7064	-	Full
+con	ADP	con	7064|39801	-	Full
 i	ART	il	8477	-	Full
 regali	NOUN	regalo	3149|25381	PLURAL	Full
 .	PUNCT	.	-	-	TextOnly
 
 # frase: Luca le ha dato un libro di favole, Anna una bambola con il vestito blu.
 Luca	PROPN	luca	-	-	TextOnly
-le	CLITIC	le	7028|7029	-	Full
+le	CLITIC	le	7028|7029|6481	-	Full
 ha	AUX	avere	-	-	Hidden
 dato	VERB	dare	28431|17038|17040	PAST	Full
 un	ART	un	8474	-	Full
@@ -80,10 +81,10 @@ di	ADP	di	-	-	Hidden
 favole	NOUN	favola	-	-	Hidden
 ,	PUNCT	,	-	-	TextOnly
 Anna	PROPN	anna	-	-	TextOnly
-una	ART	un	8474	-	Full
+una	ART	un	8474|27385|8277	-	Full
 bambola	NOUN	bambola	2482|26238	-	Full
-con	ADP	con	7064	-	Full
-il	ART	il	8476	-	Full
+con	ADP	con	7064|39801	-	Full
+il	ART	il	8476|7158	-	Full
 vestito	NOUN	vestito	2613	-	Full
 blu	ADJ	blu	4869	-	Full
 .	PUNCT	.	-	-	TextOnly
@@ -91,14 +92,14 @@ blu	ADJ	blu	4869	-	Full
 # frase: Hanno giocato in giardino e hanno cantato la canzone di compleanno.
 Hanno	AUX	avere	-	-	Hidden
 giocato	VERB	giocare	2439|6537|23392	PAST	Full
-in	ADP	in	7034	-	Full
+in	ADP	in	7034|5388|5355	-	Full
 giardino	NOUN	giardino	2434|30608|37986	-	Full
 e	CONJ	e	11399	-	Full
 hanno	AUX	avere	-	-	Hidden
 cantato	VERB	cantare	2315|6960|28657|32015	PAST	Full
 la	ART	il	8476	-	Full
 canzone	NOUN	canzone	24791|24795|38000	-	Full
-di	ADP	di	7074	-	Full
+di	ADP	di	7074|37163|37162	-	Full
 compleanno	NOUN	compleanno	3087|26781|28491|28492|37363|16635|5997	-	Full
 .	PUNCT	.	-	-	TextOnly
 
@@ -107,9 +108,9 @@ La	ART	il	8476	-	Full
 nonna	NOUN	nonna	2243|10194|23709|23710	-	Full
 ha	AUX	avere	-	-	Hidden
 preparato	VERB	preparare	6190	PAST	Full
-dei	ARTADP	di	8475	-	Full
+dei	ARTADP	di	8475|11712	-	Full
 dolci	NOUN	dolce	35769	-	Full
-con	ADP	con	7064	-	Full
+con	ADP	con	7064|39801	-	Full
 la	ART	il	8476	-	Full
 marmellata	NOUN	marmellata	2470	-	Full
 .	PUNCT	.	-	-	TextOnly
@@ -123,7 +124,7 @@ contenta	ADJ	contento	3245|28647|31923|35547|39814|9907|32123|6892	-	Full
 ,	PUNCT	,	-	-	TextOnly
 ma	CONJ	ma	11377	-	Full
 un	ART	un	8474	-	Full
-po'	ADV	poco	5546	-	Full
+po'	ADV	poco	5546|37661|7209	-	Full
 stanca	ADJ	stanco	28709|2314|31925|35537|6959|35573	-	Full
 .	PUNCT	.	-	-	TextOnly
 
@@ -137,7 +138,7 @@ denti	NOUN	dente	-	-	Hidden
 si	CLITIC	si	-	-	Hidden
 è	AUX	essere	-	-	Hidden
 messa	VERB	mettersi	34494|34569|32135	PAST	Full
-il	ART	il	8476	-	Full
+il	ART	il	8476|7158	-	Full
 pigiama	NOUN	pigiama	2522	-	Full
 e	CONJ	e	11399	-	Full
 si	CLITIC	si	-	-	Hidden

@@ -8,7 +8,7 @@ Nei	ARTADP	in	7034	-	Full
 giochi	NOUN	gioco	9810	PLURAL	Full
 ognuno	PRON	ognuno	-	-	TextOnly
 ha	VERB	avere	7271|32761	-	Full
-il	ART	il	8476	-	Full
+il	ART	il	8476|7158	-	Full
 suo	DET	suo	12272	-	Full
 turno	NOUN	turno	7158|22190	-	Full
 .	PUNCT	.	-	-	TextOnly
@@ -30,7 +30,7 @@ ancora	ADV	ancora	37162	-	Full
 .	PUNCT	.	-	-	TextOnly
 
 # frase: A volte devo aspettare e non è facile.
-A	ADP	a	7041|27387|27564	-	Full
+A	ADP	a	7041|27387|27564|7034|7070	-	Full
 volte	NOUN	volta	-	-	Hidden
 devo	MODAL	dovere	15523	-	Full
 aspettare	VERB	aspettare	8109|16697|27547|28677|39062	-	Full
@@ -55,12 +55,12 @@ altri	PRON	altro	17056	-	Full
 # frase: Se aspetto con calma, presto arriva il mio turno.
 Se	CONJ	se	28359	-	Full
 aspetto	VERB	aspettare	8109|16697|27547|28677|39062	-	Full
-con	ADP	con	7064	-	Full
+con	ADP	con	7064|39801	-	Full
 calma	NOUN	calma	37828|38050	-	Full
 ,	PUNCT	,	-	-	TextOnly
 presto	ADV	presto	25736|37661	-	Full
 arriva	VERB	arrivare	11708|13356|16805|16807	-	Full
-il	ART	il	7158	-	Full
+il	ART	il	7158|8476	-	Full
 mio	DET	mio	-	-	Hidden
 turno	NOUN	turno	-	-	Hidden
 .	PUNCT	.	-	-	TextOnly
@@ -82,7 +82,7 @@ respiro	VERB	respirare	34377|34409|34508	-	Full
 piano	ADV	piano	4676	-	Full
 e	CONJ	e	11399	-	Full
 dico	VERB	dire	9692|9693|28663	-	Full
-a	ADP	a	7041	-	Full
+a	ADP	a	7041|7034|27564|27387|7070	-	Full
 me	PRON	me	2617|6632|7309|7310|31807	-	Full
 stesso	ADJ	stesso	-	-	TextOnly
 :	PUNCT	:	-	-	TextOnly
@@ -100,13 +100,13 @@ Gli	ART	il	8477	-	Full
 amici	NOUN	amico	2255|25792	-	Full
 sono	VERB	essere	5581|36480	-	Full
 contenti	ADJ	contento	3245|9907|31923|32123|35547	-	Full
-quando	CONJ	quando	24053	-	Full
+quando	CONJ	quando	24053|22621	-	Full
 rispetto	VERB	rispettare	36720|11621	-	Full
-il	ART	il	8476	-	Full
+il	ART	il	8476|7158	-	Full
 turno	NOUN	turno	7158|22190	-	Full
 e	CONJ	e	11399	-	Full
 giocano	VERB	giocare	2439|6537|23392|35717|35723|36884|37068|37952	-	Full
 volentieri	ADV	volentieri	-	-	TextOnly
-con	ADP	con	39801	-	Full
+con	ADP	con	39801|7064	-	Full
 me	PRON	me	-	-	Hidden
 .	PUNCT	.	-	-	TextOnly

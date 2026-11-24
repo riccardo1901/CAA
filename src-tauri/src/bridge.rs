@@ -8,6 +8,27 @@ use caa_engine::tokenize::TokenKind;
 use caa_engine::types::Cat;
 use serde::Serialize;
 
+/// Limiti di una richiesta di simbolizzazione (revisione M8a): senza tetto, un grande incolla
+/// bloccherebbe il motore per secondi e produrrebbe decine di MB di risposta.
+pub const MAX_PARAGRAPHS: usize = 1000;
+pub const MAX_CHARS: usize = 2_000_000;
+
+pub fn check_request(texts: &[String]) -> Result<(), String> {
+    if texts.len() > MAX_PARAGRAPHS {
+        return Err(format!(
+            "troppi paragrafi in una richiesta ({} > {MAX_PARAGRAPHS})",
+            texts.len()
+        ));
+    }
+    let chars: usize = texts.iter().map(|t| t.len()).sum();
+    if chars > MAX_CHARS {
+        return Err(format!(
+            "testo troppo lungo in una richiesta ({chars} > {MAX_CHARS} byte)"
+        ));
+    }
+    Ok(())
+}
+
 /// Sotto questa confidenza la parola si sottolinea (SPEC.md, fase 7).
 pub const DOUBT_THRESHOLD: f32 = 0.6;
 
@@ -212,6 +233,14 @@ mod tests {
             image_path(Path::new("/d"), 7),
             PathBuf::from("/d/arasaac/images/7.webp")
         );
+    }
+
+    #[test]
+    fn una_richiesta_ha_un_tetto() {
+        assert!(check_request(&vec!["casa".to_string(); 1000]).is_ok());
+        assert!(check_request(&vec!["casa".to_string(); 1001]).is_err());
+        assert!(check_request(&["x".repeat(MAX_CHARS + 1)]).is_err());
+        assert!(check_request(&[]).is_ok());
     }
 
     #[test]

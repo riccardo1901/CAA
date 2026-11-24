@@ -237,6 +237,7 @@ pub fn draft<D: AsRef<[u8]>>(
     name: &str,
     header: &[(&str, &str)],
     text: &str,
+    candidates: bool,
 ) -> String {
     let mut s = format!("# testo: {name}\n");
     for (k, v) in header {
@@ -250,7 +251,29 @@ pub fn draft<D: AsRef<[u8]>>(
                 (None, TokenKind::Punct | TokenKind::Symbol) => (Cat::Punct, t.surface.clone()),
                 (None, _) => (Cat::Noun, t.surface.to_lowercase()),
             };
-            let picto = t.picto.map_or("-".to_string(), |p| p.id.to_string());
+            // Con `candidates` non si propone la scelta del motore (ancoraggio): si elencano gli
+            // id dell'indice per la forma e per il lemma, e l'annotatore tiene solo quelli giusti.
+            let picto = if candidates {
+                let mut ids: Vec<u32> = Vec::new();
+                let mut keys = vec![caa_engine::norm::normalize_key(&t.surface)];
+                if let Some(a) = &t.analysis {
+                    keys.push(caa_engine::norm::normalize_key(&a.lemma));
+                }
+                for k in keys {
+                    for e in engine.picto_index().lookup(&k) {
+                        if !ids.contains(&e.id) && ids.len() < 12 {
+                            ids.push(e.id);
+                        }
+                    }
+                }
+                if ids.is_empty() {
+                    "-".to_string()
+                } else {
+                    ids.iter().map(u32::to_string).collect::<Vec<_>>().join("|")
+                }
+            } else {
+                t.picto.map_or("-".to_string(), |p| p.id.to_string())
+            };
             let display = match (t.display, t.picto) {
                 (Display::Hidden, _) => "Hidden",
                 (_, Some(_)) => "Full",
@@ -286,6 +309,8 @@ pub enum Cause {
     WrongSense,
     PictoGap,
     UnwantedSymbol,
+    /// I token del motore non coincidono con quelli annotati: la frase intera conta come errore.
+    Tokenization,
 }
 
 impl Cause {
@@ -300,6 +325,7 @@ impl Cause {
             Cause::WrongSense => "senso sbagliato",
             Cause::PictoGap => "lacuna di pittogramma",
             Cause::UnwantedSymbol => "simbolo non voluto",
+            Cause::Tokenization => "tokenizzazione diversa",
         }
     }
 }
@@ -443,14 +469,21 @@ fn judge(gold: &GoldToken, t: &Token) -> Option<(Cause, String)> {
             )
         });
     }
-    if uncertain_source && (wrong_reading || !picto_ok(gold, t)) {
+    // Conta l'uscita (cosa vede il docente): pittogramma mostrato e segni. Una lettura sbagliata con
+    // l'uscita giusta non e' una correzione (SPEC.md: "risultato non tra quelli accettati"); si
+    // misura a parte con categoria e lemma.
+    let picto_good = picto_ok(gold, t);
+    if picto_good && t.modifiers.0 == gold.modifiers {
+        return None;
+    }
+    if uncertain_source {
         return Some((Cause::UnknownForm, detail_reading()));
     }
     if wrong_reading {
         return Some((Cause::WrongReading, detail_reading()));
     }
-    if !picto_ok(gold, t) {
-        let got = t.picto.map(|p| p.id);
+    if !picto_good {
+        let got = shown_picto(t);
         return Some(match (got, gold.pictos.is_empty()) {
             (None, _) => (
                 Cause::PictoGap,
@@ -484,10 +517,19 @@ fn judge(gold: &GoldToken, t: &Token) -> Option<(Cause, String)> {
     None
 }
 
+/// Il pittogramma che il docente vede: quello del token solo se si mostra (un "che" con il
+/// pittogramma ma solo testo nella politica Completo non mostra niente).
+fn shown_picto(t: &Token) -> Option<u32> {
+    match t.display {
+        Display::Full | Display::Reduced => t.picto.map(|p| p.id),
+        _ => None,
+    }
+}
+
 fn picto_ok(gold: &GoldToken, t: &Token) -> bool {
-    match t.picto {
+    match shown_picto(t) {
         None => gold.pictos.is_empty(),
-        Some(p) => gold.pictos.contains(&p.id),
+        Some(id) => gold.pictos.contains(&id),
     }
 }
 
@@ -506,15 +548,19 @@ pub fn evaluate<D: AsRef<[u8]>>(engine: &Engine<D>, texts: &[&GoldText]) -> Metr
                     .zip(&s.tokens)
                     .all(|(t, g)| t.surface == g.form);
             if !same {
+                // Ogni parola della frase e' una correzione: saltarla farebbe scendere il numero.
                 m.skipped_sentences += 1;
-                m.errors.push(ErrorItem {
-                    text: gt.name.clone(),
-                    sentence: si + 1,
-                    form: s.text.clone(),
-                    cause: Cause::UnknownForm,
-                    detail: "i token del motore non coincidono con quelli annotati: frase saltata"
-                        .to_string(),
-                });
+                for g in s.tokens.iter().filter(|g| g.cat != Cat::Punct) {
+                    m.words += 1;
+                    m.wrong += 1;
+                    m.errors.push(ErrorItem {
+                        text: gt.name.clone(),
+                        sentence: si + 1,
+                        form: g.form.clone(),
+                        cause: Cause::Tokenization,
+                        detail: "i token del motore non coincidono con quelli annotati".to_string(),
+                    });
+                }
                 continue;
             }
             for (t, g) in tokens.iter().zip(&s.tokens) {

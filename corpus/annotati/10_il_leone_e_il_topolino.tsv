@@ -1,6 +1,7 @@
 # testo: 10_il_leone_e_il_topolino
 # genere: favola
-# gruppo: prova
+# gruppo: sviluppo
+# nota: era di prova in M7, consumata dalla revisione
 # origine: scritto per il progetto (sintetico)
 
 # frase: Un leone dormiva nella foresta.
@@ -19,26 +20,26 @@ corse	VERB	correre	2719|6465|28439|8544	PAST	Full
 sulla	ARTADP	su	5451|7814	-	Full
 schiena	NOUN	schiena	2748	-	Full
 e	CONJ	e	11399	-	Full
-il	ART	il	8476	-	Full
+il	ART	il	8476|7158	-	Full
 leone	NOUN	leone	2449|25187	-	Full
 si	CLITIC	si	-	-	Hidden
 svegliò	VERB	svegliare	8988|8989|25209|28625|31857	PAST	Full
-di	ADP	di	7074	-	Full
+di	ADP	di	7074|37163|37162	-	Full
 colpo	NOUN	colpo	-	-	TextOnly
 .	PUNCT	.	-	-	TextOnly
 
 # frase: Il leone prese il topolino con la zampa e stava per mangiarlo.
-Il	ART	il	8476	-	Full
+Il	ART	il	8476|7158	-	Full
 leone	NOUN	leone	2449|25187	-	Full
 prese	VERB	prendere	6888|32773|10148|6452|6453|35019|39414	PAST	Full
-il	ART	il	8476	-	Full
+il	ART	il	8476|7158	-	Full
 topolino	NOUN	topolino	2546|28845	-	Full
-con	ADP	con	7064	-	Full
+con	ADP	con	7064|39801	-	Full
 la	ART	la	8476	-	Full
 zampa	NOUN	zampa	16833|27953	-	Full
 e	CONJ	e	11399	-	Full
 stava	VERB	stare	-	PAST	TextOnly
-per	ADP	per	7194	-	Full
+per	ADP	per	7194|7212|8194|8195|38907	-	Full
 mangiarlo	VERB	mangiare	2349|6456|28641	-	Full
 .	PUNCT	.	-	-	TextOnly
 
@@ -49,7 +50,7 @@ andare	VERB	andare	2432|8142|31758|35093|3251|6044	-	Full
 "	PUNCT	"	-	-	TextOnly
 ,	PUNCT	,	-	-	TextOnly
 pregò	VERB	pregare	8194|8195|38907	PAST	Full
-il	ART	il	8476	-	Full
+il	ART	il	8476|7158	-	Full
 topolino	NOUN	topolino	2546|28845	-	Full
 ,	PUNCT	,	-	-	TextOnly
 "	PUNCT	"	-	-	TextOnly
@@ -62,14 +63,14 @@ aiuterò	VERB	aiutare	4570|32648	FUTURE	Full
 .	PUNCT	.	-	-	TextOnly
 
 # frase: Il leone rise di cuore, ma lo lasciò libero.
-Il	ART	il	8476	-	Full
+Il	ART	il	8476|7158	-	Full
 leone	NOUN	leone	2449|25187	-	Full
 rise	VERB	ridere	13354|30393	PAST	Full
-di	ADP	di	7074	-	Full
+di	ADP	di	7074|37163|37162	-	Full
 cuore	NOUN	cuore	4613|2715	-	Full
 ,	PUNCT	,	-	-	TextOnly
 ma	CONJ	ma	11377	-	Full
-lo	CLITIC	lo	6481|6480|31670	-	Full
+lo	CLITIC	lo	6481|6480|31670|8476	-	Full
 lasciò	VERB	lasciare	11748|6215	PAST	Full
 libero	ADJ	libero	11474	-	Full
 .	PUNCT	.	-	-	TextOnly
@@ -77,13 +78,13 @@ libero	ADJ	libero	11474	-	Full
 # frase: Poco dopo il leone cadde in una rete dei cacciatori e ruggì disperato.
 Poco	ADV	poco	5546|7209	-	Full
 dopo	ADV	dopo	13080|32749	-	Full
-il	ART	il	8476	-	Full
+il	ART	il	8476|7158	-	Full
 leone	NOUN	leone	2449|25187	-	Full
 cadde	VERB	cadere	4582|6067|29674	PAST	Full
-in	ADP	in	7034	-	Full
-una	ART	una	8474	-	Full
+in	ADP	in	7034|5388|5355	-	Full
+una	ART	una	8474|27385|8277	-	Full
 rete	NOUN	rete	6205	-	Full
-dei	ARTADP	di	11712	-	Full
+dei	ARTADP	di	11712|8475	-	Full
 cacciatori	NOUN	cacciatore	3010	PLURAL	Full
 e	CONJ	e	11399	-	Full
 ruggì	VERB	ruggire	7235	PAST	Full
@@ -91,19 +92,19 @@ disperato	ADJ	disperato	-	-	TextOnly
 .	PUNCT	.	-	-	TextOnly
 
 # frase: Il topolino sentì il ruggito e corse da lui.
-Il	ART	il	8476	-	Full
+Il	ART	il	8476|7158	-	Full
 topolino	NOUN	topolino	2546|28845	-	Full
 sentì	VERB	sentire	6572|28659	PAST	Full
-il	ART	il	8476	-	Full
+il	ART	il	8476|7158	-	Full
 ruggito	NOUN	ruggito	7235	-	Full
 e	CONJ	e	11399	-	Full
 corse	VERB	correre	2719|6465|28439|8544	PAST	Full
-da	ADP	da	7077	-	Full
+da	ADP	da	7077|7074|7212	-	Full
 lui	PRON	lui	6481|6480|31670	-	Full
 .	PUNCT	.	-	-	TextOnly
 
 # frase: Con i suoi dentini piccoli rosicchiò le corde della rete una dopo l'altra.
-Con	ADP	con	7064	-	Full
+Con	ADP	con	7064|39801	-	Full
 i	ART	il	8477	-	Full
 suoi	DET	suo	12276	-	Full
 dentini	NOUN	dentino	2737	-	Full
@@ -111,16 +112,16 @@ piccoli	ADJ	piccolo	4716	-	Full
 rosicchiò	VERB	rosicchiare	26398|25393|25394	PAST	Full
 le	ART	la	8477	-	Full
 corde	NOUN	corda	7006|26026	PLURAL	Full
-della	ARTADP	di	11712	-	Full
+della	ARTADP	di	11712|7074	-	Full
 rete	NOUN	rete	6205	-	Full
 una	PRON	uno	2627|8474	-	Full
-dopo	ADP	dopo	13080|7818	-	Full
+dopo	ADP	dopo	13080|7818|32749	-	Full
 l'	ART	il	8476	-	Full
 altra	PRON	altro	17054	-	Full
 .	PUNCT	.	-	-	TextOnly
 
 # frase: Il leone fu libero e ringraziò l'amico.
-Il	ART	il	8476	-	Full
+Il	ART	il	8476|7158	-	Full
 leone	NOUN	leone	2449|25187	-	Full
 fu	VERB	essere	5581|5465|5858|36480	PAST	Full
 libero	ADJ	libero	11474	-	Full

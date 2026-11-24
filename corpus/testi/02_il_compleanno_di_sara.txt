@@ -1,5 +1,6 @@
 # genere: storia
-# gruppo: prova
+# gruppo: sviluppo
+# nota: era di prova in M7, consumata dalla revisione
 # origine: scritto per il progetto (sintetico)
 Oggi Sara compie sette anni. Si è svegliata presto e ha trovato un pacco sul tavolo della cucina.
 Il papà ha acceso le candeline sulla torta al cioccolato. Sara ha chiuso gli occhi, ha espresso un desiderio e ha soffiato forte.

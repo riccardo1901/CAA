@@ -5,7 +5,7 @@
 
 # frase: Prima di mangiare mi lavo le mani.
 Prima	ADV	prima	13028|32745	-	Full
-di	ADP	di	7074	-	Full
+di	ADP	di	7074|37163|37162	-	Full
 mangiare	VERB	mangiare	2349|6456|28641	-	Full
 mi	CLITIC	mi	-	-	Hidden
 lavo	VERB	lavare	2443|8975	-	Full
@@ -33,14 +33,14 @@ e	CONJ	e	11399	-	Full
 bagno	VERB	bagnare	-	-	TextOnly
 le	ART	la	8477	-	Full
 mani	NOUN	mano	9830	-	Full
-con	ADP	con	7064	-	Full
+con	ADP	con	7064|39801	-	Full
 l'	ART	il	8476	-	Full
 acqua	NOUN	acqua	6889	-	Full
 .	PUNCT	.	-	-	TextOnly
 
 # frase: Prendo il sapone e strofino bene le mani, anche tra le dita.
 Prendo	VERB	prendere	10148|6888|32773	-	Full
-il	ART	il	8476	-	Full
+il	ART	il	8476|7158	-	Full
 sapone	NOUN	sapone	25171|2964|8094	-	Full
 e	CONJ	e	11399	-	Full
 strofino	VERB	strofinare	35977|34371	-	Full
@@ -62,7 +62,7 @@ venti	NUM	venti	29550	-	Full
 e	CONJ	e	11399	-	Full
 poi	ADV	poi	-	-	TextOnly
 sciacquo	VERB	sciacquare	8977|34824	-	Full
-il	ART	il	8476	-	Full
+il	ART	il	8476|7158	-	Full
 sapone	NOUN	sapone	25171|2964|8094	-	Full
 .	PUNCT	.	-	-	TextOnly
 
@@ -74,7 +74,7 @@ e	CONJ	e	11399	-	Full
 asciugo	VERB	asciugare	2566|30520|37049	-	Full
 le	ART	la	-	-	Hidden
 mani	NOUN	mano	-	-	Hidden
-con	ADP	con	7064	-	Full
+con	ADP	con	7064|39801	-	Full
 la	ART	la	8476	-	Full
 carta	NOUN	carta	6166|2398	-	Full
 .	PUNCT	.	-	-	TextOnly
@@ -85,20 +85,20 @@ lavo	VERB	lavare	2443|8975	-	Full
 le	ART	la	-	-	Hidden
 mani	NOUN	mano	-	-	Hidden
 anche	ADV	anche	-	-	TextOnly
-dopo	ADP	dopo	13080|32749	-	Full
+dopo	ADP	dopo	13080|32749|7818	-	Full
 essere	AUX	essere	-	-	Hidden
 stato	VERB	essere	5581	PAST	Full
-in	ADP	in	7034	-	Full
+in	ADP	in	7034|5388|5355	-	Full
 bagno	NOUN	bagno	27555|5921|37331|38626|38627|39122	-	Full
 e	CONJ	e	11399	-	Full
-dopo	ADP	dopo	13080|32749	-	Full
+dopo	ADP	dopo	13080|32749|7818	-	Full
 aver	AUX	avere	-	-	Hidden
 giocato	VERB	giocare	2439|6537|23392|36884	PAST	Full
 fuori	ADV	fuori	5475	-	Full
 .	PUNCT	.	-	-	TextOnly
 
 # frase: Quando ho le mani pulite, sto bene e posso mangiare con tranquillità.
-Quando	CONJ	quando	22621	-	Full
+Quando	CONJ	quando	22621|24053	-	Full
 ho	VERB	avere	7271	-	Full
 le	ART	la	8477	-	Full
 mani	NOUN	mano	9830	-	Full
@@ -109,6 +109,6 @@ bene	ADV	bene	-	-	Hidden
 e	CONJ	e	11399	-	Full
 posso	MODAL	potere	35949	-	Full
 mangiare	VERB	mangiare	2349|6456|28641	-	Full
-con	ADP	con	7064	-	Full
+con	ADP	con	7064|39801	-	Full
 tranquillità	NOUN	tranquillità	38932|31310|37828|38050	-	Full
 .	PUNCT	.	-	-	TextOnly

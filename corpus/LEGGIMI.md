@@ -1,11 +1,11 @@
 # Corpus di valutazione (M7)
 
-20 testi per misurare il motore su un italiano da scuola: 7 storie, 6 favole, 7 storie sociali. Sono **scritti per il progetto** (sintetici), non testi veri della scuola: il corpus è fatto per crescere con testi reali e con le correzioni dei docenti.
+26 testi per misurare il motore su un italiano da scuola (storie, favole, storie sociali). Sono **scritti per il progetto** (sintetici), non testi veri della scuola: il corpus è fatto per crescere con testi reali e con le correzioni dei docenti.
 
 - `testi/NN_titolo.txt`: il testo (con `# genere:`, `# gruppo:`, `# origine:`).
 - `annotati/NN_titolo.tsv`: il testo annotato parola per parola (formato di `SPEC.md`).
-- **Gruppo `sviluppo`** (14 testi): serve a trovare e correggere gli errori del motore.
-- **Gruppo `prova`** (6 testi, 2 per genere): non si usa per correggere, solo per misurare; così si vede se i miglioramenti valgono anche su testi mai visti.
+- **Gruppo `sviluppo`** (20 testi): serve a trovare e correggere gli errori del motore.
+- **Gruppo `prova`** (6 testi, 21–26, 2 per genere): non si usa per correggere, solo per misurare; così si vede se i miglioramenti valgono anche su testi mai visti. Una prova che si guarda mentre si corregge è consumata e va sostituita con testi nuovi.
 
 ```bash
 cargo run --release -q -p caa-eval -- corpus                     # metriche e errori per causa, sviluppo e prova
@@ -33,4 +33,11 @@ Una riga per token, 6 colonne separate da tabulazione: `forma`, `categoria`, `le
 - I riflessivi della stessa persona ("mi lavo", "si è messa") sono sempre `Hidden`, anche se ARASAAC non ha il verbo con "-si"; "c'è", "ci sono" = "esserci" (il "ci" è nascosto).
 - Sinonimi: dove una parola non ha pittogramma gli annotatori hanno accettato quello di un sinonimo sensato ("tornare" → "ritornare"); è il tipo di scelta che in M8 farà il menu delle alternative e che il motore impara dai file curati.
 - 14 testi di sviluppo e 6 di prova; la prova non si usa per correggere (nemmeno guardando le singole parole).
+
+## Regole di annotazione aggiunte dopo la revisione (M7)
+
+- **Parole grammaticali** (articoli, preposizioni, congiunzioni, pronomi, clitici): per la stessa forma e categoria l'insieme dei pittogrammi accettati è **lo stesso in tutti i testi** (l'unione di quelli che i diversi annotatori avevano accettato). La lettera dell'alfabeto non è mai un pittogramma accettato per "e", "a", "i".
+- **"che"** (congiunzione, pronome, esclamativo): nel preset Completo si mostra solo il testo (SPEC.md, fase 10): categoria giusta, `-` come pittogramma, `TextOnly`.
+- **"po'"** è sempre `ADV` con lemma "poco".
+- **Gruppo prova**: i 6 testi di prova della prima serie sono stati guardati durante le correzioni e sono passati a `sviluppo`. La prova è ora la seconda serie (testi 21–26, scritti dopo la revisione); la sua annotazione parte da una bozza che **non propone il pittogramma del motore** ma elenca i candidati dell'indice (`caa-eval prepara-candidati`), per ridurre l'ancoraggio. Non si usa per correggere il motore.
 

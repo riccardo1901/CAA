@@ -4,27 +4,27 @@
 # origine: scritto per il progetto (sintetico)
 
 # frase: A scuola c'è una campanella.
-A	ADP	a	7041	-	Full
+A	ADP	a	7041|7034|27564|27387|7070	-	Full
 scuola	NOUN	scuola	3082|6454|32446	-	Full
 c'	CLITIC	ci	-	-	TextOnly
 è	VERB	essere	5581	-	Full
-una	ART	una	8474	-	Full
+una	ART	una	8474|27385|8277	-	Full
 campanella	NOUN	campanella	5938	-	Full
 .	PUNCT	.	-	-	TextOnly
 
 # frase: Quando suona, vuol dire che è l'ora di entrare in classe.
-Quando	CONJ	quando	22621	-	Full
+Quando	CONJ	quando	22621|24053	-	Full
 suona	VERB	suonare	7255	-	Full
 ,	PUNCT	,	-	-	TextOnly
 vuol	MODAL	volere	31141	-	Full
 dire	VERB	dire	9692|9693|28663	-	Full
-che	CONJ	che	11351	-	Full
+che	CONJ	che	-	-	TextOnly
 è	VERB	essere	5581	-	Full
 l'	ART	il	8476	-	Full
 ora	NOUN	ora	7129	-	Full
-di	ADP	di	7074	-	Full
+di	ADP	di	7074|37163|37162	-	Full
 entrare	VERB	entrare	2742|6491|28687|26811	-	Full
-in	ADP	in	7034	-	Full
+in	ADP	in	7034|5388|5355	-	Full
 classe	NOUN	classe	9814|9815|33072|39686|15734|5913	-	Full
 .	PUNCT	.	-	-	TextOnly
 
@@ -34,19 +34,19 @@ mi	CLITIC	mi	-	-	Hidden
 fermo	VERB	fermare	37185	-	Full
 e	CONJ	e	11399	-	Full
 smetto	VERB	smettere	28429|27393	-	Full
-di	ADP	di	7074	-	Full
+di	ADP	di	7074|37163|37162	-	Full
 giocare	VERB	giocare	2439|6537|23392|36884	-	Full
 .	PUNCT	.	-	-	TextOnly
 
 # frase: Metto a posto il pallone e cammino con calma verso la mia fila.
 Metto	VERB	mettere	5514|8680	-	Full
-a	ADP	a	7041	-	Hidden
+a	ADP	a	-	-	Hidden
 posto	NOUN	posto	-	-	Hidden
-il	ART	il	8476	-	Full
+il	ART	il	8476|7158	-	Full
 pallone	NOUN	pallone	2269|3241	-	Full
 e	CONJ	e	11399	-	Full
 cammino	VERB	camminare	3251|6044|32214|32908	-	Full
-con	ADP	con	7064	-	Full
+con	ADP	con	7064|39801	-	Full
 calma	NOUN	calma	37828|38050	-	Full
 verso	ADP	verso	7125	-	Full
 la	ART	la	8476	-	Full
@@ -56,7 +56,7 @@ fila	NOUN	fila	7102|31803|35123|38596|39148|37764	-	Full
 
 # frase: Aspetto con i miei compagni davanti alla porta.
 Aspetto	VERB	aspettare	8109|16697|27547|28677|39049	-	Full
-con	ADP	con	7064	-	Full
+con	ADP	con	7064|39801	-	Full
 i	ART	il	8477	-	Full
 miei	DET	mio	12266	-	Full
 compagni	NOUN	compagno	7062|7063|37658	-	Full
@@ -83,7 +83,7 @@ Buongiorno	INTJ	buongiorno	6944|38568|38567	-	Full
 # frase: Poi entro in classe, appendo lo zaino e mi siedo al mio posto.
 Poi	ADV	poi	-	-	TextOnly
 entro	VERB	entrare	2742|6491|28687|26811	-	Full
-in	ADP	in	7034	-	Full
+in	ADP	in	7034|5388|5355	-	Full
 classe	NOUN	classe	9814|9815|33072|39686|15734|5913	-	Full
 ,	PUNCT	,	-	-	TextOnly
 appendo	VERB	appendere	37896	-	Full
@@ -92,13 +92,13 @@ zaino	NOUN	zaino	-	-	Hidden
 e	CONJ	e	11399	-	Full
 mi	CLITIC	mi	-	-	Hidden
 siedo	VERB	sedere	2801|6611|35033|30826	-	Full
-al	ARTADP	a	11709	-	Full
+al	ARTADP	a	11709|3021	-	Full
 mio	DET	mio	12264	-	Full
 posto	NOUN	posto	9819|19520	-	Full
 .	PUNCT	.	-	-	TextOnly
 
 # frase: Quando faccio così, la maestra è contenta e anche io mi sento tranquillo.
-Quando	CONJ	quando	22621	-	Full
+Quando	CONJ	quando	22621|24053	-	Full
 faccio	VERB	fare	11749|32751	-	Full
 così	ADV	così	-	-	TextOnly
 ,	PUNCT	,	-	-	TextOnly

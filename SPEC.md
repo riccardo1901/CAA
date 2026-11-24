@@ -474,7 +474,7 @@ Il motore si migliora solo misurando: ogni modifica alle regole o ai pesi si acc
 | 6 | Mi sono divertito al parco. | [mi sono divertito] = divertirsi + PASSATO |
 | 7 | Dammi il libro. | dare + mi · libro |
 | 8 | Il bambino stava dormendo. | [stava dormendo] = dormire + PASSATO |
-| 9 | C'era una volta un re. | c' = ci · era = essere + PASSATO (non "era" epoca) |
+| 9 | C'era una volta un re. | c' = ci · era = essere + PASSATO (non "era" epoca). In M7: "ci" + essere alla terza persona forma "esserci" ("c'" nascosto, `strutture.tsv`); l'analisi "c' = ci" resta in `analisi.tsv` |
 | 10 | Ho mangiato il riso. | mangiare + PASSATO · riso = nome |
 | 11 | Ho riso tanto. | [ho riso] = ridere + PASSATO |
 | 12 | I ragazzi hanno fatto colazione. | ragazzo + PLURALE · "fare colazione" + PASSATO |
@@ -715,7 +715,7 @@ Dodici milestone in ordine di dipendenza. Ognuna si chiude solo quando il criter
 7. **M6 — Strutture verbali e multiparola.** Clitici, pronominali, tempi composti, perifrasi, trie delle multiparola, seconda passata.
     - *Accettazione*: tutti i 20 test dorati verdi. *Esito* (`docs/RAPPORTO-M6.md`): 20 su 20 in `lexicon/golden/strutture.tsv`; i casi 1, 2, 16, 17 e 18 sono scritti dopo aver controllato l'indice (ARASAAC ha i pittogrammi "aprire la porta", "portare a scuola", "avere fame", "salire le scale", "mettere il sale"); "c'era una volta" è in blocklist per il caso 9; tokenizzazione e analisi restano 48 su 48, copertura 96,7%.
 8. **M7 — Valutazione.** `caa-eval`, formato corpus, comando "Esporta come caso di test", primi 10 testi annotati.
-    - *Accettazione*: rapporto completo con metriche ed errori raggruppati per causa; prima taratura dei pesi. *Esito* (`docs/RAPPORTO-M7.md`): 20 testi annotati (7 storie, 6 favole, 7 storie sociali; 14 di sviluppo e 6 di prova), `caa-eval corpus` con le sei metriche e gli errori per causa; correzioni per 100 parole da 24,0 a 7,2 sullo sviluppo e da 24,4 a **15,1 sulla prova** (il numero onesto); pesi della specifica invariati. Il comando "Esporta come caso di test" nell'editor passa a M8 (serve il motore collegato); in M7 c'è `caa-eval prepara`.
+    - *Accettazione*: rapporto completo con metriche ed errori raggruppati per causa; prima taratura dei pesi. *Esito* (`docs/RAPPORTO-M7.md`, rivisto dopo la revisione indipendente): 26 testi annotati (20 di sviluppo, 6 di prova nuova scritta dopo la revisione), `caa-eval corpus` con le sei metriche e gli errori per causa; correzioni per 100 parole da 26,6 a **13,4 sulla prova** (al netto di due convenzioni grammaticali da 18,0 a 13,4; sullo sviluppo da 21,9 a 6,9, gonfiato dai file curati); pesi della specifica invariati. Il comando "Esporta come caso di test" nell'editor passa a M8; in M7 ci sono `caa-eval prepara` e `prepara-candidati`.
 9. **M8 — Integrazione.** Motore collegato all'editor via comandi Tauri, cache per paragrafo, menu alternative, ricerca, simboli personali, modificatori grafici, politica parole funzionali.
     - *Accettazione*: dal tasto al simbolo < 30 ms; correzione in 1 clic + 1 scelta; annulla/ripeti includono le scelte.
 10. **M9 — Archivio e biblioteca.** Formato `.caa`, documenti personali, biblioteca su cartella condivisa, Adatta/Pubblica/Aggiorna, lock, scritture atomiche, modalità offline, avviso cambio lessico.

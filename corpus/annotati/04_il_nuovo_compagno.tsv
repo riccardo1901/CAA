@@ -5,7 +5,7 @@
 
 # frase: Lunedì in classe è arrivato un bambino nuovo.
 Lunedì	NOUN	lunedì	6554|37730	-	Full
-in	ADP	in	7034	-	Full
+in	ADP	in	7034|5388|5355	-	Full
 classe	NOUN	classe	9814|9815|15734|33072|39686	-	Full
 è	AUX	essere	-	-	Hidden
 arrivato	VERB	arrivare	11708|13356	PAST	Full
@@ -20,7 +20,7 @@ chiama	VERB	chiamarsi	27357|7061	-	Full
 Karim	PROPN	karim	-	-	TextOnly
 e	CONJ	e	11399	-	Full
 viene	VERB	venire	11708|13356	-	Full
-da	ADP	da	7077	-	Full
+da	ADP	da	7077|7074|7212	-	Full
 un	ART	un	8474	-	Full
 paese	NOUN	paese	-	-	TextOnly
 lontano	ADJ	lontano	30385|36759	-	Full
@@ -39,13 +39,13 @@ molto	ADV	molto	5521|25708	-	Full
 # frase: La maestra lo ha presentato a tutti e lo ha fatto sedere vicino a Elena.
 La	ART	il	8476	-	Full
 maestra	NOUN	maestra	2456|6555|28003	-	Full
-lo	CLITIC	lo	6480|31670	-	Full
+lo	CLITIC	lo	6480|31670|6481|8476	-	Full
 ha	AUX	avere	-	-	Hidden
 presentato	VERB	presentare	31902|11308|16823|39430	PAST	Full
-a	ADP	a	7041	-	Full
+a	ADP	a	7041|7034|27564|27387|7070	-	Full
 tutti	PRON	tutto	36081	-	Full
 e	CONJ	e	11399	-	Full
-lo	CLITIC	lo	6480|31670	-	Full
+lo	CLITIC	lo	6480|31670|6481|8476	-	Full
 ha	AUX	avere	-	-	Hidden
 fatto	VERB	fare	11749|32751	PAST	Full
 sedere	VERB	sedere	2801|6611|30826|35029|35033	-	Full
@@ -58,7 +58,7 @@ Elena	PROPN	elena	-	-	TextOnly
 Durante	ADP	durante	7081|24737	-	Full
 la	ART	il	8476	-	Full
 ricreazione	NOUN	ricreazione	6204|27339|33064|33065	-	Full
-nessuno	PRON	nessuno	11314|26941	-	Full
+nessuno	PRON	nessuno	11314|26941|5800	-	Full
 sapeva	VERB	sapere	9034|16885|26405	PAST	Full
 cosa	PRON	cosa	22620	-	Full
 dire	VERB	dire	9692|9693|28663	-	Full
@@ -67,15 +67,15 @@ dire	VERB	dire	9692|9693|28663	-	Full
 # frase: Poi Elena gli ha chiesto: "Vuoi giocare con noi?".
 Poi	ADV	poi	13080|32749	-	Full
 Elena	PROPN	elena	-	-	TextOnly
-gli	CLITIC	gli	6481|31670	-	Full
+gli	CLITIC	gli	6481|31670|6480	-	Full
 ha	AUX	avere	-	-	Hidden
 chiesto	VERB	chiedere	9840|9843|9844|9847|36051|36159	PAST	Full
 :	PUNCT	:	-	-	TextOnly
 "	PUNCT	"	-	-	TextOnly
 Vuoi	MODAL	volere	31141|5441	-	Full
 giocare	VERB	giocare	2439|6537|23392	-	Full
-con	ADP	con	7064	-	Full
-noi	PRON	noi	31672|31674|32306	-	Full
+con	ADP	con	7064|39801	-	Full
+noi	PRON	noi	31672|31674|32306|7183|7184|7185|7186	-	Full
 ?	PUNCT	?	-	-	TextOnly
 "	PUNCT	"	-	-	TextOnly
 .	PUNCT	.	-	-	TextOnly
@@ -112,13 +112,13 @@ applaudito	VERB	applaudire	4563|36682	PAST	Full
 .	PUNCT	.	-	-	TextOnly
 
 # frase: Il giorno dopo Karim ha portato dei biscotti buonissimi preparati dalla sua mamma.
-Il	ART	il	8476	-	Full
+Il	ART	il	8476|7158	-	Full
 giorno	NOUN	giorno	37371|37731|26799	-	Full
 dopo	ADV	dopo	13080|32749	-	Full
 Karim	PROPN	karim	-	-	TextOnly
 ha	AUX	avere	-	-	Hidden
 portato	VERB	portare	6139|6553|7279|7280|37223	PAST	Full
-dei	ARTADP	di	8475	-	Full
+dei	ARTADP	di	8475|11712	-	Full
 biscotti	NOUN	biscotto	2402|2995|6525|25568	-	Full
 buonissimi	ADJ	buono	32340	-	Full
 preparati	VERB	preparare	6190	-	Full

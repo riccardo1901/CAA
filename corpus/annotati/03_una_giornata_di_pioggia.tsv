@@ -6,7 +6,7 @@
 # frase: Stamattina pioveva a dirotto.
 Stamattina	ADV	stamattina	25704|32848	-	Full
 pioveva	VERB	piovere	7148	PAST	Full
-a	ADP	a	7041	-	Full
+a	ADP	a	7041|7034|27564|27387|7070	-	Full
 dirotto	ADV	dirotto	-	-	TextOnly
 .	PUNCT	.	-	-	TextOnly
 
@@ -31,7 +31,7 @@ pallone	NOUN	pallone	2269	-	Full
 # frase: La mamma gli ha dato lo stivale giallo e l'impermeabile.
 La	ART	il	8476	-	Full
 mamma	NOUN	mamma	2458|31148	-	Full
-gli	CLITIC	gli	6481|31670	-	Full
+gli	CLITIC	gli	6481|31670|6480	-	Full
 ha	AUX	avere	-	-	Hidden
 dato	VERB	dare	28431|17038|17040	PAST	Full
 lo	ART	il	8476	-	Full
@@ -46,7 +46,7 @@ impermeabile	NOUN	impermeabile	4927|8122	-	Full
 Insieme	ADV	insieme	-	-	TextOnly
 sono	AUX	essere	-	-	Hidden
 usciti	VERB	uscire	2806|6606|28689	PAST	Full
-con	ADP	con	7064	-	Full
+con	ADP	con	7064|39801	-	Full
 l'	ART	il	8476	-	Full
 ombrello	NOUN	ombrello	2500|37456	-	Full
 e	CONJ	e	11399	-	Full
@@ -58,19 +58,19 @@ scuola	NOUN	scuola	3082|6454	-	Full
 .	PUNCT	.	-	-	TextOnly
 
 # frase: Per strada Tommaso ha visto una lumaca sul muro e dei bambini che saltavano nelle pozzanghere.
-Per	ADP	per	7194	-	Full
+Per	ADP	per	7194|7212|8194|8195|38907	-	Full
 strada	NOUN	strada	2302|5946	-	Full
 Tommaso	PROPN	tommaso	-	-	TextOnly
 ha	AUX	avere	-	-	Hidden
 visto	VERB	vedere	2474|6564|28673	PAST	Full
-una	ART	un	8474	-	Full
+una	ART	un	8474|27385|8277	-	Full
 lumaca	NOUN	lumaca	2685|8061|25827	-	Full
-sul	ARTADP	su	5451	-	Full
+sul	ARTADP	su	5451|7814	-	Full
 muro	NOUN	muro	8266|39074	-	Full
 e	CONJ	e	11399	-	Full
-dei	ARTADP	di	8475	-	Full
+dei	ARTADP	di	8475|11712	-	Full
 bambini	NOUN	bambino	31462|6975|7178|36560	-	Full
-che	PRON	che	11351	-	Full
+che	PRON	che	-	-	TextOnly
 saltavano	VERB	saltare	2804|6607|28447|39052	PAST	Full
 nelle	ARTADP	in	7034	-	Full
 pozzanghere	NOUN	pozzanghera	25936	PLURAL	Full
@@ -78,7 +78,7 @@ pozzanghere	NOUN	pozzanghera	25936	PLURAL	Full
 
 # frase: Anche lui ha provato, ma si è bagnato i calzini!
 Anche	ADV	anche	-	-	TextOnly
-lui	PRON	lui	6480|31670	-	Full
+lui	PRON	lui	6480|31670|6481	-	Full
 ha	AUX	avere	-	-	Hidden
 provato	VERB	provare	26144	PAST	Full
 ,	PUNCT	,	-	-	TextOnly
@@ -91,7 +91,7 @@ calzini	NOUN	calzino	2298	-	Full
 !	PUNCT	!	-	-	TextOnly
 
 # frase: In classe la maestra ha acceso la luce e ha raccontato una storia.
-In	ADP	in	7034	-	Full
+In	ADP	in	7034|5388|5355	-	Full
 classe	NOUN	classe	9814|9815|15734|33072|39686	-	Full
 la	ART	il	8476	-	Full
 maestra	NOUN	maestra	2456|6555|28003	-	Full
@@ -108,13 +108,13 @@ storia	NOUN	storia	-	-	Hidden
 
 # frase: Fuori il vento muoveva i rami e il cielo era grigio.
 Fuori	ADV	fuori	5475	-	Full
-il	ART	il	8476	-	Full
+il	ART	il	8476|7158	-	Full
 vento	NOUN	vento	7259|23731	-	Full
 muoveva	VERB	muovere	7167|27371	PAST	Full
 i	ART	il	8477	-	Full
 rami	NOUN	ramo	7224	PLURAL	Full
 e	CONJ	e	11399	-	Full
-il	ART	il	8476	-	Full
+il	ART	il	8476|7158	-	Full
 cielo	NOUN	cielo	38270	-	Full
 era	VERB	essere	5581|5465|5858	PAST	Full
 grigio	ADJ	grigio	3340	-	Full
@@ -129,14 +129,14 @@ più	ADV	più	-	-	TextOnly
 .	PUNCT	.	-	-	TextOnly
 
 # frase: In cielo c'era un grande arcobaleno con sette colori.
-In	ADP	in	7034	-	Full
+In	ADP	in	7034|5388|5355	-	Full
 cielo	NOUN	cielo	38270	-	Full
 c'	CLITIC	ci	-	-	Hidden
 era	VERB	essere	5581|5465|5858	PAST	Full
 un	ART	un	8474	-	Full
 grande	ADJ	grande	4658	-	Full
 arcobaleno	NOUN	arcobaleno	2986	-	Full
-con	ADP	con	7064	-	Full
+con	ADP	con	7064|39801	-	Full
 sette	NUM	sette	2633|4895|7248|35685	-	Full
 colori	NOUN	colore	5968	PLURAL	Full
 .	PUNCT	.	-	-	TextOnly

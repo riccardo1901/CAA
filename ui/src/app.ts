@@ -29,16 +29,32 @@ function applySize(px: number): void {
 }
 
 /** Passa all'interfaccia con il motore: barre, simboli veri, niente pannello di prova. */
+let engineModeOn = false;
+
 function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): void {
+  // Una volta sola: i pulsanti e gli ascoltatori delle barre non si devono accumulare.
+  if (engineModeOn) {
+    if (client) setEngine(view, client);
+    return;
+  }
+  engineModeOn = true;
   panelEl.remove();
   const app = document.createElement("div");
   app.className = "app";
-  const bars = createBars(view, info, applySize, () => size, () => replaceDocument(emptyDoc()), () => replaceDocument(sampleDoc(1)));
+  // "Nuovo" e "Testo di esempio" buttano via il documento aperto (il salvataggio arriva con M9): si chiede conferma
+  // se c'è del testo.
+  const confirmReplace = (make: () => PMNode) => () => {
+    const hasText = view.state.doc.textContent.trim().length > 0;
+    if (hasText && !window.confirm("Il documento aperto andrà perso. Continuare?")) return;
+    replaceDocument(make());
+  };
+  const bars = createBars(view, info, applySize, () => size, confirmReplace(emptyDoc), confirmReplace(() => sampleDoc(1)));
   app.append(bars.banner, bars.toolbar, layoutEl, bars.statusbar);
   root.appendChild(app);
   onEngineUpdate(bars.refresh);
+  // I simboli finti del prototipo si spengono sempre: col motore non servono e costano tempo a ogni battuta.
+  view.dispatch(view.state.tr.setMeta(symbolKey, { mode: "off" }));
   if (client) setEngine(view, client);
-  else view.dispatch(view.state.tr.setMeta(symbolKey, { mode: "off" }));
   bars.refresh();
 }
 

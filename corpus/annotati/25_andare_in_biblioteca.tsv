@@ -1,0 +1,138 @@
+# testo: 25_andare_in_biblioteca
+# genere: storia_sociale
+# gruppo: prova
+# origine: scritto per il progetto (sintetico), seconda serie di prova (M7, dopo la revisione)
+
+# frase: Il giovedì vado in biblioteca con la mia classe.
+Il	ART	il	8476|7158	-	Full
+giovedì	NOUN	giovedì	37727	-	Full
+vado	VERB	andare	2432|3251|6044|8142|31758|35093	-	Full
+in	ADP	in	7034|5388|5355	-	Full
+biblioteca	NOUN	biblioteca	3065|6063|32450	-	Full
+con	ADP	con	7064|39801	-	Full
+la	ART	la	8476	-	Full
+mia	DET	mio	12264	-	Full
+classe	NOUN	classe	39686|33072|15734|9814|9815	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: La biblioteca è un posto pieno di libri dove si sta in silenzio.
+La	ART	la	8476	-	Full
+biblioteca	NOUN	biblioteca	3065|6063|32450	-	Full
+è	VERB	essere	5581|5465|5466|5858|36480	-	Full
+un	ART	un	8474	-	Full
+posto	NOUN	posto	9819	-	Full
+pieno	ADJ	pieno	26176|31190|4688	-	Full
+di	ADP	di	7074|37163|37162	-	Full
+libri	NOUN	libro	2450|25191	PLURAL	Full
+dove	ADV	dove	7764	-	Full
+si	CLITIC	si	-	-	TextOnly
+sta	VERB	stare	5465|5466|5858|36392	-	Full
+in	ADP	in	7034|5388|5355	-	Full
+silenzio	NOUN	silenzio	5936|6071	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Quando entro, parlo a bassa voce e cammino piano.
+Quando	CONJ	quando	22621|24053	-	Full
+entro	VERB	entrare	2742|6491|26811|28687	-	Full
+,	PUNCT	,	-	-	TextOnly
+parlo	VERB	parlare	3345|6517|36544|32133	-	Full
+a	ADP	a	7041|7034|27564|27387|7070	-	Full
+bassa	ADJ	basso	-	-	TextOnly
+voce	NOUN	voce	-	-	TextOnly
+e	CONJ	e	11399	-	Full
+cammino	VERB	camminare	3251|6044|32214|32908|37345|29951	-	Full
+piano	ADV	piano	4676	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Non corro tra gli scaffali.
+Non	ADV	non	5526|5525	-	Full
+corro	VERB	correre	2719|6465|8544|28439|28921	-	Full
+tra	ADP	tra	7765	-	Full
+gli	ART	il	8477	-	Full
+scaffali	NOUN	scaffale	2386|37937	PLURAL	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Cerco un libro che mi piace.
+Cerco	VERB	cercare	6946|6947|21466|27391|32156|37238	-	Full
+un	ART	un	8474	-	Full
+libro	NOUN	libro	2450|25191	-	Full
+che	PRON	che	-	-	TextOnly
+mi	CLITIC	mi	21917|37826|38889|38891|31807|2617|6632|7309|7310	-	Full
+piace	VERB	piacere	-	-	Hidden
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Se non lo trovo, chiedo aiuto alla bibliotecaria.
+Se	CONJ	se	28359	-	Full
+non	ADV	non	5526|5525	-	Full
+lo	CLITIC	lo	8476|31670|6480|6481	-	Full
+trovo	VERB	trovare	24741|24742|24773|24774|37246	-	Full
+,	PUNCT	,	-	-	TextOnly
+chiedo	VERB	chiedere	4570	-	Full
+aiuto	NOUN	aiuto	-	-	Hidden
+alla	ARTADP	a	11709|3021	-	Full
+bibliotecaria	NOUN	bibliotecaria	34531	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Lei è gentile e mi spiega dove cercare.
+Lei	PRON	lei	7028|7029	-	Full
+è	VERB	essere	5581|5465|5466|5858|36480	-	Full
+gentile	ADJ	gentile	33994	-	Full
+e	CONJ	e	11399	-	Full
+mi	CLITIC	mi	2617|6632|7309|7310|31807|21917|37826|38889|38891	-	Full
+spiega	VERB	spiegare	8579|16705|35669	-	Full
+dove	ADV	dove	7764	-	Full
+cercare	VERB	cercare	6946|6947|21466|27391|32156|37238	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Mi siedo al tavolo e guardo le figure.
+Mi	CLITIC	mi	-	-	Hidden
+siedo	VERB	sedersi	2801|6611|35033|30826|35029	-	Full
+al	ARTADP	a	11709|3021	-	Full
+tavolo	NOUN	tavolo	3129|6562	-	Full
+e	CONJ	e	11399	-	Full
+guardo	VERB	guardare	2474|6564|28673|16907	-	Full
+le	ART	la	8477	-	Full
+figure	NOUN	figura	32518|11238	PLURAL	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Tengo le mani pulite e giro le pagine con attenzione.
+Tengo	VERB	tenere	-	-	TextOnly
+le	ART	la	8477	-	Full
+mani	NOUN	mano	9830|2928	-	Full
+pulite	ADJ	pulito	4680|26172	-	Full
+e	CONJ	e	11399	-	Full
+giro	VERB	girare	9889|37186	-	Full
+le	ART	la	-	-	Hidden
+pagine	NOUN	pagina	-	-	Hidden
+con	ADP	con	7064|39801	-	Full
+attenzione	NOUN	attenzione	24863	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Prima di uscire rimetto il libro al suo posto oppure lo porto alla signora per il prestito.
+Prima	ADV	prima	13028|32745|27319	-	Full
+di	ADP	di	7074|37163|37162	-	Full
+uscire	VERB	uscire	2806|6606|28689|27067	-	Full
+rimetto	VERB	rimettere	6474|5514	-	Full
+il	ART	il	8476|7158	-	Full
+libro	NOUN	libro	2450|25191	-	Full
+al	ARTADP	a	11709|3021	-	Full
+suo	DET	suo	12272	-	Full
+posto	NOUN	posto	9819	-	Full
+oppure	CONJ	oppure	11317|3037	-	Full
+lo	CLITIC	lo	8476|31670|6480|6481	-	Full
+porto	VERB	portare	6139|6553|37223|7279|7280|32061	-	Full
+alla	ARTADP	a	11709|3021	-	Full
+signora	NOUN	signora	4745	-	Full
+per	ADP	per	7194|7212|8194|8195|38907	-	Full
+il	ART	il	8476|7158	-	Full
+prestito	NOUN	prestito	34814	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Poi saluto e torno in classe.
+Poi	ADV	poi	13080|32749	-	Full
+saluto	VERB	salutare	6009|6522|34567|37807	-	Full
+e	CONJ	e	11399	-	Full
+torno	VERB	tornare	29714	-	Full
+in	ADP	in	7034|5388|5355	-	Full
+classe	NOUN	classe	33072|9814|9815|15734|39686	-	Full
+.	PUNCT	.	-	-	TextOnly

@@ -1,0 +1,138 @@
+# testo: 26_quando_ho_paura_del_buio
+# genere: storia_sociale
+# gruppo: prova
+# origine: scritto per il progetto (sintetico), seconda serie di prova (M7, dopo la revisione)
+
+# frase: A volte di sera ho paura del buio.
+A	ADP	a	7041|27564|27387|7034|7070	-	Full
+volte	NOUN	volta	-	-	Hidden
+di	ADP	di	7074|37163|37162	-	Full
+sera	NOUN	sera	-	-	TextOnly
+ho	VERB	avere	35571|39668	-	Full
+paura	NOUN	paura	-	-	Hidden
+del	ARTADP	di	11712	-	Full
+buio	NOUN	buio	8643|26993|10742	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Nella mia stanza le ombre sembrano mostri, ma sono solo i miei giocattoli e i vestiti sulla sedia.
+Nella	ARTADP	in	7034	-	Full
+mia	DET	mio	12264	-	Full
+stanza	NOUN	stanza	15732	-	Full
+le	ART	la	8477	-	Full
+ombre	NOUN	ombra	6649	PLURAL	Full
+sembrano	VERB	sembrare	-	-	TextOnly
+mostri	NOUN	mostro	11306	PLURAL	Full
+,	PUNCT	,	-	-	TextOnly
+ma	CONJ	ma	11377	-	Full
+sono	VERB	essere	5581|5465|5466|5858|36480	-	Full
+solo	ADV	solo	-	-	TextOnly
+i	ART	il	8477	-	Full
+miei	DET	mio	12266	-	Full
+giocattoli	NOUN	giocattolo	9813|32568	PLURAL	Full
+e	CONJ	e	11399	-	Full
+i	ART	il	8477	-	Full
+vestiti	NOUN	vestito	34739	-	Full
+sulla	ARTADP	su	5451|7814	-	Full
+sedia	NOUN	sedia	3155|4960|4961|6614	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Quando ho paura, non resto fermo a tremare.
+Quando	CONJ	quando	22621|24053	-	Full
+ho	VERB	avere	35571|39668	-	Full
+paura	NOUN	paura	-	-	Hidden
+,	PUNCT	,	-	-	TextOnly
+non	ADV	non	5526|5525	-	Full
+resto	VERB	restare	27206	-	Full
+fermo	ADJ	fermo	-	-	TextOnly
+a	ADP	a	7041|7034|27564|27387|7070	-	Full
+tremare	VERB	tremare	7109	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Respiro lentamente e abbraccio il mio orsacchiotto.
+Respiro	VERB	respirare	34377|34409|34508	-	Full
+lentamente	ADV	lentamente	4676	-	Full
+e	CONJ	e	11399	-	Full
+abbraccio	VERB	abbracciare	6023|34369|4550	-	Full
+il	ART	il	8476|7158	-	Full
+mio	DET	mio	12264	-	Full
+orsacchiotto	NOUN	orsacchiotto	4945	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Posso accendere la lampada vicino al letto.
+Posso	MODAL	potere	11750|35949	-	Full
+accendere	VERB	accendere	8103|21818	-	Full
+la	ART	la	8476	-	Full
+lampada	NOUN	lampada	4936|7103|4937	-	Full
+vicino	ADV	vicino	5367|30383	-	Full
+al	ARTADP	a	-	-	Hidden
+letto	NOUN	letto	2304|6954|25690|25900	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Posso anche chiamare la mamma o il papà, che vengono subito da me.
+Posso	MODAL	potere	11750|35949	-	Full
+anche	ADV	anche	-	-	TextOnly
+chiamare	VERB	chiamare	4686|6552|36137|32669|36305|36306	-	Full
+la	ART	la	8476	-	Full
+mamma	NOUN	mamma	2458|31148	-	Full
+o	CONJ	o	3037|11317	-	Full
+il	ART	il	8476|7158	-	Full
+papà	NOUN	papà	2497|31146	-	Full
+,	PUNCT	,	-	-	TextOnly
+che	PRON	che	-	-	TextOnly
+vengono	VERB	venire	11708|13356	-	Full
+subito	ADV	subito	25736	-	Full
+da	ADP	da	7077|7074|7212	-	Full
+me	PRON	me	2617|6632|7309|7310|31807	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: La luce mi aiuta a vedere che nella stanza non c'è niente di pericoloso.
+La	ART	la	8476	-	Full
+luce	NOUN	luce	8619|26753	-	Full
+mi	CLITIC	mi	2617|6632|7309|7310|31807|21917|37826|38889|38891	-	Full
+aiuta	VERB	aiutare	4570|32648	-	Full
+a	ADP	a	7041|7034|27564|27387|7070	-	Full
+vedere	VERB	vedere	2474|6564|28673	-	Full
+che	CONJ	che	-	-	TextOnly
+nella	ARTADP	in	7034	-	Full
+stanza	NOUN	stanza	15732	-	Full
+non	ADV	non	5526|5525	-	Full
+c'	CLITIC	ci	-	-	Hidden
+è	VERB	essere	9001|5581	-	Full
+niente	PRON	niente	29839|32522	-	Full
+di	ADP	di	7074|37163|37162	-	Full
+pericoloso	ADJ	pericoloso	25315	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Il cuore batte più piano.
+Il	ART	il	8476|7158	-	Full
+cuore	NOUN	cuore	2715|4613	-	Full
+batte	VERB	battere	-	-	TextOnly
+più	ADV	più	5508|26913|3220	-	Full
+piano	ADV	piano	4676	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Dopo un po' la paura passa e mi addormento.
+Dopo	ADP	dopo	13080|7818|32749	-	Full
+un	ART	un	8474	-	Full
+po'	ADV	poco	5546|37661|7209	-	Full
+la	ART	la	8476	-	Full
+paura	NOUN	paura	10261|35571|39248|39668|38417	-	Full
+passa	VERB	passare	-	-	TextOnly
+e	CONJ	e	11399	-	Full
+mi	CLITIC	mi	-	-	Hidden
+addormento	VERB	addormentarsi	2369|6479|28623	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: I miei genitori sono contenti e mi dicono che sono coraggioso.
+I	ART	il	8477	-	Full
+miei	DET	mio	12266	-	Full
+genitori	NOUN	genitore	35059|35060|35061|35062|35201	-	Full
+sono	VERB	essere	5581|5465|5466|5858|36480	-	Full
+contenti	ADJ	contento	3245|9907|31923|32123|35547|6892	-	Full
+e	CONJ	e	11399	-	Full
+mi	CLITIC	mi	2617|6632|7309|7310|31807|21917|37826|38889|38891	-	Full
+dicono	VERB	dire	9692|9693|28663	-	Full
+che	CONJ	che	-	-	TextOnly
+sono	VERB	essere	5581|5465|5466|5858|36480	-	Full
+coraggioso	ADJ	coraggioso	36163	-	Full
+.	PUNCT	.	-	-	TextOnly

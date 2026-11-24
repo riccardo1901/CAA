@@ -37,6 +37,7 @@ Comandi:\n\
   analisi    test dorati di analisi: categoria e lemma scelti (opzione --analisi FILE)\n\
   strutture  test dorati di struttura: parole nascoste, segni, espressioni (opzione --strutture FILE)\n\
   corpus     metriche e errori per causa sul corpus annotato (opzioni --corpus, --gruppo, --esempi)\n\
+  prepara-candidati  come prepara, ma elenca i candidati invece della scelta del motore\n\
   prepara    bozza TSV di un testo da correggere a mano\n\
   pacchetto  copia lessico e immagini necessarie in una cartella per provare l'app altrove (pacchetto DIR)\n\
   candidati  pittogrammi dell'indice per una parola\n\
@@ -60,7 +61,7 @@ fn main() -> ExitCode {
     let mut sentence = String::new();
     if matches!(
         command.as_str(),
-        "mostra" | "prepara" | "candidati" | "pacchetto"
+        "mostra" | "prepara" | "prepara-candidati" | "candidati" | "pacchetto"
     ) {
         sentence = args.next().unwrap_or_default();
     }
@@ -332,6 +333,35 @@ fn main() -> ExitCode {
             println!("Temperatura scelta: {t}");
             ExitCode::SUCCESS
         }
+        "prepara-candidati" => {
+            // Come `prepara`, ma senza la scelta del motore: la colonna dei pittogrammi elenca i
+            // candidati dell'indice (meno ancoraggio per chi annota).
+            let path = PathBuf::from(&sentence);
+            let text = match read(&path) {
+                Ok(t) => t,
+                Err(e) => return fail(&e),
+            };
+            let name = path
+                .file_stem()
+                .and_then(|n| n.to_str())
+                .unwrap_or("testo")
+                .to_string();
+            let header: Vec<(String, String)> = text
+                .lines()
+                .filter_map(|l| l.strip_prefix("# "))
+                .filter_map(|l| l.split_once(": "))
+                .map(|(k, v)| (k.to_string(), v.to_string()))
+                .collect();
+            let header: Vec<(&str, &str)> = header
+                .iter()
+                .map(|(k, v)| (k.as_str(), v.as_str()))
+                .collect();
+            print!(
+                "{}",
+                caa_eval::corpus::draft(&engine, &name, &header, &text, true)
+            );
+            ExitCode::SUCCESS
+        }
         "prepara" => {
             // caa-eval prepara FILE.txt: bozza TSV del motore da correggere a mano. Le righe
             // `# genere: …` del file diventano l'intestazione.
@@ -357,7 +387,7 @@ fn main() -> ExitCode {
                 .collect();
             print!(
                 "{}",
-                caa_eval::corpus::draft(&engine, &name, &header, &text)
+                caa_eval::corpus::draft(&engine, &name, &header, &text, false)
             );
             ExitCode::SUCCESS
         }
@@ -365,7 +395,19 @@ fn main() -> ExitCode {
             // caa-eval pacchetto --out DIR: copia il lessico compilato e le sole immagini che servono
             // ai testi del corpus, al lessico di base e al testo di esempio (per provare l'app su un
             // altro PC senza portare i 14.000 pittogrammi).
+            if sentence.is_empty() || sentence.starts_with("--") {
+                return fail("uso: caa-eval pacchetto CARTELLA [--lexicon DIR]");
+            }
             let out = PathBuf::from(&sentence);
+            // La destinazione non puo' essere (né stare dentro) il lessico da cui si copia: ogni file
+            // verrebbe copiato su se stesso e troncato. Deve essere nuova o vuota.
+            let (dest, source) = (resolve_path(&out), resolve_path(&lexicon));
+            if dest.starts_with(&source) {
+                return fail("la cartella di destinazione non puo' essere il lessico o stare dentro il lessico");
+            }
+            if std::fs::read_dir(&out).is_ok_and(|mut d| d.next().is_some()) {
+                return fail("la cartella di destinazione non e' vuota: scegline una nuova");
+            }
             let mut texts = Vec::new();
             let mut extra: Vec<u32> = Vec::new();
             let add_dir = |dir: &str, ext: &str, texts: &mut Vec<String>| {
@@ -401,6 +443,9 @@ fn main() -> ExitCode {
                         extra.extend(col.split('|').filter_map(|x| x.parse::<u32>().ok()));
                     }
                 }
+            }
+            if texts.is_empty() {
+                return fail("non trovo i testi (corpus/testi, docs/testo-esempio.txt, lessico di base): lancia il comando dalla radice del repository");
             }
             let ids = caa_eval::picto_ids_for_texts(&engine, &texts, &extra);
             let copy = |rel: &str| -> Result<(), String> {
@@ -548,6 +593,37 @@ fn main() -> ExitCode {
         }
         other => fail(&format!("comando sconosciuto: {other}\n\n{USO}")),
     }
+}
+
+/// Percorso assoluto senza richiedere che esista: si risolve l'antenato esistente e si riaccodano i
+/// componenti mancanti (serve a confrontare una destinazione ancora da creare con il lessico).
+fn resolve_path(p: &std::path::Path) -> PathBuf {
+    let abs = if p.is_absolute() {
+        p.to_path_buf()
+    } else {
+        std::env::current_dir().unwrap_or_default().join(p)
+    };
+    let mut existing = abs.clone();
+    let mut rest: Vec<std::ffi::OsString> = Vec::new();
+    while !existing.exists() {
+        match (
+            existing.file_name().map(|n| n.to_os_string()),
+            existing.parent().map(PathBuf::from),
+        ) {
+            (Some(name), Some(parent)) => {
+                rest.push(name);
+                existing = parent;
+            }
+            _ => break,
+        }
+    }
+    let mut base = std::fs::canonicalize(&existing).unwrap_or(existing);
+    for name in rest.into_iter().rev() {
+        if name != ".." && name != "." {
+            base.push(name);
+        }
+    }
+    base
 }
 
 fn fail(msg: &str) -> ExitCode {

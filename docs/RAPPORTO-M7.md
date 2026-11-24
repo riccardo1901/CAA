@@ -1,95 +1,107 @@
-# Rapporto M7 — valutazione sul corpus
+# Rapporto M7 — valutazione sul corpus (rivisto dopo la revisione indipendente)
 
-Data: 2026-11-23. Misure con `caa-eval corpus` su `data/build` (schema 2) e sui 20 testi di `corpus/`.
+Data: 2026-11-24. Misure con `caa-eval corpus` su `data/build` (schema 2). Questa versione sostituisce quella del 23 novembre: quattro revisori indipendenti (Opus) hanno trovato difetti nella misura e nel metodo, corretti qui sotto. **I numeri della versione precedente non vanno più citati.**
 
 ## Criteri di accettazione
 
 | Criterio (SPEC.md) | Esito |
 | --- | --- |
-| Rapporto completo con metriche | sì: le sei metriche della specifica, per testi di sviluppo e di prova (sotto) |
-| Errori raggruppati per causa | sì: `caa-eval corpus` stampa nove cause in ordine di frequenza, con esempi (sotto la lista di lavoro attuale) |
-| Prima taratura dei pesi | fatta: nessun peso migliora in modo apprezzabile (sotto); restano quelli della specifica |
-| Primi 10 testi annotati | **20 testi annotati** (richiesti 10): 7 storie, 6 favole, 7 storie sociali, 1.945 parole |
-| Comando "Esporta come caso di test" nell'editor | **rimandato a M8** (serve il motore collegato all'editor); in M7 c'è `caa-eval prepara`, che dà il TSV compilato dal motore da correggere a mano |
+| Rapporto completo con metriche | sì: sei metriche, per sviluppo e prova |
+| Errori raggruppati per causa | sì: dieci cause, in ordine di frequenza, con esempi (`caa-eval corpus`) |
+| Prima taratura dei pesi | fatta: nessun peso migliora in modo apprezzabile; restano quelli della specifica |
+| Primi 10 testi annotati | **26 testi annotati**: 20 di sviluppo, 6 di prova (7 storie, 6 favole… vedi sotto) |
+| "Esporta come caso di test" nell'editor | rimandato a M8; in M7 ci sono `prepara` e `prepara-candidati` |
 
-## Il corpus
+## Il corpus e il metodo (cosa è cambiato dopo la revisione)
 
-20 testi **scritti per il progetto** (sintetici: non ho testi veri della scuola), 1.945 parole. Annotazione parola per parola: bozza del motore corretta da **cinque annotatori indipendenti** (uno ogni quattro testi), con le regole di `corpus/LEGGIMI.md`, senza usare le metriche per decidere. 14 testi di **sviluppo** (servono a correggere il motore) e 6 di **prova** (2 per genere, mai usati per correggere: misurano se i miglioramenti valgono anche su testi nuovi).
+- **26 testi sintetici** scritti per il progetto, 2.588 parole: storie, favole, storie sociali. Annotazione parola per parola da annotatori indipendenti (modelli, non docenti).
+- **La prova della prima serie era consumata.** L'avevo guardata mentre correggevo il motore, contro la mia stessa regola. Quei 6 testi sono passati a **sviluppo** (ora 20 testi, 1.945 parole). La **prova è nuova**: 6 testi (21–26, 643 parole) scritti dopo la revisione, annotati **senza proporre la scelta del motore** (la bozza elencava i candidati dell'indice: `prepara-candidati`) e misurati **una sola volta**, a motore fermo.
+- **La metrica ora conta l'uscita**, come dice SPEC.md ("risultato non tra quelli accettati"): una parola richiede una correzione solo se il pittogramma *mostrato* (non quello nascosto da una politica), i segni o la visibilità non sono tra quelli accettati. Una lettura sbagliata con l'uscita giusta si vede nelle metriche di categoria e lemma, non nelle correzioni. Una frase i cui token non coincidono con l'annotazione conta come errore per ogni sua parola (prima abbassava il numero).
+- **Armonizzazione per regola**, non per parola: per le parole grammaticali l'insieme dei pittogrammi accettati è l'unione fra annotatori; la lettera E/A/I non è accettata per "e", "a", "i"; "che" nella politica Completo è solo testo (SPEC.md, fase 10); "po'" è sempre avverbio "poco". Gli annotatori ancoravano sulla bozza (in 80 righe accettavano *solo* la lettera dell'alfabeto): per questo la bozza dei testi di prova non propone più la scelta del motore.
 
-Due cose che falsano e che ho corretto:
-1. **Ancoraggio sulla bozza.** Gli annotatori tendevano a lasciare la bozza dove non erano sicuri: per "e", "a", "i" la bozza dava la lettera dell'alfabeto (3026, 3021, 3030) e 122 righe la accettavano. Ho armonizzato: il pittogramma accettato è quello grammaticale. Con le lettere accettate la misura di partenza sarebbe stata 17,5 e 18,7 invece di 24,0 e 24,4: gonfiata.
-2. **Il gruppo prova** doveva avere 6 testi ma ne aveva 7 (tre storie): corretto.
+## Risultato: correzioni per 100 parole
 
-## Metrica principale: correzioni per 100 parole
+Stessa metrica e stessa annotazione per entrambi i motori.
 
-Una parola richiede una correzione se il risultato (nascosta o visibile, pittogramma, segni) non è tra quelli accettati. È il costo reale per il docente.
-
-| | Sviluppo (14 testi, 1.335 parole) | Prova (6 testi, 610 parole) |
+| | Sviluppo (20 testi, 1.945 parole) | **Prova nuova (6 testi, 643 parole)** |
 | --- | --- | --- |
-| **Partenza** (motore di fine M6) | 24,0 | 24,4 |
-| **Dopo M7** | **7,2** | **15,1** |
+| Motore di fine M6 | 21,9 | 26,6 |
+| Motore dopo M7 | 6,9 | **13,4** |
 
-**Il numero onesto è quello della prova: da 24,4 a 15,1 correzioni ogni 100 parole.** Quello dello sviluppo (7,2) è gonfiato: gli errori sono stati corretti proprio su quei testi, con file curati che nominano quelle parole. La distanza fra i due (7,2 contro 15,1) è la stima di quanto si impara dal particolare e non si generalizza.
+- **Il numero da citare è 13,4 sulla prova nuova** (26,6 prima). Quello dello sviluppo (6,9) è gonfiato: i file curati derivano da quei testi.
+- **Come si scompone il miglioramento sulla prova** (171 → 86 parole da correggere):
+  - 55 parole vengono da due convenzioni grammaticali: la lettera dell'alfabeto per "e", "a", "i" (49, la bozza e il motore di M6 le davano e nessun docente le vorrebbe) e "che" solo testo (6, effetto della politica Completo di M8a). **Al netto di queste, la prova passa da 18,0 a 13,4.**
+  - Il resto (30 parole) viene dal codice di M7 (riflessivo sempre nascosto, "esserci", espressioni senza frasi-domanda, infiniti composti, prior curati).
+  - **Le righe curate una per una non generalizzano**: la revisione ha provato a toglierle una alla volta sulla prova (la prima serie) e il saldo era nullo (alcune aiutano una parola, altre ne peggiorano una). Ho tolto quelle che peggioravano o non servivano (il prior "passo", "libero" in blocklist, le preferenze di "chiamare", "lo", "presto", "sentire", "spingere").
+- **Intervallo**: per testo la prova va da circa 9 a 19 correzioni per 100 parole (deviazione standard intorno a 3,5). Con 643 parole e 6 testi, **differenze sotto i 2 punti sono rumore**.
 
-Per genere (dopo M7): storie 6,6 sviluppo / 14,3 prova; favole 6,5 / 18,2; storie sociali 8,6 / 12,5. Le favole in prova vanno peggio: lessico meno quotidiano (rete, rosicchiare, ruggito, palude).
+## Le altre metriche
 
-## Le altre metriche (dopo M7)
-
-| | Sviluppo | Prova |
+| | Sviluppo | Prova nuova |
 | --- | --- | --- |
-| Pittogramma giusto sulle parole piene | 95,2% (era 81,8%) | **82,5%** (era 80,7%) |
-| Categoria giusta | 96,2% | 96,4% |
-| Lemma giusto (parole con significato) | 98,1% | 98,9% |
-| Segni (plurale, passato, futuro) | 98,0% | 88,1% (59 su 67) |
-| Copertura (parole piene con un pittogramma) | 99,5% (era 94,1%) | 92,6% (era 91,9%) |
-| Errori sottolineati / parole giuste sottolineate | 15,6% / 2,3% | 10,9% / 3,5% |
+| Pittogramma giusto sulle parole piene | 91,4% (era 81,2%) | **83,4%** (era 79,6%) |
+| Categoria giusta | 96,7% | 96,1% |
+| Lemma giusto (parole con significato) | 98,5% | 97,6% |
+| Segni (plurale, passato, futuro) | 96,3% | 94,3% (83 su 88) |
+| Copertura (parole piene con un pittogramma) | 97,4% (era 93,2%) | 97,2% (era 94,5%) |
+| Errori sottolineati / parole giuste sottolineate | 12,7% / 3,3% | 17,4% / 2,7% |
 
-Letture: **l'analisi grammaticale è buona** (categoria 96%, lemma 99% anche su testi mai visti). **Il problema è il senso del pittogramma e la sua disponibilità** (82,5% sulle parole piene, 92,6% di copertura): quasi tutta la distanza fra 15,1 e 0 sta lì.
+L'analisi grammaticale è buona anche su testi mai visti. **Il problema è il senso del pittogramma**: 83% sulle parole piene.
 
-## Errori per causa
+## Errori per causa (prova nuova, 86 parole)
 
-Lista di lavoro attuale (partenza → dopo), parole da correggere:
-
-| Causa | Sviluppo | Prova (dopo) |
-| --- | --- | --- |
-| Senso sbagliato (pittogramma di un altro significato) | 81 → 10 | 31 |
-| Lettura sbagliata (categoria o lemma) | 60 → 47 | 19 |
-| Lacuna di pittogramma (nessuno per quella parola) | 29 → 3 | 21 |
-| Simbolo non voluto (dove l'annotatore non voleva nessun simbolo) | 23 → 20 | 10 |
-| Struttura verbale (ausiliare, clitico) | 18 → 8 | 4 |
-| Multiparola sbagliata | 17 → 3 | 4 |
-| Segno (plurale, passato, futuro) | 2 → 1 | 1 |
+| Causa | Parole |
+| --- | --- |
+| Senso sbagliato (pittogramma di un altro significato) | 31 |
+| Simbolo non voluto (l'annotatore non voleva nessun simbolo) | 16 |
+| Lettura sbagliata (categoria o lemma) con uscita sbagliata | 10 |
+| Multiparola sbagliata | 10 |
+| Lacuna di pittogramma | 8 |
+| Multiparola mancata | 5 |
+| Struttura verbale | 4 |
+| Forma sconosciuta | 2 |
 
 ## Cosa è cambiato nel motore e nei file curati
 
-Codice (generale, vale per qualsiasi testo):
-- Le parole chiave ARASAAC con `?` o `!` (frasi e saluti: "sei contento?", "lo vedi?") non entrano nell'indice delle espressioni: "era contenta" non diventa più "sei contento?" (17 errori sullo sviluppo → 3).
-- Il riflessivo della stessa persona (mi, ti, si, ci, vi) si nasconde sempre, anche se ARASAAC non ha il verbo con "-si" (la specifica parla solo di "clitici non riflessivi"). "c'è", "ci sono", "c'era" = "esserci".
-- Infinito composto ("dopo aver giocato", "senza essere stato"): ausiliare nascosto e PASSATO.
-- Una riga di `lemma_picto.tsv` può nominare una **forma** (vince sul lemma) e vale anche per i verbi pronominali.
-- Nuovi prior curati `lexicon/overrides/ambiguity_priors.tsv` (previsti dalla specifica come ripiego): 15 prime persone che il treebank, di giornali, legge come nomi ("aspetto", "cammino", "entro", "conto"…) più "quando" congiunzione, "fino" preposizione, "piano" avverbio.
+Codice (generale):
+- Le parole chiave ARASAAC con `?` o `!` (frasi e saluti) non entrano nell'indice delle espressioni.
+- Il riflessivo della stessa persona si nasconde sempre; "ci" e "vi" solo se esiste il verbo pronominale in ARASAAC ("ci andiamo" resta con "ci" visibile). La concordanza guarda tutte le letture finite dello stesso verbo ("sono" è 1ª singolare e 3ª plurale).
+- "ci" + essere alla 3ª persona = "esserci" ("c'è", "ci sono", "c'è stato"), non davanti a un aggettivo ("ci è utile").
+- "Mi sono divertito", "essersi lavato": riflessivo anche senza complemento e anche attaccato all'ausiliare.
+- Infinito composto ("dopo aver giocato"): ausiliare nascosto e passato.
+- Le espressioni di un verbo pronominale senza pittogramma pronominale usano il lemma semplice ("si mette le scarpe" = "mettere le scarpe").
+- Una riga di `lemma_picto.tsv` può nominare una forma; una riga della forma non aggiunge il segno di plurale.
+- Prior curati `ambiguity_priors.tsv` (spec: fase 7, ripiego): 13 prime persone (aspetto, cammino, entro, conto…), "quando" congiunzione, "fino" preposizione; "piano" avverbio in `forms_extra.tsv` (Morph-it! non ha la lettura).
 
-File curati (derivati dal corpus di **sviluppo**, quindi con effetto gonfiato su di esso): 67 righe di `lemma_picto.tsv` (parole per cui l'indice propone più pittogrammi e il primo non è quello giusto: "classe", "scala", "porta", "camminare", "arrivare"…; più "e", "a", "i" grammaticali e "fermarsi"), 9 righe di `blocklist.tsv` (simboli di un altro senso: "brillare", "via", "scusa"…), la forma "po'" = "poco" in `forms_extra.tsv`.
+File curati: 58 righe in `lemma_picto.tsv` (derivate dal corpus di sviluppo; le 3 grammaticali "e", "a", "i" e "fermarsi" sono decisioni di principio, il resto è locale), 8 in `blocklist.tsv`, "po'", "piano" in `forms_extra.tsv`.
 
-Misure del treebank e dei test dorati dopo le modifiche: tokenizzazione 48/48, analisi 48/48, strutture 20/20 (il caso 9 e il 19 cambiano: "c'" è dentro "esserci", "po'" ha lemma "poco"), copertura delle parole di base **97,5%** (era 96,7%), treebank categoria 94,9% invariata.
+Altre misure dopo le modifiche: tokenizzazione 48/48, analisi 48/48, strutture 20/20, copertura del lessico di base 97,3% (503→502: "presto" è tornato fra le eccezioni dopo aver tolto una scelta locale), treebank invariato.
 
 ## Taratura dei pesi
 
-Prima taratura sul corpus con una ricerca a griglia (un peso alla volta) controllando insieme sviluppo e prova: tutti i valori provati cambiano il risultato di al massimo 1–2 parole su 1.335 e su 610, cioè rumore. I pesi della specifica restano. Conferma l'ablazione di M5: le regole di contesto contano poco, il collo di bottiglia sono i dati curati.
+Ricerca a griglia (un peso alla volta) con sviluppo e prova insieme sulla prima serie: ogni valore provato cambia il risultato di 1–2 parole, cioè rumore. I pesi della specifica restano. (La revisione ha notato giustamente che la prova di allora era già stata guardata: il confronto sui pesi è informativo ma non una misura pulita.)
 
-## Limiti e cosa fare dopo
+## Decisioni da segnalare (divergenze dalla specifica)
 
-- **I testi sono sintetici** e scritti da me; le annotazioni sono di annotatori che sono modelli, non docenti. Quello che conta davvero (cosa un docente accetta) si misura nel pilota con i docenti (M11) e, prima, con le correzioni raccolte dall'editor (M8–M9).
-- **Con 20 testi la prova è piccola** (610 parole): ±1 parola sbagliata sposta di 0,16 punti. I confronti sotto l'1 punto sono rumore.
-- **La taratura della confidenza è debole nel dominio scuola**: solo 11–16% degli errori è sottolineato (il treebank dava 38%), perché gli errori qui sono quasi tutti di senso del pittogramma e la confidenza misura l'incertezza della lettura. Il rimedio previsto è il menu delle alternative (M8): segnalare le parole con più pittogrammi plausibili.
-- **Lacune di pittogramma**: i 21 casi della prova sono parole che ARASAAC non ha sole ("tornare", "riuscire", "calma"); gli annotatori hanno accettato il sinonimo. Un elenco di sinonimi curato (`lemma_picto.tsv`) è la cura, e va costruito con i docenti.
-- Le multiparola prendono sempre la sequenza più lunga: dove l'annotatore preferiva simboli separati è un errore ("multiparola sbagliata").
+1. **"che" nella politica Completo è solo testo**, come dice SPEC.md fase 10; per Essenziale è nascosto, anche quando "che" è un esclamativo ("Che bello!"): la specifica parla di "che relativo o congiunzione" e il motore non distingue ancora l'esclamativo.
+2. **Il segnaposto** (riquadro tratteggiato) si mostra per nomi, verbi, aggettivi, avverbi e parole sconosciute senza pittogramma; **non per i nomi propri** ("Marco", "Roma") né per le parole grammaticali: SPEC.md, fase 8, dice solo "Nessun simbolo: segnaposto". Per i nomi propri l'intento è che si usi un simbolo personale (M8c).
+3. **Riflessivo sempre nascosto** (anche senza il verbo pronominale in ARASAAC): la specifica per quel caso lascia il clitico con il simbolo del pronome, ma la tabella della fase 10 parla solo di "clitici *non riflessivi*".
+4. **Il caso dorato 9** ("C'era una volta un re") ora ha "c'" nascosto dentro "esserci"; l'analisi (`analisi.tsv`) resta "c' = ci".
+5. **La "seconda passata"** della specifica (rieseguire Viterbi quando una struttura fallisce per una lettura vicina) non c'è: per i gruppi verbali il bonus sta nelle regole di Viterbi (peso 0,1), per le espressioni in una regola sulla confidenza. Conseguenza: in "È stato bello" "stato" resta il nome.
+
+## Limiti
+
+- **I testi sono sintetici e gli annotatori sono modelli**, non docenti: quello che un docente accetta davvero si misura nel pilota (M11).
+- **Ancoraggio residuo**: anche con i candidati al posto della scelta del motore, categoria, lemma e segni nelle bozze della prova venivano dal motore.
+- **Incoerenze fra annotatori** nelle parole non grammaticali ("più", "forte", "presto": 10 errori circa su 1.900 parole) non sono state armonizzate: sono casi di senso.
+- **La sottolineatura delle parole incerte intercetta solo il 13–17% degli errori** (contro il 38% sul treebank): gli errori sono di senso del pittogramma, che la confidenza non misura. Il rimedio è il menu delle alternative (M8b), segnalando le parole con più pittogrammi plausibili.
+- **Le lacune** sono soprattutto parole che ARASAAC non ha sole ("tornare", "riuscire", "calma"): gli annotatori accettano un sinonimo; serve un elenco curato con i docenti.
 
 ## Comandi
 
 ```bash
 cargo run --release -q -p caa-eval -- corpus                       # metriche e errori per causa (sviluppo e prova)
-cargo run --release -q -p caa-eval -- corpus --gruppo prova        # solo la prova
-cargo run --release -q -p caa-eval -- prepara corpus/testi/X.txt   # bozza TSV dal motore da correggere a mano
+cargo run --release -q -p caa-eval -- corpus --gruppo prova        # solo la prova (non per correggere!)
+cargo run --release -q -p caa-eval -- prepara-candidati corpus/testi/X.txt   # bozza senza la scelta del motore
 cargo run --release -q -p caa-eval -- candidati sale               # pittogrammi dell'indice per una parola
 ```

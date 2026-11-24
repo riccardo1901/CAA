@@ -1,5 +1,6 @@
 # genere: storia
-# gruppo: prova
+# gruppo: sviluppo
+# nota: era di prova in M7, consumata dalla revisione
 # origine: scritto per il progetto (sintetico)
 Il sabato mattina vado al mercato con la nonna. Lei porta una grande borsa di stoffa e io spingo il carrello.
 Ci sono tante bancarelle. Il fruttivendolo vende le arance, le pere e le fragole. La nonna sceglie due chili di mele e un cavolo.

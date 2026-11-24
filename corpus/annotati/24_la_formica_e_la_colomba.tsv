@@ -1,0 +1,145 @@
+# testo: 24_la_formica_e_la_colomba
+# genere: favola
+# gruppo: prova
+# origine: scritto per il progetto (sintetico), seconda serie di prova (M7, dopo la revisione)
+
+# frase: Una formica assetata scese fino al ruscello per bere.
+Una	ART	una	8474|27385|8277	-	Full
+formica	NOUN	formica	2425	-	Full
+assetata	ADJ	assetato	4963|35523|7273|32140	-	Full
+scese	VERB	scendere	2654|6053|8035|24723|34807|37244	PAST	Full
+fino	ADP	fino	7771	-	Full
+al	ARTADP	a	-	-	Hidden
+ruscello	NOUN	ruscello	23757	-	Full
+per	ADP	per	7194|7212|8194|8195|38907	-	Full
+bere	VERB	bere	2276|6061|29716	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Si sporse troppo, scivolò e cadde in acqua.
+Si	CLITIC	si	-	-	Hidden
+sporse	VERB	sporgersi	6913|6914|36493	PAST	Full
+troppo	ADV	troppo	39188	-	Full
+,	PUNCT	,	-	-	TextOnly
+scivolò	VERB	scivolare	9028|9029|29676|7016	PAST	Full
+e	CONJ	e	11399	-	Full
+cadde	VERB	cadere	4582|6067|29674|39440	PAST	Full
+in	ADP	in	7034|5388|5355	-	Full
+acqua	NOUN	acqua	2248|6889|32464	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: La corrente la trascinava via.
+La	ART	il	8476	-	Full
+corrente	NOUN	corrente	-	-	TextOnly
+la	CLITIC	la	-	-	TextOnly
+trascinava	VERB	trascinare	-	PAST	TextOnly
+via	ADV	via	-	-	TextOnly
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Una colomba, che stava su un ramo, la vide e staccò una foglia.
+Una	ART	una	8474|27385|8277	-	Full
+colomba	NOUN	colomba	2493	-	Full
+,	PUNCT	,	-	-	TextOnly
+che	PRON	che	-	-	TextOnly
+stava	VERB	stare	36392|5465|5466|5858	PAST	Full
+su	ADP	su	5451|7814	-	Full
+un	ART	un	8474	-	Full
+ramo	NOUN	ramo	7224	-	Full
+,	PUNCT	,	-	-	TextOnly
+la	CLITIC	la	-	-	TextOnly
+vide	VERB	vedere	2474|6564|28673	PAST	Full
+e	CONJ	e	11399	-	Full
+staccò	VERB	staccare	7015	PAST	Full
+una	ART	una	8474|27385|8277	-	Full
+foglia	NOUN	foglia	3114|5077	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: La lasciò cadere vicino alla formica.
+La	CLITIC	la	-	-	TextOnly
+lasciò	VERB	lasciare	6215	PAST	Full
+cadere	VERB	cadere	39440|2675	-	Full
+vicino	ADV	vicino	5367|30383	-	Full
+alla	ARTADP	a	-	-	Hidden
+formica	NOUN	formica	2425	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: La formica salì sulla foglia e si salvò.
+La	ART	il	8476	-	Full
+formica	NOUN	formica	2425	-	Full
+salì	VERB	salire	2795|6617|8226|24725	PAST	Full
+sulla	ARTADP	su	5451|7814	-	Full
+foglia	NOUN	foglia	3114|5077	-	Full
+e	CONJ	e	11399	-	Full
+si	CLITIC	si	-	-	Hidden
+salvò	VERB	salvarsi	9046|38316|10178	PAST	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Poco dopo un cacciatore si avvicinò all'albero con una rete.
+Poco	ADV	poco	5546|7209|37661	-	Full
+dopo	ADV	dopo	13080|32749	-	Full
+un	ART	un	8474	-	Full
+cacciatore	NOUN	cacciatore	3010	-	Full
+si	CLITIC	si	-	-	Hidden
+avvicinò	VERB	avvicinarsi	5359	PAST	Full
+all'	ARTADP	a	11709	-	Full
+albero	NOUN	albero	2256|3057	-	Full
+con	ADP	con	7064|39801	-	Full
+una	ART	una	8474|27385|8277	-	Full
+rete	NOUN	rete	6205	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Voleva prendere la colomba.
+Voleva	MODAL	volere	5441|31141	PAST	Full
+prendere	VERB	prendere	8187|8188|4606	-	Full
+la	ART	il	8476	-	Full
+colomba	NOUN	colomba	2493	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: La formica lo vide e lo morse forte al piede.
+La	ART	il	8476	-	Full
+formica	NOUN	formica	2425	-	Full
+lo	CLITIC	lo	6480|31670|6481|8476	-	Full
+vide	VERB	vedere	2474|6564|28673	PAST	Full
+e	CONJ	e	11399	-	Full
+lo	CLITIC	lo	6480|31670|6481|8476	-	Full
+morse	VERB	mordere	4700|7165|15461|31863|39075	PAST	Full
+forte	ADV	forte	25121|4655|10204	-	Full
+al	ARTADP	a	11709|3021	-	Full
+piede	NOUN	piede	2841|25327	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Il cacciatore gridò e lasciò cadere la rete.
+Il	ART	il	8476|7158	-	Full
+cacciatore	NOUN	cacciatore	3010	-	Full
+gridò	VERB	gridare	4686|6552|7120|31125|31127|36137	PAST	Full
+e	CONJ	e	11399	-	Full
+lasciò	VERB	lasciare	6215	PAST	Full
+cadere	VERB	cadere	39440|2675	-	Full
+la	ART	il	8476	-	Full
+rete	NOUN	rete	6205	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: La colomba sentì il rumore e volò via.
+La	ART	il	8476	-	Full
+colomba	NOUN	colomba	2493	-	Full
+sentì	VERB	sentire	6572|28659	PAST	Full
+il	ART	il	8476|7158	-	Full
+rumore	NOUN	rumore	36165	-	Full
+e	CONJ	e	11399	-	Full
+volò	VERB	volare	6246	PAST	Full
+via	ADV	via	-	-	TextOnly
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Da quel giorno la formica e la colomba furono amiche per sempre.
+Da	ADP	da	7077|7074|7212	-	Full
+quel	DET	quello	6906	-	Full
+giorno	NOUN	giorno	7022|26799|37371	-	Full
+la	ART	il	8476	-	Full
+formica	NOUN	formica	2425	-	Full
+e	CONJ	e	11399	-	Full
+la	ART	il	8476	-	Full
+colomba	NOUN	colomba	2493	-	Full
+furono	VERB	essere	5581|36480	PAST	Full
+amiche	NOUN	amica	8486|25786	PLURAL	Full
+per	ADP	per	7194|7212|8194|8195|38907	-	Full
+sempre	ADV	sempre	17322	-	Full
+.	PUNCT	.	-	-	TextOnly

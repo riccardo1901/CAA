@@ -13,7 +13,8 @@ use tauri::http::Response;
 use tauri::State;
 
 use bridge::{
-    data_candidates, find_data_dir, image_path, parse_picto_path, parse_policy, to_dto, TokenDto,
+    check_request, data_candidates, find_data_dir, image_path, parse_picto_path, parse_policy,
+    to_dto, TokenDto,
 };
 
 /// Il motore e la cartella dei dati, caricati una volta all'avvio.
@@ -75,13 +76,15 @@ fn engine_info(state: State<'_, Arc<Backend>>) -> EngineInfo {
     }
 }
 
-/// Simbolizza più paragrafi in una chiamata sola.
-#[tauri::command]
+/// Simbolizza più paragrafi in una chiamata sola. `async`: il comando gira su un thread a parte e non
+/// blocca l'interfaccia mentre il motore lavora (con testi lunghi richiede decine di millisecondi).
+#[tauri::command(async)]
 fn symbolize(
     state: State<'_, Arc<Backend>>,
     texts: Vec<String>,
     policy: String,
 ) -> Result<Vec<Vec<TokenDto>>, String> {
+    check_request(&texts)?;
     let engine = state.engine.as_ref().ok_or_else(|| {
         state
             .error
@@ -122,7 +125,6 @@ fn main() {
                 Some(b) => Response::builder()
                     .header("Content-Type", "image/webp")
                     .header("Cache-Control", "max-age=86400")
-                    .header("Access-Control-Allow-Origin", "*")
                     .body(b)
                     .unwrap_or_else(|_| Response::new(Vec::new())),
                 None => Response::builder()

@@ -4,9 +4,9 @@
 # origine: scritto per il progetto (sintetico)
 
 # frase: Una volta una volpe affamata vide un grappolo d'uva matura appeso a un ramo molto alto.
-Una	ART	una	27385|8277	-	Full
+Una	ART	una	27385|8277|8474	-	Full
 volta	NOUN	volta	-	-	Hidden
-una	ART	una	8474	-	Full
+una	ART	una	8474|27385|8277	-	Full
 volpe	NOUN	volpe	2623	-	Full
 affamata	ADJ	affamato	4962|7272|31890|35559|35579	-	Full
 vide	VERB	vedere	2474|6564|28673	PAST	Full
@@ -16,7 +16,7 @@ d'	ADP	di	-	-	Hidden
 uva	NOUN	uva	-	-	Hidden
 matura	ADJ	maturo	-	-	TextOnly
 appeso	VERB	appendere	6986|10133|28691|36035	-	Full
-a	ADP	a	7041	-	Full
+a	ADP	a	7041|7034|27564|27387|7070	-	Full
 un	ART	un	8474	-	Full
 ramo	NOUN	ramo	7224	-	Full
 molto	ADV	molto	5521|25708	-	Full
@@ -27,13 +27,13 @@ alto	ADJ	alto	39778|25782	-	Full
 La	ART	la	8476	-	Full
 volpe	NOUN	volpe	2623	-	Full
 saltò	VERB	saltare	2804|6607|28447|39052|39225	PAST	Full
-una	ART	una	27385	-	Full
+una	ART	una	27385|8474|8277	-	Full
 volta	NOUN	volta	-	-	Hidden
 ,	PUNCT	,	-	-	TextOnly
 ma	CONJ	ma	11377	-	Full
 non	ADV	non	5526|5525	-	Full
 riuscì	VERB	riuscire	11750|35949	PAST	Full
-a	ADP	a	7041	-	Full
+a	ADP	a	7041|7034|27564|27387|7070	-	Full
 prenderlo	VERB	prendere	10148|4606|32773|5568	-	Full
 .	PUNCT	.	-	-	TextOnly
 
@@ -42,11 +42,11 @@ Saltò	VERB	saltare	2804|6607|28447|39052|39225	PAST	Full
 ancora	ADV	ancora	37162|37163	-	Full
 ,	PUNCT	,	-	-	TextOnly
 più	ADV	più	5508|3220|26913	-	Full
-in	ADP	in	5388	-	Full
+in	ADP	in	5388|7034|5355	-	Full
 alto	ADJ	alto	-	-	Hidden
 ,	PUNCT	,	-	-	TextOnly
 e	CONJ	e	11399	-	Full
-di	ADP	di	37163|37162	-	Full
+di	ADP	di	37163|37162|7074	-	Full
 nuovo	ADJ	nuovo	-	-	Hidden
 cadde	VERB	cadere	31164|31165	PAST	Full
 a	ADP	a	-	-	Hidden
@@ -55,13 +55,13 @@ terra	NOUN	terra	-	-	Hidden
 
 # frase: Provò per molte volte.
 Provò	VERB	provare	26144	PAST	Full
-per	ADP	per	7194|7212	-	Full
+per	ADP	per	7194|7212|8194|8195|38907	-	Full
 molte	DET	molto	7168|5521	-	Full
 volte	NOUN	volta	-	-	TextOnly
 .	PUNCT	.	-	-	TextOnly
 
 # frase: Alla fine, stanca e sudata, si sedette e guardò l'uva con rabbia.
-Alla	ARTADP	a	11709	-	Full
+Alla	ARTADP	a	11709|3021	-	Full
 fine	NOUN	fine	5358	-	Full
 ,	PUNCT	,	-	-	TextOnly
 stanca	ADJ	stanco	2314|6959|31925|35537|35573	-	Full
@@ -74,7 +74,7 @@ e	CONJ	e	11399	-	Full
 guardò	VERB	guardare	2474|6564|28673	PAST	Full
 l'	ART	il	8476	-	Full
 uva	NOUN	uva	3247	-	Full
-con	ADP	con	7064	-	Full
+con	ADP	con	7064|39801	-	Full
 rabbia	NOUN	rabbia	35567	-	Full
 .	PUNCT	.	-	-	TextOnly
 
@@ -105,13 +105,13 @@ E	CONJ	e	11399	-	Full
 se	CLITIC	si	-	-	Hidden
 ne	CLITIC	ne	-	-	Hidden
 andò	VERB	andarsene	32154	PAST	Full
-con	ADP	con	7064	-	Full
-il	ART	il	8476	-	Full
+con	ADP	con	7064|39801	-	Full
+il	ART	il	8476|7158	-	Full
 muso	NOUN	muso	7772	-	Full
 alto	ADJ	alto	5388|39778	-	Full
 ,	PUNCT	,	-	-	TextOnly
 fingendo	VERB	fingere	-	-	TextOnly
-di	ADP	di	7074	-	Full
+di	ADP	di	7074|37163|37162	-	Full
 non	ADV	non	5526|5525	-	Full
 essere	VERB	essere	5581|5465|5466|5858|36480	-	Full
 dispiaciuta	ADJ	dispiaciuto	38360|38361	-	Full
@@ -123,14 +123,14 @@ Morale	NOUN	morale	-	-	TextOnly
 chi	PRON	chi	-	-	TextOnly
 non	ADV	non	5526|5525	-	Full
 riesce	VERB	riuscire	11750|35949	-	Full
-a	ADP	a	7041	-	Full
+a	ADP	a	7041|7034|27564|27387|7070	-	Full
 ottenere	VERB	ottenere	24208	-	Full
-una	ART	una	8474	-	Full
+una	ART	una	8474|27385|8277	-	Full
 cosa	NOUN	cosa	11318	-	Full
 ,	PUNCT	,	-	-	TextOnly
 spesso	ADV	spesso	37029	-	Full
 dice	VERB	dire	9692|9693|28663	-	Full
-che	CONJ	che	11351	-	Full
+che	CONJ	che	-	-	TextOnly
 non	ADV	non	5526|5525	-	Full
 la	CLITIC	la	-	-	TextOnly
 desidera	VERB	desiderare	32816|36518|36877|31141|5441	-	Full

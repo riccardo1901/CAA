@@ -164,9 +164,10 @@ body { margin: 0; }
 .w.mp::after { content: "+"; }
 .w.mpast::after { content: "\25C0"; }
 .w.mfut::after { content: "\25B6"; }
-.w.mp.mpast::after { content: "\25C0 +"; }
-.w.mp.mfut::after { content: "+ \25B6"; }
-.w.wc::after { content: none !important; }
+.w.mp.mpast::after { content: "\25C0\20+"; }
+.w.mp.mfut::after { content: "+\20\25B6"; }
+.w.wc::after,
+.w.hid::after { content: none !important; } /* niente segni sopra il vuoto o sulle parti di una parola */
 
 /* Barra degli strumenti e barra di stato (app) */
 .app { display: flex; flex-direction: column; height: 100vh; }

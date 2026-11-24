@@ -4,19 +4,19 @@
 # origine: scritto per il progetto (sintetico)
 
 # frase: A mezzogiorno vado in mensa con la mia classe.
-A	ADP	a	7041	-	Full
+A	ADP	a	7041|7034|27564|27387|7070	-	Full
 mezzogiorno	NOUN	mezzogiorno	39324	-	Full
 vado	VERB	andare	2432|3251|6044|8142|31758|35093	-	Full
-in	ADP	in	7034	-	Full
+in	ADP	in	7034|5388|5355	-	Full
 mensa	NOUN	mensa	5970|9824	-	Full
-con	ADP	con	7064	-	Full
+con	ADP	con	7064|39801	-	Full
 la	ART	la	8476	-	Full
 mia	DET	mio	12264	-	Full
 classe	NOUN	classe	39686	-	Full
 .	PUNCT	.	-	-	TextOnly
 
 # frase: In mensa ci sono tanti bambini e c'è un po' di rumore.
-In	ADP	in	7034	-	Full
+In	ADP	in	7034|5388|5355	-	Full
 mensa	NOUN	mensa	5970|9824	-	Full
 ci	CLITIC	ci	-	-	Hidden
 sono	VERB	essere	9001|5581	-	Full
@@ -26,19 +26,19 @@ e	CONJ	e	11399	-	Full
 c'	CLITIC	ci	-	-	Hidden
 è	VERB	essere	9001|5581	-	Full
 un	ART	un	8474	-	Full
-po'	ADV	poco	5546	-	Full
-di	ADP	di	7074	-	Full
+po'	ADV	poco	5546|37661|7209	-	Full
+di	ADP	di	7074|37163|37162	-	Full
 rumore	NOUN	rumore	36165	-	Full
 .	PUNCT	.	-	-	TextOnly
 
 # frase: Mi metto in fila e prendo il vassoio.
 Mi	CLITIC	mi	-	-	Hidden
 metto	VERB	mettere	6989|8166|32757	-	Full
-in	ADP	in	7034	-	Full
+in	ADP	in	7034|5388|5355	-	Full
 fila	NOUN	fila	7102|31803|35123|37764|38596|38597|39146|39148	-	Full
 e	CONJ	e	11399	-	Full
 prendo	VERB	prendere	10148|32773|4606|38011	-	Full
-il	ART	il	8476	-	Full
+il	ART	il	8476|7158	-	Full
 vassoio	NOUN	vassoio	2656|6928|39254	-	Full
 .	PUNCT	.	-	-	TextOnly
 
@@ -47,12 +47,12 @@ Le	ART	la	8477	-	Full
 signore	NOUN	signora	4745	PLURAL	Full
 della	ARTADP	di	7074|11712	-	Full
 mensa	NOUN	mensa	5970|9824	-	Full
-mi	CLITIC	mi	31807|2617|6632|7309|7310	-	Full
+mi	CLITIC	mi	31807|2617|6632|7309|7310|21917|37826|38889|38891	-	Full
 danno	VERB	dare	17038|17040|28431	-	Full
-il	ART	il	8476	-	Full
+il	ART	il	8476|7158	-	Full
 primo	NOUN	primo	7219	-	Full
 ,	PUNCT	,	-	-	TextOnly
-il	ART	il	8476	-	Full
+il	ART	il	8476|7158	-	Full
 secondo	NOUN	secondo	7240	-	Full
 e	CONJ	e	11399	-	Full
 la	ART	la	8476	-	Full
@@ -66,11 +66,11 @@ al	ARTADP	a	3021|11709	-	Full
 tavolo	NOUN	tavolo	3129|6562|37873	-	Full
 e	CONJ	e	11399	-	Full
 mangio	VERB	mangiare	2349|6456|28641	-	Full
-con	ADP	con	7064	-	Full
+con	ADP	con	7064|39801	-	Full
 la	ART	la	8476	-	Full
 forchetta	NOUN	forchetta	2588	-	Full
 e	CONJ	e	11399	-	Full
-il	ART	il	8476	-	Full
+il	ART	il	8476|7158	-	Full
 cucchiaio	NOUN	cucchiaio	2362	-	Full
 .	PUNCT	.	-	-	TextOnly
 
@@ -91,21 +91,21 @@ piano	ADV	piano	4676	-	Full
 
 # frase: Uso il tovagliolo e parlo con voce bassa.
 Uso	VERB	usare	15485	-	Full
-il	ART	il	8476	-	Full
+il	ART	il	8476|7158	-	Full
 tovagliolo	NOUN	tovagliolo	2569|36303	-	Full
 e	CONJ	e	11399	-	Full
 parlo	VERB	parlare	3345|6517|36544|9692|9693|28663|32133	-	Full
-con	ADP	con	7064	-	Full
+con	ADP	con	7064|39801	-	Full
 voce	NOUN	voce	-	-	TextOnly
 bassa	ADJ	basso	-	-	TextOnly
 .	PUNCT	.	-	-	TextOnly
 
 # frase: Quando finisco, porto il vassoio dove si mettono i piatti sporchi.
-Quando	CONJ	quando	24053	-	Full
+Quando	CONJ	quando	24053|22621	-	Full
 finisco	VERB	finire	32814|5358|28429	-	Full
 ,	PUNCT	,	-	-	TextOnly
 porto	VERB	portare	6139|6553|37223|8982|7279|7280|32061	-	Full
-il	ART	il	8476	-	Full
+il	ART	il	8476|7158	-	Full
 vassoio	NOUN	vassoio	2656|6928|39254	-	Full
 dove	ADV	dove	7764	-	Full
 si	CLITIC	si	-	-	TextOnly
@@ -121,7 +121,7 @@ fine	NOUN	fine	5358	-	Full
 ringrazio	VERB	ringraziare	38783|8128|8129|31206|36093	-	Full
 e	CONJ	e	11399	-	Full
 torno	VERB	tornare	29714	-	Full
-in	ADP	in	7034	-	Full
+in	ADP	in	7034|5388|5355	-	Full
 classe	NOUN	classe	9814|9815|15734|33072|39686	-	Full
 .	PUNCT	.	-	-	TextOnly
 

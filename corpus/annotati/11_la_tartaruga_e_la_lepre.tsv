@@ -4,11 +4,11 @@
 # origine: scritto per il progetto (sintetico)
 
 # frase: Una lepre si vantava di essere la più veloce del bosco.
-Una	ART	una	8474	-	Full
+Una	ART	una	8474|27385|8277	-	Full
 lepre	NOUN	lepre	17265	-	Full
 si	CLITIC	si	-	-	Hidden
 vantava	VERB	vantare	31408	PAST	Full
-di	ADP	di	7074	-	Full
+di	ADP	di	7074|37163|37162	-	Full
 essere	VERB	essere	5581|5465|5858|36480	-	Full
 la	ART	la	8476	-	Full
 più	ADV	più	26913|5508	-	Full
@@ -18,16 +18,16 @@ bosco	NOUN	bosco	2666|32462	-	Full
 .	PUNCT	.	-	-	TextOnly
 
 # frase: Una tartaruga, stufa di sentirla, le propose una gara.
-Una	ART	una	8474	-	Full
+Una	ART	una	8474|27385|8277	-	Full
 tartaruga	NOUN	tartaruga	2596|26503	-	Full
 ,	PUNCT	,	-	-	TextOnly
 stufa	ADJ	stufo	2245|35531|6873	-	Full
-di	ADP	di	7074	-	Full
+di	ADP	di	7074|37163|37162	-	Full
 sentirla	VERB	sentire	6572|28659	-	Full
 ,	PUNCT	,	-	-	TextOnly
 le	CLITIC	le	6481|7029|7028	-	Full
 propose	VERB	proporre	11576|39150	PAST	Full
-una	ART	una	8474	-	Full
+una	ART	una	8474|27385|8277	-	Full
 gara	NOUN	gara	37313|11205|37424	-	Full
 .	PUNCT	.	-	-	TextOnly
 
@@ -35,7 +35,7 @@ gara	NOUN	gara	37313|11205|37424	-	Full
 La	ART	la	8476	-	Full
 lepre	NOUN	lepre	17265	-	Full
 scoppiò	VERB	scoppiare	-	PAST	TextOnly
-a	ADP	a	7041	-	Full
+a	ADP	a	7041|7034|27564|27387|7070	-	Full
 ridere	VERB	ridere	13354|30393	-	Full
 ma	CONJ	ma	11377	-	Full
 accettò	VERB	accettare	25757|25752|37609	PAST	Full
@@ -46,14 +46,14 @@ Gli	ART	il	8477	-	Full
 animali	NOUN	animale	6901|8025	PLURAL	Full
 si	CLITIC	si	-	-	Hidden
 radunarono	VERB	radunare	-	PAST	TextOnly
-per	ADP	per	7194	-	Full
+per	ADP	per	7194|7212|8194|8195|38907	-	Full
 vedere	VERB	vedere	2474|6564|28673	-	Full
 la	ART	la	8476	-	Full
 corsa	NOUN	corsa	11205|37424	-	Full
 .	PUNCT	.	-	-	TextOnly
 
 # frase: Al via la lepre partì come un lampo e lasciò indietro la tartaruga.
-Al	ARTADP	a	11709	-	Full
+Al	ARTADP	a	11709|3021	-	Full
 via	NOUN	via	-	-	TextOnly
 la	ART	la	8476	-	Full
 lepre	NOUN	lepre	17265	-	Full
@@ -72,14 +72,14 @@ tartaruga	NOUN	tartaruga	2596|26503	-	Full
 Poi	ADV	poi	-	-	TextOnly
 ,	PUNCT	,	-	-	TextOnly
 sicura	ADJ	sicuro	-	-	TextOnly
-di	ADP	di	7074	-	Full
+di	ADP	di	7074|37163|37162	-	Full
 vincere	VERB	vincere	7218|10155|36541|38986	-	Full
 ,	PUNCT	,	-	-	TextOnly
 si	CLITIC	si	-	-	Hidden
 fermò	VERB	fermare	37185	PAST	Full
-a	ADP	a	7041	-	Full
+a	ADP	a	7041|7034|27564|27387|7070	-	Full
 riposare	VERB	riposare	3299|16643|28649|31937	-	Full
-sotto	ADP	sotto	5437|7047	-	Full
+sotto	ADP	sotto	5437|7047|5355	-	Full
 un	ART	un	8474	-	Full
 albero	NOUN	albero	2256|3057	-	Full
 e	CONJ	e	11399	-	Full
@@ -102,7 +102,7 @@ mai	ADV	mai	5527	-	Full
 
 # frase: Passo dopo passo superò la lepre addormentata e arrivò al traguardo.
 Passo	NOUN	passo	35811	-	Full
-dopo	ADP	dopo	13080|7818	-	Full
+dopo	ADP	dopo	13080|7818|32749	-	Full
 passo	NOUN	passo	35811	-	Full
 superò	VERB	superare	34844	PAST	Full
 la	ART	la	8476	-	Full
@@ -110,12 +110,12 @@ lepre	NOUN	lepre	17265	-	Full
 addormentata	ADJ	addormentato	36485|36486	-	Full
 e	CONJ	e	11399	-	Full
 arrivò	VERB	arrivare	11708|13356|16805|16807	PAST	Full
-al	ARTADP	a	11709	-	Full
+al	ARTADP	a	11709|3021	-	Full
 traguardo	NOUN	traguardo	16817	-	Full
 .	PUNCT	.	-	-	TextOnly
 
 # frase: Quando la lepre si svegliò, era troppo tardi.
-Quando	CONJ	quando	24053	-	Full
+Quando	CONJ	quando	24053|22621	-	Full
 la	ART	la	8476	-	Full
 lepre	NOUN	lepre	17265	-	Full
 si	CLITIC	si	-	-	Hidden

@@ -1,0 +1,150 @@
+# testo: 21_la_bicicletta_nuova
+# genere: storia
+# gruppo: prova
+# origine: scritto per il progetto (sintetico), seconda serie di prova (M7, dopo la revisione)
+
+# frase: Per il suo compleanno Luca ha ricevuto una bicicletta verde con il campanello.
+Per	ADP	per	7194|7212|8194|8195|38907	-	Full
+il	ART	il	8476|7158	-	Full
+suo	DET	suo	12272	-	Full
+compleanno	NOUN	compleanno	3087|5997|16635|26781|28491|28492|37363	-	Full
+Luca	PROPN	luca	-	-	TextOnly
+ha	AUX	avere	-	-	Hidden
+ricevuto	VERB	ricevere	17042|17044	PAST	Full
+una	ART	una	8474|27385|8277	-	Full
+bicicletta	NOUN	bicicletta	2277|6935|39236	-	Full
+verde	ADJ	verde	4886|4887	-	Full
+con	ADP	con	7064|39801	-	Full
+il	ART	il	8476|7158	-	Full
+campanello	NOUN	campanello	6230	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Era bellissima e luccicava al sole.
+Era	VERB	essere	5581|5465|5858|36480	PAST	Full
+bellissima	ADJ	bello	4660|11194|26114|31851	-	Full
+e	CONJ	e	11399	-	Full
+luccicava	VERB	luccicare	-	PAST	TextOnly
+al	ARTADP	a	11709|3021	-	Full
+sole	NOUN	sole	2798|7252	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Il papà gli ha messo il casco in testa e lo ha accompagnato nel cortile.
+Il	ART	il	8476|7158	-	Full
+papà	NOUN	papà	2497|31146	-	Full
+gli	CLITIC	gli	6481|31670|6480	-	Full
+ha	AUX	avere	-	-	Hidden
+messo	VERB	mettere	39563	PAST	Full
+il	ART	il	-	-	Hidden
+casco	NOUN	casco	-	-	Hidden
+in	ADP	in	7034|5388|5355	-	Full
+testa	NOUN	testa	2673	-	Full
+e	CONJ	e	11399	-	Full
+lo	CLITIC	lo	6480|31670|6481|8476	-	Full
+ha	AUX	avere	-	-	Hidden
+accompagnato	VERB	accompagnare	37485|25762	PAST	Full
+nel	ARTADP	in	7034	-	Full
+cortile	NOUN	cortile	39552|6204	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: All'inizio Luca aveva paura e le ruote ballavano da una parte e dall'altra.
+All'	ARTADP	a	11709	-	Full
+inizio	NOUN	inizio	5431	-	Full
+Luca	PROPN	luca	-	-	TextOnly
+aveva	VERB	avere	35571|39668	PAST	Full
+paura	NOUN	paura	-	-	Hidden
+e	CONJ	e	11399	-	Full
+le	ART	la	8477	-	Full
+ruote	NOUN	ruota	5566	PLURAL	Full
+ballavano	VERB	ballare	-	PAST	TextOnly
+da	ADP	da	7077|7074|7212	-	Full
+una	ART	una	8474|27385|8277	-	Full
+parte	NOUN	parte	-	-	TextOnly
+e	CONJ	e	11399	-	Full
+dall'	ARTADP	da	11712|7074	-	Full
+altra	PRON	altro	17054	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Ha provato tante volte.
+Ha	AUX	avere	-	-	Hidden
+provato	VERB	provare	26144	PAST	Full
+tante	DET	tanto	7168|25492	-	Full
+volte	NOUN	volta	-	-	TextOnly
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Una volta è caduto e si è sbucciato il ginocchio, ma non ha pianto.
+Una	ART	una	8474|27385|8277	-	Full
+volta	NOUN	volta	-	-	Hidden
+è	AUX	essere	-	-	Hidden
+caduto	VERB	cadere	4582|6067|29674|8241|8242	PAST	Full
+e	CONJ	e	11399	-	Full
+si	CLITIC	si	-	-	Hidden
+è	AUX	essere	-	-	Hidden
+sbucciato	VERB	sbucciarsi	-	PAST	TextOnly
+il	ART	il	8476|7158	-	Full
+ginocchio	NOUN	ginocchio	2810	-	Full
+,	PUNCT	,	-	-	TextOnly
+ma	CONJ	ma	11377	-	Full
+non	ADV	non	5526|5525	-	Full
+ha	AUX	avere	-	-	Hidden
+pianto	VERB	piangere	35881|3239|7147|28645|32298	PAST	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: La mamma gli ha messo un cerotto colorato.
+La	ART	la	8476	-	Full
+mamma	NOUN	mamma	2458|31148	-	Full
+gli	CLITIC	gli	6481|31670|6480	-	Full
+ha	AUX	avere	-	-	Hidden
+messo	VERB	mettere	33914|33915|33916|38452	PAST	Full
+un	ART	un	-	-	Hidden
+cerotto	NOUN	cerotto	-	-	Hidden
+colorato	ADJ	colorato	-	-	TextOnly
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Dopo un'ora Luca pedalava da solo intorno all'aiuola.
+Dopo	ADP	dopo	13080|7818|32749	-	Full
+un'	ART	uno	8474	-	Full
+ora	NOUN	ora	7129	-	Full
+Luca	PROPN	luca	-	-	TextOnly
+pedalava	VERB	pedalare	5517|6045|6173	PAST	Full
+da	ADP	da	7077|7074|7212	-	Full
+solo	ADJ	solo	39247|7253	-	Full
+intorno	ADV	intorno	5376	-	Full
+all'	ARTADP	a	11709	-	Full
+aiuola	NOUN	aiuola	39094	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Ha suonato il campanello e tutti i vicini si sono affacciati alla finestra per salutarlo.
+Ha	AUX	avere	-	-	Hidden
+suonato	VERB	suonare	7255	PAST	Full
+il	ART	il	8476|7158	-	Full
+campanello	NOUN	campanello	6230	-	Full
+e	CONJ	e	11399	-	Full
+tutti	DET	tutto	5596|27091|32438	-	Full
+i	ART	il	8477	-	Full
+vicini	NOUN	vicino	6241|26529|37228	PLURAL	Full
+si	CLITIC	si	-	-	Hidden
+sono	AUX	essere	-	-	Hidden
+affacciati	VERB	affacciarsi	6913|6914|36493	PAST	Full
+alla	ARTADP	a	11709|3021	-	Full
+finestra	NOUN	finestra	2611|24465	-	Full
+per	ADP	per	7194|7212|8194|8195|38907	-	Full
+salutarlo	VERB	salutare	6009|6522|34567|37807	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Domani andrà al parco con la sua bicicletta e farà una gara con la sorella.
+Domani	ADV	domani	7152|38278	-	Full
+andrà	VERB	andare	2432|3251|6044|8142|31758|35093	FUTURE	Full
+al	ARTADP	a	11709|3021	-	Full
+parco	NOUN	parco	2859|30609	-	Full
+con	ADP	con	7064|39801	-	Full
+la	ART	la	8476	-	Full
+sua	DET	suo	12272	-	Full
+bicicletta	NOUN	bicicletta	2277|6935|39236	-	Full
+e	CONJ	e	11399	-	Full
+farà	VERB	fare	11749|32751	FUTURE	Full
+una	ART	una	8474|27385|8277	-	Full
+gara	NOUN	gara	37313|11205	-	Full
+con	ADP	con	7064|39801	-	Full
+la	ART	la	8476	-	Full
+sorella	NOUN	sorella	2422|37966	-	Full
+.	PUNCT	.	-	-	TextOnly

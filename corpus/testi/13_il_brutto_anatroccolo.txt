@@ -1,5 +1,6 @@
 # genere: favola
-# gruppo: prova
+# gruppo: sviluppo
+# nota: era di prova in M7, consumata dalla revisione
 # origine: scritto per il progetto (sintetico)
 In una fattoria una mamma anatra covava le sue uova. Un giorno si schiusero e nacquero cinque anatroccoli gialli e uno più grande, grigio e goffo.
 Gli altri animali lo prendevano in giro: "Che brutto! Non somiglia a nessuno!". L'anatroccolo era triste e un mattino scappò lontano.

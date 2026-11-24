@@ -647,3 +647,95 @@ fn la_politica_non_tocca_i_gruppi() {
         );
     }
 }
+
+// --- Correzioni dalla revisione M7-M8a ------------------------------------------------------
+
+#[test]
+fn ci_sono_diventa_esserci_anche_se_sono_e_scelto_alla_prima_persona() {
+    // "sono" ha due letture (1a singolare, 3a plurale): conta che ESISTA la terza (revisione).
+    let t = run("ci sono");
+    assert_eq!(
+        (t[0].display, t[1].picto.map(|p| p.id)),
+        (Display::Hidden, Some(136))
+    );
+    assert_eq!(t[1].reason.picto, PictoReason::Pronominal);
+}
+
+#[test]
+fn ci_e_con_un_aggettivo_non_e_esserci() {
+    // "ci è utile": "ci" = a noi.
+    let t = run("ci è utile");
+    assert_ne!(t[0].display, Display::Hidden);
+    assert_ne!(t[1].picto.map(|p| p.id), Some(136));
+}
+
+#[test]
+fn c_e_stato_ha_esserci_e_il_passato() {
+    let t = run("c'è stato");
+    assert_eq!(t[0].display, Display::Hidden);
+    assert_eq!(
+        (t[2].picto.map(|p| p.id), mods(&t[2])),
+        (Some(136), Modifiers::PAST),
+        "{t:?}"
+    );
+}
+
+#[test]
+fn riflessivo_nei_tempi_composti_anche_senza_complemento() {
+    // "divertito" e' anche un aggettivo: senza complemento il gruppo non si formava e "Mi sono"
+    // restavano visibili.
+    let t = run("Mi sono divertito");
+    // "divertire" non ha pittogramma nel mini-lessico: la testa resta solo testo ma non nascosta.
+    assert_eq!(
+        (t[0].display, t[1].display),
+        (Display::Hidden, Display::Hidden)
+    );
+    assert_ne!(t[2].display, Display::Hidden);
+    assert_eq!(mods(&t[2]), Modifiers::PAST);
+}
+
+#[test]
+fn essersi_lavato_e_un_verbo_pronominale() {
+    let t = run("essersi lavato");
+    assert_eq!(
+        (t[0].display, t[1].picto.map(|p| p.id), mods(&t[1])),
+        (Display::Hidden, Some(127), Modifiers::PAST),
+        "{t:?}"
+    );
+    assert_eq!(t[1].group.map(|g| g.kind), Some(GroupKind::Pronominal));
+}
+
+#[test]
+fn il_riflessivo_senza_pittogramma_pronominale_non_rompe_le_espressioni() {
+    // "mettersi" non esiste in ARASAAC ma "mettere le scarpe" si': "si mette le scarpe" la trova.
+    let t = engine_mwe_run("Luca si mette le scarpe");
+    let mette = word(&t, "mette");
+    assert_eq!(mette.picto.map(|p| p.id), Some(137), "{t:?}");
+    assert_eq!(word(&t, "si").display, Display::Hidden);
+}
+
+fn engine_mwe_run(text: &str) -> Vec<Token> {
+    common::engine_mwe("", "").symbolize_text(text)
+}
+
+#[test]
+fn ci_locativo_resta_visibile_ma_ci_riflessivo_si_nasconde() {
+    // "ci andiamo" (= lì): "andarsi" non esiste, "ci" non si nasconde; "ci siamo lavati": "lavarsi" c'e'.
+    let t = run("Ci andiamo");
+    assert_ne!(t[0].display, Display::Hidden, "{t:?}");
+    let t = run("Ci siamo lavato");
+    assert_eq!(
+        (t[0].display, t[1].display, t[2].picto.map(|p| p.id)),
+        (Display::Hidden, Display::Hidden, Some(127)),
+        "{t:?}"
+    );
+}
+
+#[test]
+fn una_riga_della_forma_non_aggiunge_il_plurale() {
+    // "occhiali" ha una parola chiave propria: una riga lemma_picto per quella forma non deve far
+    // comparire il segno di plurale.
+    let e = engine("occhiali\tNOUN\t105\t1\tforma\n", "");
+    let t = e.symbolize_text("occhiali");
+    assert_eq!((t[0].picto.map(|p| p.id), mods(&t[0])), (Some(105), 0));
+}

@@ -1,0 +1,157 @@
+# testo: 23_il_pastore_bugiardo
+# genere: favola
+# gruppo: prova
+# origine: scritto per il progetto (sintetico), seconda serie di prova (M7, dopo la revisione)
+
+# frase: C'era una volta un pastore che portava le pecore sul monte.
+C'	CLITIC	ci	8277	-	Full
+era	VERB	essere	-	-	Hidden
+una	ART	una	-	-	Hidden
+volta	NOUN	volta	-	-	Hidden
+un	ART	un	8474	-	Full
+pastore	NOUN	pastore	7788|27535|27536	-	Full
+che	PRON	che	-	-	TextOnly
+portava	VERB	portare	6139|6553|37223|8982|8983	PAST	Full
+le	ART	il	8477	-	Full
+pecore	NOUN	pecora	2489	PLURAL	Full
+sul	ARTADP	su	5451|7814	-	Full
+monte	NOUN	monte	2909	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Ogni giorno si annoiava e voleva divertirsi.
+Ogni	DET	ogni	-	-	TextOnly
+giorno	NOUN	giorno	7022|26799|37371	-	Full
+si	CLITIC	si	-	-	Hidden
+annoiava	VERB	annoiarsi	6873|28705|2245|35531	PAST	Full
+e	CONJ	e	11399	-	Full
+voleva	MODAL	volere	5441|31141	PAST	Full
+divertirsi	VERB	divertirsi	8992|16647	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Un pomeriggio gridò: "Aiuto!
+Un	ART	un	8474	-	Full
+pomeriggio	NOUN	pomeriggio	7268|32850	-	Full
+gridò	VERB	gridare	4686|6552|7120|31125|31127|36137	PAST	Full
+:	PUNCT	:	-	-	TextOnly
+"	PUNCT	"	-	-	TextOnly
+Aiuto	INTJ	aiuto	19524|12252	-	Full
+!	PUNCT	!	-	-	TextOnly
+
+# frase: Il lupo!
+Il	ART	il	8476|7158	-	Full
+lupo	NOUN	lupo	5892|37933	-	Full
+!	PUNCT	!	-	-	TextOnly
+
+# frase: Il lupo!".
+Il	ART	il	8476|7158	-	Full
+lupo	NOUN	lupo	5892|37933	-	Full
+!	PUNCT	!	-	-	TextOnly
+"	PUNCT	"	-	-	TextOnly
+.	PUNCT	.	-	-	TextOnly
+
+# frase: I contadini corsero con i bastoni, ma non trovarono nessun lupo.
+I	ART	il	8477	-	Full
+contadini	NOUN	contadino	2982|6035	PLURAL	Full
+corsero	VERB	correre	2719|6465|8544|28439|28921	PAST	Full
+con	ADP	con	7064|39801	-	Full
+i	ART	il	8477	-	Full
+bastoni	NOUN	bastone	11322|5922	PLURAL	Full
+,	PUNCT	,	-	-	TextOnly
+ma	CONJ	ma	11377	-	Full
+non	ADV	non	5526|5525	-	Full
+trovarono	VERB	trovare	24741|24742|24773|24774|37246	PAST	Full
+nessun	DET	nessuno	5800|11314|26941	-	Full
+lupo	NOUN	lupo	5892|37933	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Il pastore rideva a crepapelle.
+Il	ART	il	8476|7158	-	Full
+pastore	NOUN	pastore	7788|27535|27536	-	Full
+rideva	VERB	ridere	38792|30393	PAST	Full
+a	ADP	a	-	-	Hidden
+crepapelle	NOUN	crepapelle	-	-	Hidden
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Il giorno dopo fece lo stesso scherzo e i contadini corsero di nuovo.
+Il	ART	il	8476|7158	-	Full
+giorno	NOUN	giorno	7022|26799|37371	-	Full
+dopo	ADV	dopo	13080|32749	-	Full
+fece	VERB	fare	11749|32751	PAST	Full
+lo	ART	il	8476	-	Full
+stesso	ADJ	stesso	4667|32392	-	Full
+scherzo	NOUN	scherzo	26905	-	Full
+e	CONJ	e	11399	-	Full
+i	ART	il	8477	-	Full
+contadini	NOUN	contadino	2982|6035	PLURAL	Full
+corsero	VERB	correre	2719|6465|8544|28439|28921	PAST	Full
+di	ADP	di	7074|37163|37162	-	Full
+nuovo	ADJ	nuovo	-	-	Hidden
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Anche questa volta il lupo non c'era e loro tornarono arrabbiati.
+Anche	ADV	anche	-	-	TextOnly
+questa	DET	questo	7095|7091	-	Full
+volta	NOUN	volta	-	-	TextOnly
+il	ART	il	8476|7158	-	Full
+lupo	NOUN	lupo	5892|37933	-	Full
+non	ADV	non	5526|5525	-	Full
+c'	CLITIC	ci	-	-	Hidden
+era	VERB	essere	5581|5465|5466|5858	PAST	Full
+e	CONJ	e	11399	-	Full
+loro	PRON	loro	7032|7033|31805|31906	-	Full
+tornarono	VERB	tornare	29714	PAST	Full
+arrabbiati	ADJ	arrabbiato	2374|7039|21820|31884|35539|35567	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Una sera il lupo arrivò davvero.
+Una	ART	una	8474|27385|8277	-	Full
+sera	NOUN	sera	-	-	TextOnly
+il	ART	il	8476|7158	-	Full
+lupo	NOUN	lupo	5892|37933	-	Full
+arrivò	VERB	arrivare	11708|13356|16805|16807	PAST	Full
+davvero	ADV	davvero	-	-	TextOnly
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Il pastore gridò con tutta la voce, ma nessuno si mosse perché pensavano a un altro scherzo.
+Il	ART	il	8476|7158	-	Full
+pastore	NOUN	pastore	7788|27535|27536	-	Full
+gridò	VERB	gridare	4686|6552|7120|31125|31127|36137	PAST	Full
+con	ADP	con	7064|39801	-	Full
+tutta	DET	tutto	5596|32438|27091	-	Full
+la	ART	il	8476	-	Full
+voce	NOUN	voce	-	-	TextOnly
+,	PUNCT	,	-	-	TextOnly
+ma	CONJ	ma	11377	-	Full
+nessuno	PRON	nessuno	11314|26941|5800	-	Full
+si	CLITIC	si	-	-	Hidden
+mosse	VERB	muoversi	21395|27371	PAST	Full
+perché	CONJ	perché	11348	-	Full
+pensavano	VERB	pensare	8661|8662|31847|34403|38796	PAST	Full
+a	ADP	a	7041|7034|27564|27387|7070	-	Full
+un	ART	un	8474	-	Full
+altro	ADJ	altro	17054	-	Full
+scherzo	NOUN	scherzo	26905	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Il lupo disperse il gregge e il pastore pianse.
+Il	ART	il	8476|7158	-	Full
+lupo	NOUN	lupo	5892|37933	-	Full
+disperse	VERB	disperdere	-	PAST	TextOnly
+il	ART	il	8476|7158	-	Full
+gregge	NOUN	gregge	10249	-	Full
+e	CONJ	e	11399	-	Full
+il	ART	il	8476|7158	-	Full
+pastore	NOUN	pastore	7788|27535|27536	-	Full
+pianse	VERB	piangere	3239|7147|28645|32298|35881	PAST	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Chi dice sempre bugie non viene più creduto.
+Chi	PRON	chi	13358|10276	-	Full
+dice	VERB	dire	9692|9693|28663	-	Full
+sempre	ADV	sempre	17322	-	Full
+bugie	NOUN	bugia	36161|31195|31226	PLURAL	Full
+non	ADV	non	5526|5525	-	Full
+viene	AUX	venire	-	-	Hidden
+più	ADV	più	-	-	TextOnly
+creduto	VERB	credere	-	-	TextOnly
+.	PUNCT	.	-	-	TextOnly

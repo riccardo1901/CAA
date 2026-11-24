@@ -27,15 +27,16 @@ const MOCK = `
     }
     return out;
   }
-  window.__mock = { calls, delay: 4 };
+  window.__mock = { calls, delay: 4, fail: 0 };
   return {
-    symbolize: (texts, policy) => { calls.push({ texts, policy }); return new Promise((r) => setTimeout(() => r(texts.map((t) => tokens(t, policy))), window.__mock.delay)); },
+    symbolize: (texts, policy) => { calls.push({ texts, policy }); return new Promise((r, rej) => setTimeout(() => { if (window.__mock.fail > 0) { window.__mock.fail--; rej(new Error('motore guasto')); } else r(texts.map((t) => tokens(t, policy))); }, window.__mock.delay)); },
     url: (id) => svg(id),
   };
 })()
 `;
 
 async function open(page: Page, text?: string): Promise<void> {
+  page.on("dialog", (d) => void d.accept());
   await page.goto("/");
   await page.waitForFunction(() => (window as any).caaProto);
   await page.evaluate(
@@ -92,17 +93,19 @@ test("la politica Essenziale nasconde gli articoli e Completo li riduce", async 
 
 test("scrivendo, i simboli già disegnati restano al loro posto e la parola nuova arriva dopo", async ({ page }) => {
   await open(page, "Marco mangia pane");
-  await page.evaluate(() => { (window as any).__mock.delay = 60; });
-  const before = await page.locator(".w[style*='--img']").count();
+  // Il motore risponde dopo 10 secondi: finché non risponde, i simboli di prima devono restare.
+  await page.evaluate(() => { (window as any).__mock.delay = 10_000; });
   await page.locator(".ProseMirror").click();
   await page.keyboard.press("End");
   await page.keyboard.type(" casa", { delay: 0 });
-  // Subito dopo la digitazione, i simboli di prima ci sono ancora (spostati, non cancellati).
-  const immediately = await page.locator(".w[style*='--img']").count();
-  expect(immediately).toBeGreaterThanOrEqual(before);
-  // Dopo la risposta c'è anche "casa".
-  await expect(page.locator(".w[style*='--img']", { hasText: "casa" })).toHaveCount(1);
-  expect(await page.locator(".w[style*='--img']").count()).toBe(before + 1);
+  await page.waitForTimeout(50);
+  const texts = await page.locator(".w[style*='--img']").allTextContents();
+  expect(texts).toEqual(["Marco", "mangia", "pane"]);
+  expect((await stats(page)).pending).toBe(1);
+  // Risposta rapida: arriva anche "casa".
+  await page.evaluate(() => { (window as any).__mock.delay = 5; });
+  await page.keyboard.type(" mare", { delay: 0 });
+  await expect(page.locator(".w[style*='--img']", { hasText: "mare" })).toHaveCount(1);
 });
 
 test("una risposta in ritardo per un testo vecchio non rovina il paragrafo", async ({ page }) => {
@@ -117,7 +120,7 @@ test("una risposta in ritardo per un testo vecchio non rovina il paragrafo", asy
   expect((await stats(page)).pending).toBe(0);
 });
 
-test("il formato in grassetto non spezza il simbolo e i paragrafi uguali partono una volta sola", async ({ page }) => {
+test("i paragrafi uguali partono una volta sola", async ({ page }) => {
   await open(page, "casa\ncasa\ncasa");
   await page.waitForFunction(() => (window as any).caaProto.engineStats().pending === 0);
   const calls = await page.evaluate(() => (window as any).__mock.calls as Array<{ texts: string[] }>);
@@ -125,29 +128,119 @@ test("il formato in grassetto non spezza il simbolo e i paragrafi uguali partono
   await expect(page.locator(".w[style*='--img']")).toHaveCount(3);
 });
 
-test("dal tasto al simbolo: la parola nuova ha il simbolo in meno di 30 ms oltre l'attesa del motore", async ({ page }) => {
-  await open(page, "Marco mangia");
-  await page.evaluate(() => { (window as any).__mock.delay = 2; });
-  await page.locator(".ProseMirror").click();
-  await page.keyboard.press("End");
-  const ms = await page.evaluate(
-    () =>
-      new Promise<number>((resolve) => {
-        const p = (window as any).caaProto;
-        const t0 = performance.now();
-        const done = () => {
-          const found = [...document.querySelectorAll(".w[style*='--img']")].some((e) => e.textContent === "pane");
-          if (found) resolve(performance.now() - t0);
-          else requestAnimationFrame(done);
-        };
-        const view = p.view;
-        view.dispatch(view.state.tr.insertText(" pane", view.state.doc.content.size - 1));
-        done();
-      }),
-  );
-  expect(ms, `tempo ${ms.toFixed(1)} ms`).toBeLessThan(30);
+test("il grassetto non spezza un token del motore (trattino e date come nel motore)", async ({ page }) => {
+  await open(page, "crema anti-age e data 12/11/2026");
+  // Seleziono "age" e metto il grassetto: deve diventare in grassetto tutto "anti-age".
+  await page.evaluate(() => {
+    const p = (window as any).caaProto;
+    const text: string = p.view.state.doc.textContent;
+    const from = 1 + text.indexOf("age");
+    p.setCaret(from, from + 3);
+  });
+  await page.keyboard.press("Control+b");
+  await page.waitForFunction(() => (window as any).caaProto.engineStats().pending === 0);
+  const bold = await page.evaluate(() => [...document.querySelectorAll(".ProseMirror strong")].map((e) => e.textContent));
+  expect(bold.join("")).toBe("anti-age");
+  // Il simbolo non e' diviso: nessun pezzo "wc" nella parola.
+  expect(await page.locator(".w.wc").count()).toBe(0);
+  // Stessa cosa per una data.
+  await page.evaluate(() => {
+    const p = (window as any).caaProto;
+    const text: string = p.view.state.doc.textContent;
+    const from = 1 + text.indexOf("11/");
+    p.setCaret(from, from + 2);
+  });
+  await page.keyboard.press("Control+b");
+  const bold2 = await page.evaluate(() => [...document.querySelectorAll(".ProseMirror strong")].map((e) => e.textContent).join("|"));
+  expect(bold2).toContain("12/11/2026");
 });
 
+test("se il motore dà errore l'editor lo dice, riprova da solo e poi i simboli arrivano", async ({ page }) => {
+  await open(page, "Marco");
+  // Il motore e' guasto finché non lo rimetto a posto (le battute partono più in fretta della prima risposta).
+  await page.evaluate(() => { (window as any).__mock.fail = 1_000_000; (window as any).__mock.calls.length = 0; });
+  await page.locator(".ProseMirror").click();
+  await page.keyboard.press("End");
+  await page.keyboard.type(" mangia", { delay: 0 });
+  await expect(page.locator(".statusbar")).toContainText("Il motore non risponde");
+  // Con il motore guasto non parte una richiesta a ogni battuta: 10 battute in piu', poche chiamate.
+  const before = await page.evaluate(() => (window as any).__mock.calls.length);
+  await page.keyboard.type(" aaaaaaaaaa", { delay: 0 });
+  await page.waitForTimeout(200);
+  const after = await page.evaluate(() => (window as any).__mock.calls.length);
+  expect(after - before).toBeLessThanOrEqual(1);
+  // Il motore torna a funzionare: al prossimo tentativo (dopo 1 s, poi 2 s, poi 4 s) i simboli compaiono.
+  await page.evaluate(() => { (window as any).__mock.fail = 0; });
+  await expect(page.locator(".w[style*='--img']", { hasText: "mangia" })).toHaveCount(1, { timeout: 20_000 });
+  await expect(page.locator(".statusbar")).not.toContainText("Il motore non risponde");
+});
+
+test("la barra di stato non salta mentre si scrive", async ({ page }) => {
+  await open(page, "Marco mangia la mela e beve il latte.\nGiulia legge un libro.");
+  await page.waitForFunction(() => (window as any).caaProto.engineStats().pending === 0);
+  const total = (await stats(page)).words;
+  await page.evaluate(() => { (window as any).__mock.delay = 30; });
+  await page.locator(".ProseMirror").click();
+  await page.keyboard.press("Control+Home");
+  const seen: number[] = [];
+  for (const ch of " e") {
+    await page.keyboard.type(ch, { delay: 0 });
+    for (let k = 0; k < 6; k++) {
+      seen.push((await stats(page)).words);
+      await page.waitForTimeout(8);
+    }
+  }
+  // Mai meno del totale iniziale: i paragrafi in attesa mantengono l'ultimo conteggio.
+  expect(Math.min(...seen)).toBeGreaterThanOrEqual(total);
+});
+
+test("il segno passato + plurale ha lo spazio e le parole nascoste non mostrano segni", async ({ page }) => {
+  await open(page, "I andati bambini");
+  // "andati" ha passato + plurale: il segno e' "◀ +" con lo spazio.
+  const content = await page.evaluate(() => getComputedStyle([...document.querySelectorAll(".w.mp.mpast")][0], "::after").content);
+  expect(content).toBe('"\u25C0 +"');
+  // Una parola nascosta con segni non disegna il segno.
+  await page.selectOption("select", "essential");
+  await page.waitForFunction(() => (window as any).caaProto.engineStats().pending === 0);
+  const hiddenBadge = await page.evaluate(() => {
+    const el = document.querySelector(".w.hid");
+    return el ? getComputedStyle(el, "::after").content : "assente";
+  });
+  expect(["none", "normal", "assente", '""']).toContain(hiddenBadge);
+});
+
+test("dal tasto al simbolo, con un documento di 200 paragrafi @perf", async ({ page }) => {
+  const text = Array.from({ length: 200 }, (_, i) => `Marco mangia la mela numero ${i} e beve il latte caldo.`).join("\n");
+  await open(page, text);
+  await page.waitForFunction(() => (window as any).caaProto.engineStats().pending === 0, undefined, { timeout: 30_000 });
+  await page.evaluate(() => { (window as any).__mock.delay = 2; });
+  await page.locator(".ProseMirror").click();
+  const times: number[] = [];
+  for (let n = 0; n < 12; n++) {
+    const ms = await page.evaluate(
+      (word) =>
+        new Promise<number>((resolve) => {
+          const p = (window as any).caaProto;
+          const view = p.view;
+          const t0 = performance.now();
+          const done = () => {
+            const found = [...document.querySelectorAll(".w[style*='--img']")].some((e) => e.textContent === word);
+            if (found) resolve(performance.now() - t0);
+            else requestAnimationFrame(done);
+          };
+          // Scrive la parola nuova in fondo al primo paragrafo.
+          const end = view.state.doc.child(0).nodeSize - 1;
+          view.dispatch(view.state.tr.insertText(` ${word}`, end));
+          done();
+        }),
+      ["alfa", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta", "iota", "kappa", "lambda", "sigma"][n],
+    );
+    times.push(ms);
+  }
+  times.sort((a, b) => a - b);
+  const median = times[Math.floor(times.length / 2)];
+  expect(median, `mediana ${median.toFixed(1)} ms, tutti: ${times.map((t) => t.toFixed(0)).join(" ")}`).toBeLessThan(30);
+});
 test("dopo «Testo di esempio» o «Nuovo» i simboli del motore tornano (e la politica resta)", async ({ page }) => {
   await open(page, "Marco mangia pane");
   await page.selectOption("select", "essential");

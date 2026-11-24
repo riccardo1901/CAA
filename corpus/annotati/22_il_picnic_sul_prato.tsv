@@ -1,0 +1,155 @@
+# testo: 22_il_picnic_sul_prato
+# genere: storia
+# gruppo: prova
+# origine: scritto per il progetto (sintetico), seconda serie di prova (M7, dopo la revisione)
+
+# frase: Sabato la famiglia di Chiara è andata a fare un picnic sul prato dietro il bosco.
+Sabato	NOUN	sabato	6605|37725	-	Full
+la	ART	la	8476	-	Full
+famiglia	NOUN	famiglia	2392|11728|11729|11731|11733|11735|24515|24523|24525|30245|31466|31467	-	Full
+di	ADP	di	7074|37163|37162	-	Full
+Chiara	PROPN	chiara	-	-	TextOnly
+è	AUX	essere	-	-	Hidden
+andata	VERB	andare	2432|3251|6044|8142|31758|35093	PAST	Full
+a	ADP	a	7041|7034|27564|27387|7070	-	Full
+fare	VERB	fare	39755|10236	-	Full
+un	ART	un	-	-	Hidden
+picnic	NOUN	picnic	-	-	Hidden
+sul	ARTADP	su	5451|7814	-	Full
+prato	NOUN	prato	11214	-	Full
+dietro	ADP	dietro	5443|7818	-	Full
+il	ART	il	8476|7158	-	Full
+bosco	NOUN	bosco	2666|32462	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Il cielo era azzurro e non c'erano nuvole.
+Il	ART	il	8476|7158	-	Full
+cielo	NOUN	cielo	38270	-	Full
+era	VERB	essere	5581|5465|5858|36480	PAST	Full
+azzurro	ADJ	azzurro	3355	-	Full
+e	CONJ	e	11399	-	Full
+non	ADV	non	5526|5525	-	Full
+c'	CLITIC	ci	-	-	Hidden
+erano	VERB	essere	9001|5581	PAST	Full
+nuvole	NOUN	nuvola	2883	PLURAL	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: La nonna ha steso una coperta a quadretti e ha tirato fuori la cesta.
+La	ART	la	8476	-	Full
+nonna	NOUN	nonna	2243|10194|23709|23710	-	Full
+ha	AUX	avere	-	-	Hidden
+steso	VERB	stendere	-	PAST	TextOnly
+una	ART	una	8474|27385|8277	-	Full
+coperta	NOUN	coperta	2459	-	Full
+a	ADP	a	7041|7070|7034|27564|27387	-	Full
+quadretti	NOUN	quadretto	-	-	Hidden
+e	CONJ	e	11399	-	Full
+ha	AUX	avere	-	-	Hidden
+tirato	VERB	tirare	8216	PAST	Full
+fuori	ADV	fuori	-	-	Hidden
+la	ART	la	8476	-	Full
+cesta	NOUN	cesta	3012	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Dentro c'erano le uova sode, il formaggio, le fragole e una bottiglia di succo.
+Dentro	ADV	dentro	5439	-	Full
+c'	CLITIC	ci	-	-	Hidden
+erano	VERB	essere	9001|5581	PAST	Full
+le	ART	la	8477	-	Full
+uova	NOUN	uovo	7132	PLURAL	Full
+sode	ADJ	sodo	-	-	Hidden
+,	PUNCT	,	-	-	TextOnly
+il	ART	il	8476|7158	-	Full
+formaggio	NOUN	formaggio	2541|4881|25363|29144	-	Full
+,	PUNCT	,	-	-	TextOnly
+le	ART	la	8477	-	Full
+fragole	NOUN	fragola	2400	PLURAL	Full
+e	CONJ	e	11399	-	Full
+una	ART	una	8474|27385|8277	-	Full
+bottiglia	NOUN	bottiglia	2288|39042|39043	-	Full
+di	ADP	di	7074|37163|37162	-	Full
+succo	NOUN	succo	11461|11463	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Mentre mangiavano, una farfalla gialla si è posata sul cappello di Chiara.
+Mentre	CONJ	mentre	7081|24737	-	Full
+mangiavano	VERB	mangiare	2349|6456|28641	PAST	Full
+,	PUNCT	,	-	-	TextOnly
+una	ART	una	8474|27385|8277	-	Full
+farfalla	NOUN	farfalla	2465|8158|26200	-	Full
+gialla	ADJ	giallo	2648	-	Full
+si	CLITIC	si	-	-	Hidden
+è	AUX	essere	-	-	Hidden
+posata	VERB	posarsi	25353	PAST	Full
+sul	ARTADP	su	5451|7814	-	Full
+cappello	NOUN	cappello	2572|39395	-	Full
+di	ADP	di	7074|37163|37162	-	Full
+Chiara	PROPN	chiara	-	-	TextOnly
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Tutti sono rimasti fermi e zitti per guardarla.
+Tutti	PRON	tutti	36081	-	Full
+sono	AUX	essere	-	-	Hidden
+rimasti	VERB	rimanere	27206	PAST	Full
+fermi	ADJ	fermo	37185	-	Full
+e	CONJ	e	11399	-	Full
+zitti	ADJ	zitto	5936|6071	-	Full
+per	ADP	per	7194|7212|8194|8195|38907	-	Full
+guardarla	VERB	guardare	2474|6564|28673|16907	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Dopo pranzo il fratello ha costruito un aquilone con la carta e lo ha fatto volare.
+Dopo	ADP	dopo	13080|7818|32749	-	Full
+pranzo	NOUN	pranzo	4611|38057	-	Full
+il	ART	il	8476|7158	-	Full
+fratello	NOUN	fratello	2423|37967	-	Full
+ha	AUX	avere	-	-	Hidden
+costruito	VERB	costruire	2713|25988|35739	PAST	Full
+un	ART	un	8474	-	Full
+aquilone	NOUN	aquilone	2350	-	Full
+con	ADP	con	7064|39801	-	Full
+la	ART	la	8476	-	Full
+carta	NOUN	carta	2398	-	Full
+e	CONJ	e	11399	-	Full
+lo	CLITIC	lo	6480|31670|6481|8476	-	Full
+ha	AUX	avere	-	-	Hidden
+fatto	VERB	fare	11749|32751	PAST	Full
+volare	VERB	volare	6246|10190	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Il filo era lungo e l'aquilone saliva sempre più in alto.
+Il	ART	il	8476|7158	-	Full
+filo	NOUN	filo	2978	-	Full
+era	VERB	essere	5581|5465|5858|36480	PAST	Full
+lungo	ADJ	lungo	4675|26162	-	Full
+e	CONJ	e	11399	-	Full
+l'	ART	il	8476	-	Full
+aquilone	NOUN	aquilone	2350	-	Full
+saliva	VERB	salire	24725	PAST	Full
+sempre	ADV	sempre	17322	-	Full
+più	ADV	più	5508|3220|26913	-	Full
+in	ADP	in	7034|5388|5355	-	Full
+alto	ADJ	alto	-	-	Hidden
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Al tramonto hanno raccolto i piatti e sono tornati a casa.
+Al	ARTADP	a	11709|3021	-	Full
+tramonto	NOUN	tramonto	3176	-	Full
+hanno	AUX	avere	-	-	Hidden
+raccolto	VERB	raccogliere	6452|6453|32663	PAST	Full
+i	ART	il	8477	-	Full
+piatti	NOUN	piatto	37947|2532|16857	-	Full
+e	CONJ	e	11399	-	Full
+sono	AUX	essere	-	-	Hidden
+tornati	VERB	tornare	29714	PAST	Full
+a	ADP	a	7041|7034|27564|27387|7070	-	Full
+casa	NOUN	casa	2317|6964	-	Full
+.	PUNCT	.	-	-	TextOnly
+
+# frase: Chiara era stanca ma contenta.
+Chiara	PROPN	chiara	-	-	TextOnly
+era	VERB	essere	5581|5465|5858|36480	PAST	Full
+stanca	ADJ	stanco	2314|6959|28709|31925|35537|35573	-	Full
+ma	CONJ	ma	11377	-	Full
+contenta	ADJ	contento	3245|28647|31923|35547|39814|6892|9907|32123	-	Full
+.	PUNCT	.	-	-	TextOnly

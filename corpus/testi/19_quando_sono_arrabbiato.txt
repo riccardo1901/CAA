@@ -1,5 +1,6 @@
 # genere: storia_sociale
-# gruppo: prova
+# gruppo: sviluppo
+# nota: era di prova in M7, consumata dalla revisione
 # origine: scritto per il progetto (sintetico)
 Qualche volta mi arrabbio. Sento il cuore che batte forte e le guance che diventano calde. Succede a tutti.
 Quando sono arrabbiato non urlo e non do calci. Mi fermo e faccio tre respiri lunghi.

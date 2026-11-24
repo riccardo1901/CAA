@@ -7,27 +7,27 @@
 Un	ART	un	8474	-	Full
 agnello	NOUN	agnello	34078|2489	-	Full
 beveva	VERB	bere	2276|6061|29716	PAST	Full
-a	ADP	a	7041|7034	-	Full
+a	ADP	a	7041|7034|27564|27387|7070	-	Full
 un	ART	un	8474	-	Full
 ruscello	NOUN	ruscello	23757	-	Full
 .	PUNCT	.	-	-	TextOnly
 
 # frase: Più in alto, un lupo affamato lo vide e volle trovare una scusa per mangiarlo.
 Più	ADV	più	26913|5508	-	Full
-in	ADP	in	5388	-	Full
+in	ADP	in	5388|7034|5355	-	Full
 alto	ADJ	alto	-	-	Hidden
 ,	PUNCT	,	-	-	TextOnly
 un	ART	un	8474	-	Full
 lupo	NOUN	lupo	5892|37933	-	Full
 affamato	ADJ	affamato	4962|7272|31890|35559|35579	-	Full
-lo	CLITIC	lo	6481|6480|31670	-	Full
+lo	CLITIC	lo	6481|6480|31670|8476	-	Full
 vide	VERB	vedere	2474|6564|28673	PAST	Full
 e	CONJ	e	11399	-	Full
 volle	MODAL	volere	31141|5441	PAST	Full
 trovare	VERB	trovare	24741|24742|24773|24774|37246	-	Full
-una	ART	una	8474	-	Full
+una	ART	una	8474|27385|8277	-	Full
 scusa	NOUN	scusa	-	-	TextOnly
-per	ADP	per	7194	-	Full
+per	ADP	per	7194|7212|8194|8195|38907	-	Full
 mangiarlo	VERB	mangiare	2349|6456|28641	-	Full
 .	PUNCT	.	-	-	TextOnly
 
@@ -44,7 +44,7 @@ acqua	NOUN	acqua	6889|32464	-	Full
 
 # frase: ringhiò il lupo.
 ringhiò	VERB	ringhiare	-	PAST	TextOnly
-il	ART	il	8476	-	Full
+il	ART	il	8476|7158	-	Full
 lupo	NOUN	lupo	5892|37933	-	Full
 .	PUNCT	.	-	-	TextOnly
 
@@ -65,15 +65,15 @@ agnello	NOUN	agnello	34078|2489	-	Full
 Io	PRON	io	2617|6632|7309|7310|31807	-	Full
 bevo	VERB	bere	2276|6061|29716	-	Full
 più	ADV	più	26913|5508	-	Full
-in	ADP	in	5355	-	Full
+in	ADP	in	5355|7034|5388	-	Full
 basso	ADJ	basso	-	-	Hidden
-di	ADP	di	7074	-	Full
+di	ADP	di	7074|37163|37162	-	Full
 te	PRON	te	6625|7290|2608|7289|31801	-	Full
 "	PUNCT	"	-	-	TextOnly
 .	PUNCT	.	-	-	TextOnly
 
 # frase: Il lupo non si arrese.
-Il	ART	il	8476	-	Full
+Il	ART	il	8476|7158	-	Full
 lupo	NOUN	lupo	5892|37933	-	Full
 non	ADV	non	5526	-	Full
 si	CLITIC	si	-	-	Hidden
@@ -88,7 +88,7 @@ scorso	ADJ	scorso	-	-	Hidden
 hai	AUX	avere	-	-	Hidden
 parlato	VERB	parlare	3345|6517|36544|9692|9693|28663	PAST	Full
 male	ADV	male	5504	-	Full
-di	ADP	di	7074	-	Full
+di	ADP	di	7074|37163|37162	-	Full
 me	PRON	me	2617|6632|7309|7310|31807	-	Full
 !	PUNCT	!	-	-	TextOnly
 "	PUNCT	"	-	-	TextOnly
@@ -125,7 +125,7 @@ padre	NOUN	padre	2497|31146	-	Full
 
 # frase: gridò il lupo, e saltò addosso all'agnello.
 gridò	VERB	gridare	4686|6552|7120|31125|31127|36137	PAST	Full
-il	ART	il	8476	-	Full
+il	ART	il	8476|7158	-	Full
 lupo	NOUN	lupo	5892|37933	-	Full
 ,	PUNCT	,	-	-	TextOnly
 e	CONJ	e	11399	-	Full
@@ -143,6 +143,6 @@ del	ARTADP	di	11712	-	Full
 male	NOUN	male	5504	-	Full
 trova	VERB	trovare	24741|24742|24773|24774|37246	-	Full
 sempre	ADV	sempre	17322	-	Full
-una	ART	una	8474	-	Full
+una	ART	una	8474|27385|8277	-	Full
 scusa	NOUN	scusa	-	-	TextOnly
 .	PUNCT	.	-	-	TextOnly

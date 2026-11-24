@@ -31,6 +31,12 @@ Cosa serve: l'app compilata dalla CI (`caa-app.exe`, artifact del run di GitHub 
 - Altrimenti: il numero della prova e cosa hai visto (se puoi, una foto dello schermo).
 - Dimmi anche se i **segni** ◀ ▶ + ti sembrano comprensibili o se la scuola usa un'altra convenzione (sono provvisori).
 
+## Novità dopo la revisione
+
+- "Nuovo" e "Testo di esempio" chiedono conferma se c'è del testo (il salvataggio arriva con M9).
+- Se il motore non risponde, in basso compare **"Il motore non risponde: riprovo…"** e l'app riprova da sola.
+- **Chiudi sempre l'app prima di sostituire la cartella `dati`** (su Windows i file in uso non si possono sostituire).
+
 ## Note
 
 - Il pacchetto di prova ha solo le immagini dei testi del corpus e delle parole di base: per altre parole il simbolo può mancare (riquadro tratteggiato) anche se il motore lo conosce. L'uso vero avrà tutte le immagini.
