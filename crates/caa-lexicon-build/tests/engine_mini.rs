@@ -739,3 +739,153 @@ fn una_riga_della_forma_non_aggiunge_il_plurale() {
     let t = e.symbolize_text("occhiali");
     assert_eq!((t[0].picto.map(|p| p.id), mods(&t[0])), (Some(105), 0));
 }
+
+// --- M8b (motore): alternative, scelta del docente, blocco di senso ---------------------------
+
+fn request_with<'a>(
+    text: &'a str,
+    forced: &'a [ForcedPick],
+    locks: &'a SenseLocks,
+    prefs: &'a DocPrefs,
+    memory: &'a UserMemory,
+) -> Request<'a> {
+    Request {
+        text,
+        prefs,
+        forced,
+        sense_locks: locks,
+        memory,
+    }
+}
+
+fn symbolize_with(text: &str, forced: &[ForcedPick], locks: &SenseLocks) -> Vec<Token> {
+    engine("", "").symbolize(&request_with(
+        text,
+        forced,
+        locks,
+        &DocPrefs::default(),
+        &UserMemory::default(),
+    ))
+}
+
+#[test]
+fn alternative_altre_letture_e_altri_sensi() {
+    let e = engine("", "");
+    let (prefs, memory, locks) = (
+        DocPrefs::default(),
+        UserMemory::default(),
+        SenseLocks::default(),
+    );
+    let req = request_with("porta", &[], &locks, &prefs, &memory);
+    // "porta" nome (101); il verbo "portare" (102) e' un'altra lettura.
+    let alts = e.alternatives(&req, (0, 5));
+    assert!(
+        alts.iter()
+            .any(|c| c.picto.id == 102 && c.keyword == "portare"),
+        "{alts:?}"
+    );
+    assert!(
+        alts.iter().all(|c| c.picto.id != 101),
+        "il simbolo scelto non e' fra le alternative"
+    );
+    // "pane" ha due pittogrammi (104 e 116): l'altro e' un altro senso.
+    let req = request_with("pane", &[], &locks, &prefs, &memory);
+    let chosen = e.symbolize(&req)[0].picto.unwrap().id;
+    let alts = e.alternatives(&req, (0, 4));
+    let other = if chosen == 104 { 116 } else { 104 };
+    assert!(alts.iter().any(|c| c.picto.id == other), "{alts:?}");
+    assert!(alts.iter().all(|c| !c.reason.is_empty()));
+    // Nessun doppione e al massimo 8.
+    let ids: Vec<u32> = alts.iter().map(|c| c.picto.id).collect();
+    let mut dedup = ids.clone();
+    dedup.sort_unstable();
+    dedup.dedup();
+    assert_eq!(ids.len(), dedup.len());
+    assert!(alts.len() <= 8);
+    // Intervallo che non e' un token, punteggiatura: nessuna alternativa.
+    assert!(e.alternatives(&req, (1, 3)).is_empty());
+}
+
+#[test]
+fn le_alternative_non_mostrano_i_pittogrammi_bloccati() {
+    let e = engine("", "pane\t116\tprova\n");
+    let (prefs, memory, locks) = (
+        DocPrefs::default(),
+        UserMemory::default(),
+        SenseLocks::default(),
+    );
+    let req = request_with("pane", &[], &locks, &prefs, &memory);
+    assert!(e
+        .alternatives(&req, (0, 4))
+        .iter()
+        .all(|c| c.picto.id != 116));
+}
+
+#[test]
+fn la_scelta_del_docente_vince_su_tutto() {
+    let forced = [ForcedPick {
+        span_utf16: (0, 4),
+        picto: 116,
+    }];
+    let t = symbolize_with("pane", &forced, &SenseLocks::default());
+    assert_eq!(t[0].picto.map(|p| p.id), Some(116));
+    assert_eq!(
+        (t[0].reason.picto, t[0].confidence, t[0].display),
+        (PictoReason::Teacher, 1.0, Display::Full)
+    );
+    // 0 = nessun simbolo; un intervallo che non e' un token non fa niente.
+    let none = [ForcedPick {
+        span_utf16: (0, 4),
+        picto: 0,
+    }];
+    let t = symbolize_with("pane", &none, &SenseLocks::default());
+    assert_eq!((t[0].picto, t[0].display), (None, Display::TextOnly));
+    let stray = [ForcedPick {
+        span_utf16: (1, 3),
+        picto: 116,
+    }];
+    assert_eq!(
+        symbolize_with("pane", &stray, &SenseLocks::default())[0]
+            .reason
+            .picto,
+        PictoReason::ExactForm
+    );
+}
+
+#[test]
+fn il_blocco_di_senso_vale_per_tutte_le_occorrenze_e_cede_alla_scelta() {
+    let mut locks = SenseLocks::default();
+    locks.insert("pane", Cat::Noun, 116);
+    let t = symbolize_with("pane e pane", &[], &locks);
+    let panes: Vec<_> = t.iter().filter(|x| x.surface == "pane").collect();
+    assert!(panes
+        .iter()
+        .all(|x| x.picto.map(|p| p.id) == Some(116) && x.reason.picto == PictoReason::SenseLock));
+    // Una scelta esplicita su una delle due vince sul blocco.
+    let forced = [ForcedPick {
+        span_utf16: (0, 4),
+        picto: 104,
+    }];
+    let t = symbolize_with("pane e pane", &forced, &locks);
+    assert_eq!(t[0].picto.map(|p| p.id), Some(104));
+    assert_eq!(t[2].picto.map(|p| p.id), Some(116));
+    // Un'altra categoria o un altro lemma non sono toccati.
+    assert_eq!(
+        symbolize_with("porta", &[], &locks)[0].picto.map(|p| p.id),
+        Some(101)
+    );
+}
+
+#[test]
+fn il_docente_puo_scegliere_un_simbolo_per_una_parola_sconosciuta() {
+    let forced = [ForcedPick {
+        span_utf16: (0, 6),
+        picto: 104,
+    }];
+    let t = symbolize_with("blorpf", &forced, &SenseLocks::default());
+    assert_eq!(t[0].kind, TokenKind::Unknown);
+    assert_eq!(
+        (t[0].picto.map(|p| p.id), t[0].display, t[0].reason.picto),
+        (Some(104), Display::Full, PictoReason::Teacher)
+    );
+}

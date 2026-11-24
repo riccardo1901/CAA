@@ -219,3 +219,39 @@ fn i_venti_casi_dorati_di_struttura_sui_dati_veri() {
         r.failures.join("\n")
     );
 }
+
+// --- M8b (motore): alternative con i dati veri ------------------------------------------------
+
+#[test]
+fn alternative_sui_dati_veri() {
+    use caa_engine::engine::{DocPrefs, Request, SenseLocks, UserMemory};
+    let engine = engine_or_skip!();
+    let (prefs, locks, memory) = (
+        DocPrefs::default(),
+        SenseLocks::default(),
+        UserMemory::default(),
+    );
+    let req = |text| Request {
+        text,
+        prefs: &prefs,
+        forced: &[],
+        sense_locks: &locks,
+        memory: &memory,
+    };
+    // "sale" (nome nella frase): fra le alternative ci deve essere un altro senso, mai il simbolo scelto.
+    let text = "Metti il sale nell'acqua.";
+    let tokens = engine.symbolize(&req(text));
+    let sale = tokens.iter().find(|t| t.surface == "sale").unwrap();
+    let alts = engine.alternatives(&req(text), sale.span_utf16);
+    assert!(!alts.is_empty() && alts.len() <= 8, "{alts:?}");
+    let chosen = sale.picto.unwrap().id;
+    assert!(alts.iter().all(|c| c.picto.id != chosen));
+    // Almeno una viene dall'altra lettura (salire).
+    assert!(
+        alts.iter().any(|c| c.reason.starts_with("altra lettura")),
+        "{alts:?}"
+    );
+    // Punteggiatura: niente.
+    let dot = tokens.iter().find(|t| t.surface == ".").unwrap();
+    assert!(engine.alternatives(&req(text), dot.span_utf16).is_empty());
+}

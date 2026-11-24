@@ -43,13 +43,33 @@ pub struct DocPrefs {
 /// Scelta esplicita del docente su un intervallo di testo (la usa la fase 8, M8).
 #[derive(Debug, Clone)]
 pub struct ForcedPick {
+    /// Intervallo di UN token (come lo restituisce il motore).
     pub span_utf16: (u32, u32),
+    /// Pittogramma scelto; 0 = nessun simbolo.
     pub picto: u32,
 }
 
-/// Lemma → pittogramma già scelto nel documento (blocco di senso, M8).
+/// Lemma → pittogramma già scelto nel documento (blocco di senso, SPEC.md fase 8, livello 2): se il
+/// docente ha scelto "pesca" = frutto, tutte le altre "pesca" (stessa categoria) prendono lo stesso.
 #[derive(Debug, Clone, Default)]
-pub struct SenseLocks {}
+pub struct SenseLocks {
+    locks: std::collections::HashMap<(String, Cat), u32>,
+}
+
+impl SenseLocks {
+    /// Blocca un lemma (come lo scrive Morph-it!, anche con maiuscole) e una categoria su un pittogramma.
+    pub fn insert(&mut self, lemma: &str, cat: Cat, picto: u32) {
+        self.locks.insert((normalize_key(lemma), cat), picto);
+    }
+
+    pub fn get(&self, lemma: &str, cat: Cat) -> Option<u32> {
+        self.locks.get(&(normalize_key(lemma), cat)).copied()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.locks.is_empty()
+    }
+}
 
 /// Correzioni passate del docente (M8).
 #[derive(Debug, Clone, Default)]
@@ -124,7 +144,10 @@ pub enum GroupRole {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Candidate {
     pub picto: PictoRef,
+    /// Parola chiave con cui si è trovato il pittogramma ("portare").
     pub keyword: String,
+    /// Perché è fra le alternative ("altra lettura: nome", "altro senso di «pane»").
+    pub reason: String,
 }
 
 /// Da dove viene una lettura.
@@ -188,6 +211,10 @@ pub enum PictoReason {
     Pronominal,
     /// Espressione multiparola di ARASAAC ("far colazione", "ferro da stiro").
     Multiword,
+    /// Scelta esplicita del docente su questa parola (livello 1).
+    Teacher,
+    /// Blocco di senso del documento (livello 2).
+    SenseLock,
 }
 
 /// Perché il motore ha scelto così (debug e menu delle alternative).
@@ -211,6 +238,8 @@ impl Reason {
             PictoReason::NumberWord => "numero in lettere",
             PictoReason::Pronominal => "verbo pronominale",
             PictoReason::Multiword => "espressione multiparola",
+            PictoReason::Teacher => "scelta del docente",
+            PictoReason::SenseLock => "stesso senso di tutto il testo",
         }
     }
 }
@@ -242,6 +271,8 @@ impl fmt::Display for Reason {
             PictoReason::NumberWord => "pittogramma del numero in lettere",
             PictoReason::Pronominal => "pittogramma del verbo pronominale",
             PictoReason::Multiword => "pittogramma dell'espressione multiparola",
+            PictoReason::Teacher => "pittogramma scelto dal docente",
+            PictoReason::SenseLock => "pittogramma scelto per tutto il testo",
         };
         write!(f, "{reading}; {picto}")
     }
@@ -376,6 +407,46 @@ const ELISION_TABLE: [(&str, &str, Cat); 18] = [
     ("buon'", "buono", Cat::Adj),
     ("sant'", "santo", Cat::Adj),
 ];
+
+/// Livelli 1 e 2 della scelta del pittogramma (SPEC.md, fase 8): la scelta esplicita del docente su un
+/// token vince su tutto, poi il blocco di senso per lemma e categoria. Il pittogramma 0 della scelta
+/// del docente vuol dire "nessun simbolo". Non tocca le parole nascoste.
+fn apply_choices(tokens: &mut [Token], locks: &SenseLocks, forced: &[ForcedPick]) {
+    for t in tokens.iter_mut() {
+        // Anche le parole sconosciute: sono proprio quelle per cui il docente sceglie a mano.
+        if !matches!(
+            t.kind,
+            TokenKind::Word | TokenKind::Number | TokenKind::Unknown
+        ) {
+            continue;
+        }
+        if let Some(f) = forced.iter().find(|f| f.span_utf16 == t.span_utf16) {
+            t.confidence = 1.0;
+            t.reason.picto = PictoReason::Teacher;
+            if f.picto == 0 {
+                t.picto = None;
+                t.display = Display::TextOnly;
+            } else {
+                t.picto = Some(PictoRef { id: f.picto });
+                if t.display != Display::Hidden {
+                    t.display = Display::Full;
+                }
+            }
+            continue;
+        }
+        if locks.is_empty() || t.display == Display::Hidden {
+            continue;
+        }
+        let Some(a) = &t.analysis else { continue };
+        if let Some(id) = locks.get(&a.lemma, a.cat) {
+            if t.picto.map(|p| p.id) != Some(id) {
+                t.picto = Some(PictoRef { id });
+                t.display = Display::Full;
+                t.reason.picto = PictoReason::SenseLock;
+            }
+        }
+    }
+}
 
 /// Fase 10: cosa si mostra delle parole funzionali. Non tocca i token dei gruppi (ausiliari e
 /// membri sono già nascosti, la testa resta visibile) né quelli senza pittogramma.
@@ -743,7 +814,78 @@ impl<D: AsRef<[u8]>> Engine<D> {
         self.apply_groups(&mut tokens);
         self.apply_multiword(&mut tokens);
         apply_policy(&mut tokens, req.prefs);
+        apply_choices(&mut tokens, req.sense_locks, req.forced);
         tokens
+    }
+
+    /// Le alternative al pittogramma scelto per il token che occupa `span_utf16` (fino a 8, senza
+    /// doppioni e senza i bloccati): prima gli altri pittogrammi delle altre letture, poi gli altri
+    /// sensi della stessa parola. Si calcolano a richiesta (il menu) e non per ogni token.
+    pub fn alternatives(&self, req: &Request, span_utf16: (u32, u32)) -> Vec<Candidate> {
+        let tokens = self.symbolize(req);
+        let Some(t) = tokens.iter().find(|t| t.span_utf16 == span_utf16) else {
+            return Vec::new();
+        };
+        self.alternatives_of(t)
+    }
+
+    fn alternatives_of(&self, t: &Token) -> Vec<Candidate> {
+        const MAX: usize = 8;
+        let Some(chosen) = &t.analysis else {
+            return Vec::new();
+        };
+        let key = normalize_key(&t.surface);
+        let lemma_key = normalize_key(&chosen.lemma);
+        let blocked = |id: u32| {
+            self.curated
+                .is_blocked(&[key.as_str(), lemma_key.as_str()], id)
+        };
+        let mut seen: std::collections::HashSet<u32> = t.picto.map(|p| p.id).into_iter().collect();
+        let mut out: Vec<Candidate> = Vec::new();
+        let mut push = |id: u32, keyword: &str, reason: String| {
+            if out.len() < MAX && !blocked(id) && seen.insert(id) {
+                out.push(Candidate {
+                    picto: PictoRef { id },
+                    keyword: keyword.to_string(),
+                    reason,
+                });
+            }
+        };
+        // 1. Le altre letture (altra categoria o altro lemma) con il loro pittogramma.
+        for r in &t.readings {
+            if r.cat == chosen.cat && r.lemma == chosen.lemma {
+                continue;
+            }
+            if let Some(c) = self.choose_picto(&key, r) {
+                let kw = normalize_key(&r.lemma);
+                push(
+                    c.id,
+                    &kw,
+                    format!("altra lettura: {} ({})", r.lemma, r.cat.name()),
+                );
+            }
+        }
+        // 2. Gli altri sensi della stessa parola: i pittogrammi della forma e del lemma, quelli della
+        // stessa categoria per primi, poi la prima parola chiave, poi i meno ambigui.
+        let mut keys = vec![key.clone()];
+        if lemma_key != key {
+            keys.push(lemma_key.clone());
+        }
+        for k in keys {
+            let mut entries = self.picto.lookup(&k);
+            entries.sort_by_key(|e| {
+                (
+                    !compatible(chosen.cat, e),
+                    !e.has_flag(picto_flags::FIRST_KEY),
+                    e.n_keys,
+                    e.id,
+                )
+            });
+            for e in entries {
+                push(e.id, &k, format!("altro senso di «{k}»"));
+            }
+        }
+        out
     }
 
     /// Fase 6: espressioni multiparola. Si cammina sulle unità (parole e gruppi verbali, senza gli
