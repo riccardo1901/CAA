@@ -41,7 +41,34 @@ export const schema = new Schema({
         cat: { default: "" },
       },
       inclusive: false,
-      toDOM: () => ["span", { class: "pk" }, 0],
+      // Gli attributi viaggiano nel DOM: copia, taglia e incolla (anche da un altro punto del testo) portano con sé le scelte.
+      toDOM: (mark) => [
+        "span",
+        {
+          class: "pk",
+          "data-word": mark.attrs.word as string,
+          "data-picto": String(mark.attrs.picto),
+          "data-lock": String(mark.attrs.lock),
+          "data-lemma": mark.attrs.lemma as string,
+          "data-cat": mark.attrs.cat as string,
+        },
+        0,
+      ],
+      parseDOM: [
+        {
+          tag: "span.pk",
+          getAttrs: (dom) => {
+            const e = dom as HTMLElement;
+            return {
+              word: e.dataset.word ?? "",
+              picto: Number(e.dataset.picto ?? 0) || 0,
+              lock: e.dataset.lock === "1" ? 1 : 0,
+              lemma: e.dataset.lemma ?? "",
+              cat: e.dataset.cat ?? "",
+            };
+          },
+        },
+      ],
     },
   },
 });

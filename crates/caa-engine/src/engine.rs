@@ -425,7 +425,10 @@ fn apply_choices(tokens: &mut [Token], locks: &SenseLocks, forced: &[ForcedPick]
             t.reason.picto = PictoReason::Teacher;
             if f.picto == 0 {
                 t.picto = None;
-                t.display = Display::TextOnly;
+                // Una parola nascosta dalla politica (articoli in "Essenziale") resta nascosta.
+                if t.display != Display::Hidden {
+                    t.display = Display::TextOnly;
+                }
             } else {
                 t.picto = Some(PictoRef { id: f.picto });
                 if t.display != Display::Hidden {
@@ -439,6 +442,8 @@ fn apply_choices(tokens: &mut [Token], locks: &SenseLocks, forced: &[ForcedPick]
         }
         let Some(a) = &t.analysis else { continue };
         if let Some(id) = locks.get(&a.lemma, a.cat) {
+            // Il docente ha deciso il senso per tutto il testo: la parola non e' piu' da controllare.
+            t.confidence = 1.0;
             if t.picto.map(|p| p.id) != Some(id) {
                 t.picto = Some(PictoRef { id });
                 t.display = Display::Full;

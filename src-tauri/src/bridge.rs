@@ -662,5 +662,28 @@ mod tests {
         assert!(p3.picto.is_none() && !p3.placeholder && p3.teacher);
         // La ricerca trova per inizio di parola.
         assert!(!engine.search_pictos("pan", 24).is_empty());
+        // Con prefissi corti ("ca") le chiavi sono migliaia: le piu' corte devono venire prima delle
+        // altre, non le prime in ordine alfabetico ("caa", "cabina"...).
+        let ca = engine.search_pictos("ca", 24);
+        let short = ca.iter().filter(|c| c.keyword.chars().count() <= 3).count();
+        assert!(
+            ca.len() == 24 && short >= 1,
+            "{:?}",
+            ca.iter().map(|c| &c.keyword).collect::<Vec<_>>()
+        );
+        assert!(
+            engine
+                .search_pictos("cas", 24)
+                .iter()
+                .any(|c| c.keyword == "casa"),
+            "«cas» deve trovare «casa»"
+        );
+        assert!(
+            engine
+                .search_pictos("ca", 5000)
+                .iter()
+                .any(|c| c.keyword == "casa"),
+            "«ca» deve poter trovare «casa»"
+        );
     }
 }

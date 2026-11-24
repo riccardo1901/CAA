@@ -17,7 +17,6 @@ export function createEditor(mount: HTMLElement, doc: PMNode, mode: Mode = "A"):
       keymap({
         "Mod-z": undo,
         "Mod-y": redo,
-        "Ctrl-y": redo,
         "Shift-Mod-z": redo,
         "Mod-b": toggleBoldWords,
         // Barra laterale dei simboli (M8b).

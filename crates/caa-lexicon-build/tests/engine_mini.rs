@@ -924,3 +924,37 @@ fn la_ricerca_libera_trova_per_chiave_e_per_prefisso() {
         ids("mangiato", 8)
     );
 }
+
+#[test]
+fn un_blocco_di_senso_toglie_il_dubbio_anche_se_il_simbolo_e_gia_quello() {
+    // "porta" e' ambigua (sottolineata); il docente ha deciso il senso per tutto il testo.
+    assert!(symbolize_with("porta", &[], &SenseLocks::default())[0].confidence < 0.6);
+    for picto in [101, 104] {
+        let mut locks = SenseLocks::default();
+        locks.insert("porta", Cat::Noun, picto);
+        let t = symbolize_with("porta", &[], &locks);
+        assert_eq!(t[0].confidence, 1.0, "blocco su {picto}");
+        assert_eq!(t[0].picto.map(|p| p.id), Some(picto));
+    }
+}
+
+#[test]
+fn nessun_simbolo_non_rende_visibile_una_parola_nascosta() {
+    // In Essenziale l'articolo e' nascosto: "nessun simbolo" scelto dal docente non lo riporta in vista.
+    let prefs = DocPrefs {
+        function_policy: FunctionPolicy::Essential,
+    };
+    let forced = [ForcedPick {
+        span_utf16: (0, 2),
+        picto: 0,
+    }];
+    let t = engine("", "").symbolize(&Request {
+        text: "la porta",
+        prefs: &prefs,
+        forced: &forced,
+        sense_locks: &SenseLocks::default(),
+        memory: &UserMemory::default(),
+    });
+    assert_eq!(t[0].display, Display::Hidden);
+    assert_eq!(t[0].picto, None);
+}

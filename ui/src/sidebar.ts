@@ -46,6 +46,8 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
   let candidates: CandidateDto[] = [];
   let results: CandidateDto[] = [];
   let searching = false;
+  // Il ritardo della ricerca è unico: passando a un'altra parola quello vecchio si annulla.
+  let searchTimer: ReturnType<typeof setTimeout> | null = null;
   // La casella «usa per tutto il testo» resta come l'ha messa il docente anche quando la barra si ridisegna.
   let lockAll = true;
 
@@ -64,6 +66,8 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
 
   function show(t: TokenAt, focusSide: boolean): void {
     const mine = ++generation;
+    if (searchTimer) clearTimeout(searchTimer);
+    searchTimer = null;
     target = t;
     sig = signature(t);
     shownWord = t.para.text.slice(t.token.s, t.token.e);
@@ -99,7 +103,9 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
     allLabel.title = canLock ? "Tutte le parole uguali del testo prendono questo simbolo" : "Parola non riconosciuta: vale solo qui";
 
     const choose = (choice: Choice): void => {
-      applyChoice(view, { paraPos: t.paraPos, s: t.token.s, e: t.token.e, lemma: t.token.lemma, cat: t.token.cat }, choice, all.checked && canLock);
+      // La posizione della parola si legge adesso: il testo può essere cambiato da quando la barra l'ha mostrata.
+      const w = target ?? t;
+      applyChoice(view, { paraPos: w.paraPos, s: w.token.s, e: w.token.e, lemma: w.token.lemma, cat: w.token.cat }, choice, all.checked && canLock);
       // La barra resta sulla parola e si aggiorna quando il motore risponde; il cursore torna nel testo.
       view.focus();
     };
@@ -142,12 +148,14 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
     search.type = "search";
     search.placeholder = "Cerca un simbolo…";
     search.setAttribute("aria-label", "Cerca un simbolo");
-    let timer: ReturnType<typeof setTimeout> | null = null;
+    let resultsQuery = "";
     const runSearch = (): void => {
+      if (generation !== mine) return;
       const q = search.value.trim();
       if (q === "") {
         // Query vuota: tornano le alternative della parola.
         results = [];
+        resultsQuery = "";
         searching = false;
         status.textContent = candidates.length ? "" : "Nessuna altra alternativa: puoi cercare un simbolo";
         render(candidates, true);
@@ -158,6 +166,7 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
         (r) => {
           if (generation !== mine || search.value.trim() !== q) return;
           results = r;
+          resultsQuery = q;
           status.textContent = r.length ? "" : "Nessun simbolo trovato";
           render(r, false);
         },
@@ -168,12 +177,17 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
     };
     search.addEventListener("input", () => {
       if (search.value.trim() !== "") searching = true;
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(runSearch, 150);
+      if (searchTimer) clearTimeout(searchTimer);
+      searchTimer = setTimeout(runSearch, 150);
     });
     search.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && results[0]) {
-        e.preventDefault();
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      // I risultati devono essere quelli di quello che è scritto adesso, non della ricerca di prima.
+      if (search.value.trim() !== resultsQuery) {
+        if (searchTimer) clearTimeout(searchTimer);
+        runSearch();
+      } else if (results[0]) {
         choose({ kind: "picto", id: results[0].picto });
       }
     });
@@ -184,8 +198,9 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
 
     client.alternatives(t.para, t.policy, t.locks, t.token.s, t.token.e).then(
       (list) => {
-        if (generation !== mine || searching) return;
-        candidates = list;
+        if (generation !== mine) return;
+        candidates = list; // si tengono anche se si sta cercando: servono quando si svuota la ricerca
+        if (searching) return;
         status.textContent = list.length ? "" : "Nessuna altra alternativa: puoi cercare un simbolo";
         render(list, true);
       },
@@ -237,6 +252,7 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
       return;
     }
     if (signature(t) !== sig) show(t, false);
+    else target = t; // stessa parola e stessi simboli: si aggiornano solo le posizioni
   }
   unsubscribe = onEngineUpdate(refresh);
 

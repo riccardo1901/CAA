@@ -37,10 +37,10 @@ const MOCK = `
     }
     return out;
   }
-  window.__mock = { calls, delay: 4, fail: 0, alts: [], searches: [] };
+  window.__mock = { calls, delay: 4, fail: 0, alts: [], searches: [], altDelay: 3 };
   return {
     symbolize: (paras, policy, locks) => { calls.push({ texts: paras.map((p) => p.text), paras, locks, policy }); return new Promise((r, rej) => setTimeout(() => { if (window.__mock.fail > 0) { window.__mock.fail--; rej(new Error('motore guasto')); } else r(paras.map((p) => tokens(p.text, policy, p.forced, locks))); }, window.__mock.delay)); },
-    alternatives: (para, policy, locks, s, e) => { window.__mock.alts.push({ para, s, e }); return new Promise((r) => setTimeout(() => r([1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => ({ picto: 1000 + i, keyword: 'alt' + i, reason: 'altro senso', image: i !== 3 }))), 3)); },
+    alternatives: (para, policy, locks, s, e) => { window.__mock.alts.push({ para, s, e }); return new Promise((r) => setTimeout(() => r([1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => ({ picto: 1000 + i, keyword: 'alt' + i, reason: 'altro senso', image: i !== 3 }))), window.__mock.altDelay)); },
     search: (q) => { window.__mock.searches.push(q); return new Promise((r) => setTimeout(() => r(q === 'zzz' ? [] : [{ picto: 9001, keyword: q + 'a', reason: 'cercato', image: true }, { picto: 9002, keyword: q + 'b', reason: 'cercato', image: true }]), 3)); },
     url: (id) => svg(id),
   };
@@ -621,4 +621,63 @@ test("F8 ripetuto passa di parola in parola anche con il fuoco nella barra", asy
   expect(await head()).toBe(36);
   // Una sola parola evidenziata alla volta.
   await expect(page.locator(".w.cur")).toHaveCount(1);
+});
+
+// ---- Revisione di M8b ----
+
+test("scrivendo prima della parola mostrata, la scelta va sulla parola giusta", async ({ page }) => {
+  await open(page, "Marco mangia pane");
+  await clickSymbol(page, "pane");
+  await expect(page.locator(".pm-cell")).toHaveCount(8);
+  await page.evaluate(() => (window as any).caaProto.setCaret(1));
+  await page.keyboard.type("Il ");
+  await page.waitForFunction(() => (window as any).caaProto.engineStats().pending === 0);
+  await page.locator(".pm-cell").nth(1).click();
+  await expect.poll(async () => (await docPicks(page)).length).toBe(1);
+  const picks = await docPicks(page);
+  expect(picks[0]).toMatchObject({ text: "pane", word: "pane", picto: 1002 });
+});
+
+test("le alternative che arrivano mentre si cerca non si perdono", async ({ page }) => {
+  await open(page, "Marco mangia pane");
+  await page.evaluate(() => { (window as any).__mock.altDelay = 500; });
+  await clickSymbol(page, "pane");
+  await page.locator(".pm-search").fill("ma");
+  await expect(page.locator(".pm-cell")).toHaveCount(2);
+  await page.waitForTimeout(700); // le alternative arrivano mentre la ricerca è ancora scritta
+  await page.locator(".pm-search").fill("");
+  await expect(page.locator(".pm-cell")).toHaveCount(8);
+  await page.locator(".side").focus();
+  await page.keyboard.press("2");
+  await expect.poll(async () => (await docPicks(page))[0]).toMatchObject({ picto: 1002 });
+});
+
+test("una ricerca appena scritta non rovina la parola scelta subito dopo", async ({ page }) => {
+  await open(page, "Marco mangia pane");
+  await clickSymbol(page, "pane");
+  await page.locator(".pm-search").fill("ca");
+  await clickSymbol(page, "mangia"); // entro i 150 ms della ricerca
+  await expect(page.locator(".pm-head")).toContainText("mangia");
+  await expect(page.locator(".pm-cell")).toHaveCount(8);
+  await page.waitForTimeout(400);
+  await expect(page.locator(".pm-cell")).toHaveCount(8);
+  await page.locator(".side").focus();
+  await page.keyboard.press("1");
+  await expect.poll(async () => (await docPicks(page))[0]).toMatchObject({ text: "mangia", picto: 1001 });
+});
+
+test("copiando e incollando una frase le scelte la seguono", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await open(page, "Marco mangia pane");
+  await clickSymbol(page, "pane");
+  await page.locator(".pm-all input").uncheck();
+  await page.locator(".pm-cell").nth(1).click();
+  await expect.poll(async () => (await docPicks(page)).length).toBe(1);
+  await page.locator(".ProseMirror").click();
+  await page.keyboard.press("Control+a");
+  await page.keyboard.press("Control+c");
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("Control+v");
+  await expect.poll(async () => (await docPicks(page)).length).toBe(2);
 });

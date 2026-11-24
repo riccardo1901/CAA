@@ -471,11 +471,12 @@ impl<D: AsRef<[u8]>> PictoIndex<D> {
             .keys
             .search(Str::new(query).starts_with())
             .into_stream();
-        // Tetto sulle chiavi lette: un prefisso di una lettera ne ha migliaia.
+        // Si leggono tutte le chiavi con quel prefisso, perche' le piu' corte devono venire per prime
+        // (con "ca" il taglio alfabetico perdeva "casa"); il tetto e' solo una guardia.
         while let Some((k, _)) = stream.next() {
             if k != query.as_bytes() {
                 keys.push(String::from_utf8_lossy(k).into_owned());
-                if keys.len() >= 500 {
+                if keys.len() >= 100_000 {
                     break;
                 }
             }

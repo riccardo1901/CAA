@@ -42,7 +42,22 @@ M8b editor (menu alternative, "Cerca…", scelte come marcature con annulla/ripe
 ## Esito delle prove a mano (Windows)
 Tutte le prove di `docs/PROVE-M8b.md` superate dopo le correzioni sopra ("M8b ok"). Il Ctrl+Y non funzionava all'inizio e non è stato riprodotto in Chromium: aggiunti Ctrl-y esplicito, Ctrl+Maiusc+Z e i pulsanti Annulla/Ripeti.
 
+## Revisione indipendente (Opus) e correzioni
+Sei difetti confermati, cinque riprodotti con una prova prima della correzione:
+- **Alta**: la barra teneva le posizioni vecchie; scrivendo prima della parola mostrata la scelta finiva su testo sbagliato. Ora la posizione si legge al momento della scelta.
+- **Copia e incolla** perdeva le scelte (il mark non aveva `parseDOM`): ora le scelte seguono il testo copiato o spostato.
+- **Ricerca**: le alternative arrivate mentre si cercava andavano perse; il ritardo della ricerca vecchia rovinava la parola nuova; Invio poteva scegliere il risultato della ricerca precedente.
+- **Ricerca per prefissi corti** saltava parole comuni ("ca" non trovava "casa"): il taglio a 500 chiavi era alfabetico, prima dell'ordine per lunghezza.
+- **Motore**: il blocco di senso non toglieva la sottolineatura di dubbio; "Nessun simbolo" rendeva visibile un articolo nascosto in "Essenziale". Metriche invariate (dorati 48/48, strutture 20/20, corpus 6,9 e 13,4).
+
+Rimandati o accettati:
+- **Blocco di senso legato a una parola** (divergenza da `SPEC.md`, dove `sense_locks` è un dato del documento): se si cancella la parola su cui si è fatta la scelta "per tutto il testo", le altre tornano automatiche. Si risolve con il formato del documento di M9 (`sense_locks` nel manifest).
+- Una lettera scritta davanti a una parola scelta e poi cancellata fa perdere la scelta (annulla la rimette): l'allineamento dei mark alle parole intere è quello che evita i simboli separati dalla parola (M3).
+- Il costo della chiave di cache cresce con paragrafi per lunghezza della firma: oggi trascurabile (0,3 ms a battuta), da memorizzare per nodo se i documenti diventano molto lunghi.
+- **Ctrl+Y** non riprodotto né spiegato dal codice: restano le ipotesi "il tasto non arriva alla pagina in WebView2" o "il fuoco non era nell'editor". Restano Ctrl+Maiusc+Z e i pulsanti; se torna a dare problemi si aggiunge un registro dei tasti nella build Windows.
+
 ## Decisioni
+- Il blocco di senso porta la parola a confidenza 1 (il docente ha deciso il senso): non resta "da controllare".
 - "Nessun simbolo" e "Solo testo" valgono per la sola parola scelta (la spunta si applica solo ai pittogrammi veri).
 - La correzione vale nel documento aperto; la memoria fra documenti arriva con M9.
 - "Tab fuori dal testo" per la parola dubbia non c'è: F8 e clic sul contatore.
