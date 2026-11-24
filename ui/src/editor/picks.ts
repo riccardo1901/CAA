@@ -98,8 +98,8 @@ export interface WordRef {
 
 /**
  * Applica una scelta a una parola in un'unica transazione (un solo passo di annulla). Con `all`, e solo
- * per un pittogramma vero, la scelta diventa un blocco di senso del documento: i blocchi precedenti
- * dello stesso lemma si sciolgono.
+ * per un pittogramma vero, la scelta diventa un blocco di senso del documento: le scelte precedenti
+ * delle parole con lo stesso lemma (singole o in blocco) si sciolgono.
  */
 export function applyChoice(view: EditorView, w: WordRef, choice: Choice, all: boolean): void {
   const { doc } = view.state;
@@ -115,14 +115,13 @@ export function applyChoice(view: EditorView, w: WordRef, choice: Choice, all: b
     const lock = all && choice.kind === "picto" && w.lemma !== "" && w.cat !== "";
     const word = para.textContent.slice(w.s, w.e).toLowerCase();
     if (lock) {
-      // Un solo blocco per lemma: si sciolgono gli altri (le scelte sulle singole parole restano).
+      // «Tutto il testo» vale per tutte le parole uguali (stesso lemma e categoria): le loro scelte
+      // precedenti, singole o di un blocco più vecchio, si sciolgono; altrimenti vincerebbero sul blocco.
       tr.doc.descendants((node, pos) => {
         if (!node.isTextblock) return true;
         for (const p of paraInfo(node).picks) {
-          if (p.lock && p.cat === w.cat && p.lemma.toLowerCase() === w.lemma.toLowerCase() && !(pos === w.paraPos && p.s === w.s)) {
-            const a = pos + 1 + p.s;
-            const b = pos + 1 + p.e;
-            tr.removeMark(a, b, type).addMark(a, b, type.create({ word: p.word, picto: p.picto, lock: 0, lemma: p.lemma, cat: p.cat }));
+          if (p.cat === w.cat && p.lemma.toLowerCase() === w.lemma.toLowerCase() && !(pos === w.paraPos && p.s === w.s)) {
+            tr.removeMark(pos + 1 + p.s, pos + 1 + p.e, type);
           }
         }
         return false;

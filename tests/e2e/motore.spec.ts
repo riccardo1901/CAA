@@ -372,10 +372,15 @@ test("«usa per tutto il testo»: tutte le parole uguali, o solo quella", async 
   await page.locator(".pm-cell").nth(0).click();
   await expect.poll(async () => new Set(await page.locator(".w", { hasText: /^pane$/ }).evaluateAll((els) => els.map((e) => e.getAttribute("style")))).size).toBe(2);
   expect(await docPicks(page)).toHaveLength(2);
-  // Una scelta con blocco su un'altra occorrenza scioglie il blocco precedente: resta un solo lock.
+  // Una scelta con blocco («tutto il testo») sostituisce anche le scelte singole delle parole uguali:
+  // resta una sola scelta e tutte le occorrenze hanno lo stesso simbolo.
   await clickSymbol(page, "pane", 2);
+  await expect(page.locator(".pm-all input")).not.toBeChecked(); // la spunta tolta prima resta tolta
+  await page.locator(".pm-all input").check();
   await page.locator(".pm-cell").nth(4).click();
-  await expect.poll(async () => (await docPicks(page)).filter((p) => p.lock === 1).length).toBe(1);
+  await expect.poll(async () => (await docPicks(page)).length).toBe(1);
+  expect((await docPicks(page))[0]).toMatchObject({ lock: 1, picto: 1005 });
+  await expect.poll(async () => new Set(await page.locator(".w", { hasText: /^pane$/ }).evaluateAll((els) => els.map((e) => e.getAttribute("style")))).size).toBe(1);
 });
 
 test("tastiera: Alt+↓ riempie la barra, 1–8 sceglie, Esc torna al testo", async ({ page }) => {
