@@ -55,7 +55,20 @@ export interface CandidateDto {
   image: boolean;
 }
 
-export type Policy = "complete" | "essential";
+/** Politica delle parole funzionali: `complete`, `essential` o `custom:articles=reduced;clitics=full;che=text;preps=full;conj=full`. */
+export type Policy = string;
+
+/** Cosa si mostra di una categoria: simbolo, simbolo ridotto (solo articoli), solo testo, nascosto. */
+export type Rule = "full" | "reduced" | "text" | "hidden";
+
+/** La tabella del preset «Personalizzato». */
+export interface PolicyTable {
+  articles: Rule;
+  clitics: Rule;
+  che: Rule;
+  preps: Rule;
+  conj: Rule;
+}
 
 export interface EngineInfo {
   ok: boolean;

@@ -19,6 +19,7 @@ una\tuno\tART-F:s
 bella\tbello\tADJ:pos+f+s
 giornata\tgiornata\tNOUN-F:s
 perché\tperché\tCON
+ma\tma\tCON
 po'\tpo'\tADV
 un\tuno\tART-M:s
 di\tdi\tPRE
@@ -141,7 +142,8 @@ pub const ARASAAC: &str = r#"[
  {"_id":135,"keywords":[{"type":5,"keyword":"le tre"}]},
  {"_id":136,"keywords":[{"type":3,"keyword":"esserci"}]},
  {"_id":137,"keywords":[{"type":3,"keyword":"mettere le scarpe"}]},
- {"_id":138,"keywords":[{"type":6,"keyword":"che"}]}
+ {"_id":138,"keywords":[{"type":6,"keyword":"che"}]},
+ {"_id":139,"keywords":[{"type":6,"keyword":"ma"}]}
 ]"#;
 
 pub fn engine(lemma_picto: &str, blocklist: &str) -> Engine<Vec<u8>> {

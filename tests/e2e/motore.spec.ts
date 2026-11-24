@@ -16,7 +16,11 @@ const MOCK = `
       const punct = !/[\\p{L}\\d]/u.test(w);
       let t = { s, e, kind: punct ? 'punct' : 'word', display: punct ? 'text' : 'full', picto: punct ? null : (w.toLowerCase().charCodeAt(0) * 7 + w.length), image: !punct, mods: 0, group: 0, head: false, confidence: 1, doubtful: false, placeholder: false };
       const lw = w.toLowerCase();
-      if (lw === 'il' || lw === 'la') t.display = policy === 'essential' ? 'hidden' : 'reduced';
+      if (lw === 'il' || lw === 'la') {
+        const m = /articles=(\\w+)/.exec(policy);
+        const rule = policy === 'essential' ? 'hidden' : policy.startsWith('custom:') ? (m ? m[1] : 'reduced') : 'reduced';
+        t.display = { reduced: 'reduced', full: 'full', text: 'text', hidden: 'hidden' }[rule];
+      }
       if (lw === 'sera') { t.picto = null; t.image = false; t.display = 'text'; t.placeholder = true; }
       if (lw === 'dubbio') { t.confidence = 0.4; t.doubtful = true; }
       if (lw === 'andato') t.mods = 2;
@@ -680,4 +684,44 @@ test("copiando e incollando una frase le scelte la seguono", async ({ page, cont
   await page.keyboard.press("Enter");
   await page.keyboard.press("Control+v");
   await expect.poll(async () => (await docPicks(page)).length).toBe(2);
+});
+
+// ---- M8c-1: politica «Personalizzato» ----
+
+test("«Personalizzato»: una tabella per categoria, subito visibile e ricordata", async ({ page }) => {
+  await open(page, "La casa il pane.");
+  await expect(page.getByRole("button", { name: "Modifica…" })).toBeHidden();
+  await page.selectOption("select[aria-label='Politica delle parole funzionali']", "custom");
+  // Si apre la tabella: cinque categorie, con le sole opzioni sensate.
+  const dialog = page.locator(".policy-dialog");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator("tr")).toHaveCount(5);
+  await expect(dialog.getByLabel("Articoli").locator("option")).toHaveText(["Simbolo ridotto", "Simbolo pieno", "Solo testo", "Nascosto"]);
+  await expect(dialog.getByLabel("Preposizioni").locator("option")).toHaveText(["Simbolo", "Solo testo"]);
+  await expect(dialog.getByLabel("Congiunzioni").locator("option")).toHaveText(["Simbolo", "Solo testo"]);
+  await expect(dialog.getByLabel("«che»").locator("option")).toHaveText(["Simbolo", "Solo testo", "Nascosto"]);
+  await expect(dialog).toContainText("Ausiliari");
+  // La tabella parte come «Completo»: articoli ridotti.
+  await expect(page.locator(".w.red")).toHaveCount(2);
+  // Cambiando una riga il testo cambia subito e il motore riceve la tabella.
+  await dialog.getByLabel("Articoli").selectOption("hidden");
+  await expect(page.locator(".w.hid")).toHaveCount(2);
+  await expect(page.locator(".w.red")).toHaveCount(0);
+  const policies = await page.evaluate(() => (window as any).__mock.calls.map((c: { policy: string }) => c.policy));
+  expect(policies[policies.length - 1]).toBe("custom:articles=hidden;clitics=full;che=text;preps=full;conj=full");
+  await dialog.getByLabel("Articoli").selectOption("text");
+  await expect(page.locator(".w.hid")).toHaveCount(0);
+  await dialog.getByLabel("Articoli").selectOption("hidden");
+  await dialog.getByRole("button", { name: "Chiudi" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.locator(".statusbar")).toContainText("Parole funzionali: Personalizzato");
+  // Tornando a «Completo» e poi a «Personalizzato» la tabella è ancora quella; «Modifica…» la riapre.
+  await page.selectOption("select[aria-label='Politica delle parole funzionali']", "complete");
+  await expect(page.locator(".w.red")).toHaveCount(2);
+  await expect(page.getByRole("button", { name: "Modifica…" })).toBeHidden();
+  await page.selectOption("select[aria-label='Politica delle parole funzionali']", "custom");
+  await expect(page.locator(".w.hid")).toHaveCount(2);
+  await page.getByRole("button", { name: "Chiudi" }).click();
+  await page.getByRole("button", { name: "Modifica…" }).click();
+  await expect(dialog.getByLabel("Articoli")).toHaveValue("hidden");
 });

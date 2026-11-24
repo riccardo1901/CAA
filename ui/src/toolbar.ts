@@ -2,7 +2,7 @@
 // (parole da controllare, numero di parole, stato del motore).
 import { redo, redoDepth, undo, undoDepth } from "prosemirror-history";
 import type { EditorView } from "prosemirror-view";
-import type { EngineInfo, Policy } from "./engine/client";
+import type { EngineInfo, Policy, PolicyTable, Rule } from "./engine/client";
 import { engineStats, setPolicy } from "./editor/engineSymbols";
 import { hooks } from "./editor/menuHooks";
 
@@ -16,13 +16,81 @@ const SIZES: Array<[string, number]> = [
 const POLICIES: Array<[Policy, string]> = [
   ["complete", "Completo"],
   ["essential", "Essenziale"],
+  ["custom", "Personalizzato"],
 ];
+
+const RULE_LABEL: Record<Rule, string> = { full: "Simbolo", reduced: "Simbolo ridotto", text: "Solo testo", hidden: "Nascosto" };
+
+/** Le righe della tabella «Personalizzato» e le opzioni sensate per ciascuna (SPEC.md, fase 10). */
+const TABLE_ROWS: Array<{ key: keyof PolicyTable; label: string; options: Rule[]; labels?: Partial<Record<Rule, string>> }> = [
+  { key: "articles", label: "Articoli", options: ["reduced", "full", "text", "hidden"], labels: { full: "Simbolo pieno" } },
+  { key: "clitics", label: "Pronomi clitici (non riflessivi)", options: ["full", "text", "hidden"] },
+  { key: "che", label: "«che»", options: ["full", "text", "hidden"] },
+  { key: "preps", label: "Preposizioni", options: ["full", "text"] },
+  { key: "conj", label: "Congiunzioni", options: ["full", "text"] },
+];
+
+/** La tabella di partenza è quella di «Completo». */
+const COMPLETE_TABLE: PolicyTable = { articles: "reduced", clitics: "full", che: "text", preps: "full", conj: "full" };
+
+/** Il valore da mandare al motore per una tabella. */
+export function tablePolicy(t: PolicyTable): Policy {
+  return `custom:articles=${t.articles};clitics=${t.clitics};che=${t.che};preps=${t.preps};conj=${t.conj}`;
+}
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls = "", text = ""): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
   if (text) e.textContent = text;
   return e;
+}
+
+interface PolicyDialog {
+  root: HTMLElement;
+  show(): void;
+  hide(): void;
+}
+
+/** La tabella del preset «Personalizzato»: una riga per categoria, le modifiche valgono subito. */
+function createPolicyDialog(table: PolicyTable, changed: () => void, closed: () => void): PolicyDialog {
+  const root = el("div", "policy-dialog");
+  root.hidden = true;
+  root.setAttribute("role", "dialog");
+  root.setAttribute("aria-label", "Parole funzionali personalizzate");
+  root.append(el("h2", "", "Parole funzionali"));
+  const grid = el("table");
+  for (const row of TABLE_ROWS) {
+    const tr = el("tr");
+    const select = el("select");
+    select.setAttribute("aria-label", row.label);
+    for (const rule of row.options) {
+      const o = el("option", "", row.labels?.[rule] ?? RULE_LABEL[rule]);
+      o.value = rule;
+      select.append(o);
+    }
+    select.value = table[row.key];
+    select.addEventListener("change", () => {
+      table[row.key] = select.value as Rule;
+      changed();
+    });
+    const th = el("th", "", row.label);
+    const td = el("td");
+    td.append(select);
+    tr.append(th, td);
+    grid.append(tr);
+  }
+  const note = el("p", "note", "Ausiliari dei tempi composti: sempre nascosti (il tempo è nel segno). Punteggiatura: sempre testo.");
+  const close = el("button", "", "Chiudi");
+  close.type = "button";
+  const hide = (): void => {
+    root.hidden = true;
+  };
+  close.addEventListener("click", () => {
+    hide();
+    closed();
+  });
+  root.append(grid, note, close);
+  return { root, show: () => (root.hidden = false), hide };
 }
 
 export interface Bars {
@@ -79,11 +147,28 @@ export function createBars(
     o.value = value;
     select.appendChild(o);
   }
-  select.addEventListener("change", () => {
-    setPolicy(view, select.value as Policy);
+  // La tabella di «Personalizzato» sta nel documento aperto (con M9 si salverà nel file).
+  const table: PolicyTable = { ...COMPLETE_TABLE };
+  const editBtn = el("button", "", "Modifica…");
+  editBtn.type = "button";
+  editBtn.hidden = true;
+  const dialog = createPolicyDialog(table, () => {
+    setPolicy(view, tablePolicy(table));
     refresh();
+  }, () => view.focus());
+  const applyPolicy = (): void => {
+    const custom = select.value === "custom";
+    editBtn.hidden = !custom;
+    if (!custom) dialog.hide();
+    setPolicy(view, custom ? tablePolicy(table) : (select.value as Policy));
+    refresh();
+  };
+  select.addEventListener("change", () => {
+    applyPolicy();
+    if (select.value === "custom") dialog.show();
   });
-  policyLabel.appendChild(select);
+  editBtn.addEventListener("click", () => dialog.show());
+  policyLabel.append(select, " ", editBtn);
 
   // Contorno: ogni coppia simbolo-parola in una "card" (impostazione dell'editor, ricordata sul computer).
   const cardsLabel = el("label", "", " ");
@@ -127,7 +212,7 @@ export function createBars(
     return b;
   });
 
-  toolbar.append(doc, el("span", "grow"), cardsLabel, policyLabel, sizes);
+  toolbar.append(doc, el("span", "grow"), cardsLabel, policyLabel, sizes, dialog.root);
 
   const wordsInfo = el("span");
   const doubtInfo = el("span", "link");

@@ -23,8 +23,78 @@ use crate::viterbi::{decode, Node, Weights};
 // Contratto (SPEC.md, "Contratto (Rust)")
 // ---------------------------------------------------------------------------------------
 
+/// Cosa si mostra di una categoria di parole funzionali (SPEC.md, fase 10).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FunctionRule {
+    /// Il simbolo come lo ha scelto il motore (senza simbolo resta solo testo).
+    Full,
+    /// Simbolo piccolo (solo articoli).
+    Reduced,
+    /// Solo la parola, senza simbolo.
+    TextOnly,
+    /// La parola resta nel testo ma senza simbolo e attenuata.
+    Hidden,
+}
+
+/// La tabella per categoria del preset "Personalizzato" (SPEC.md, fase 10). Ausiliari nei tempi
+/// composti, riflessivi e punteggiatura non si configurano: hanno regole fisse.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PolicyTable {
+    pub articles: FunctionRule,
+    /// Clitici non riflessivi.
+    pub clitics: FunctionRule,
+    /// "che" relativo o congiunzione.
+    pub che: FunctionRule,
+    /// Preposizioni semplici e articolate ("nella" mostra "in").
+    pub prepositions: FunctionRule,
+    pub conjunctions: FunctionRule,
+}
+
+impl PolicyTable {
+    /// Articoli ridotti, clitici col simbolo del pronome, "che" come testo.
+    pub fn complete() -> Self {
+        PolicyTable {
+            articles: FunctionRule::Reduced,
+            clitics: FunctionRule::Full,
+            che: FunctionRule::TextOnly,
+            prepositions: FunctionRule::Full,
+            conjunctions: FunctionRule::Full,
+        }
+    }
+
+    /// Articoli, clitici non riflessivi e "che" nascosti.
+    pub fn essential() -> Self {
+        PolicyTable {
+            articles: FunctionRule::Hidden,
+            clitics: FunctionRule::Hidden,
+            che: FunctionRule::Hidden,
+            prepositions: FunctionRule::Full,
+            conjunctions: FunctionRule::Full,
+        }
+    }
+
+    /// Riporta le scelte senza senso a quelle vicine: il simbolo ridotto vale solo per gli articoli
+    /// e preposizioni e congiunzioni portano significato (SPEC.md), quindi non si nascondono.
+    pub fn normalized(self) -> Self {
+        use FunctionRule::*;
+        let no_reduced = |r: FunctionRule| if r == Reduced { Full } else { r };
+        let no_hidden = |r: FunctionRule| match r {
+            Reduced => Full,
+            Hidden => TextOnly,
+            r => r,
+        };
+        PolicyTable {
+            articles: self.articles,
+            clitics: no_reduced(self.clitics),
+            che: no_reduced(self.che),
+            prepositions: no_hidden(self.prepositions),
+            conjunctions: no_hidden(self.conjunctions),
+        }
+    }
+}
+
 /// Politica delle parole funzionali (SPEC.md, fase 10): cosa si mostra di articoli, clitici non
-/// riflessivi e "che".
+/// riflessivi, "che", preposizioni e congiunzioni.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum FunctionPolicy {
     /// Articoli con simbolo ridotto, clitici con il simbolo del pronome, "che" come solo testo.
@@ -32,6 +102,19 @@ pub enum FunctionPolicy {
     Complete,
     /// Articoli, clitici non riflessivi e "che" nascosti.
     Essential,
+    /// La tabella del docente.
+    Custom(PolicyTable),
+}
+
+impl FunctionPolicy {
+    /// La tabella che il motore applica (normalizzata).
+    pub fn table(self) -> PolicyTable {
+        match self {
+            FunctionPolicy::Complete => PolicyTable::complete(),
+            FunctionPolicy::Essential => PolicyTable::essential(),
+            FunctionPolicy::Custom(t) => t.normalized(),
+        }
+    }
 }
 
 /// Preferenze del documento (la politica e, più avanti, la tabella personalizzata).
@@ -456,26 +539,29 @@ fn apply_choices(tokens: &mut [Token], locks: &SenseLocks, forced: &[ForcedPick]
 /// Fase 10: cosa si mostra delle parole funzionali. Non tocca i token dei gruppi (ausiliari e
 /// membri sono già nascosti, la testa resta visibile) né quelli senza pittogramma.
 fn apply_policy(tokens: &mut [Token], prefs: &DocPrefs) {
-    let essential = prefs.function_policy == FunctionPolicy::Essential;
+    let table = prefs.function_policy.table();
     for t in tokens.iter_mut() {
         let Some(a) = &t.analysis else { continue };
         if t.group.is_some() || t.display == Display::Hidden || t.kind != TokenKind::Word {
             continue;
         }
-        let has_picto = t.picto.is_some();
-        let che = normalize_key(&a.lemma) == "che";
-        t.display = match a.cat {
-            _ if che => {
-                if essential {
-                    Display::Hidden
-                } else {
-                    Display::TextOnly
-                }
+        let rule = if normalize_key(&a.lemma) == "che" {
+            table.che
+        } else {
+            match a.cat {
+                Cat::Art => table.articles,
+                Cat::Clitic => table.clitics,
+                Cat::Adp | Cat::ArtAdp => table.prepositions,
+                Cat::Conj => table.conjunctions,
+                _ => continue,
             }
-            Cat::Art if essential => Display::Hidden,
-            Cat::Art if has_picto => Display::Reduced,
-            Cat::Clitic if essential => Display::Hidden,
-            _ => t.display,
+        };
+        t.display = match rule {
+            FunctionRule::Full => t.display,
+            FunctionRule::Reduced if t.picto.is_some() => Display::Reduced,
+            FunctionRule::Reduced => t.display,
+            FunctionRule::TextOnly => Display::TextOnly,
+            FunctionRule::Hidden => Display::Hidden,
         };
     }
 }

@@ -278,3 +278,26 @@ body { margin: 0; }
   padding-bottom: 2px;
 }
 .cards .w.hid:not(.wc) { border-color: #c4c9d4; }
+
+/* ---- Tabella «Personalizzato» delle parole funzionali (M8c-1) ---- */
+.toolbar { position: relative; }
+.policy-dialog {
+  position: absolute;
+  right: 14px;
+  top: 100%;
+  z-index: 40;
+  width: 400px;
+  max-width: calc(100vw - 28px);
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid #9a9aa8;
+  border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+  font: 14px system-ui, sans-serif;
+}
+.policy-dialog[hidden] { display: none; }
+.policy-dialog h2 { font-size: 16px; margin: 0 0 8px; }
+.policy-dialog table { width: 100%; border-collapse: collapse; }
+.policy-dialog th { text-align: left; font-weight: 400; padding: 4px 8px 4px 0; }
+.policy-dialog td { text-align: right; padding: 4px 0; }
+.policy-dialog .note { color: #555; font-size: 12.5px; margin: 8px 0; }

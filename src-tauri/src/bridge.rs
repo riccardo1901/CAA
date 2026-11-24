@@ -4,8 +4,8 @@
 use std::path::{Path, PathBuf};
 
 use caa_engine::engine::{
-    Candidate, Display, ForcedPick, FunctionPolicy, GroupRole, PictoReason, ReadingReason,
-    SenseLocks, Token,
+    Candidate, Display, ForcedPick, FunctionPolicy, FunctionRule, GroupRole, PictoReason,
+    PolicyTable, ReadingReason, SenseLocks, Token,
 };
 use caa_engine::tokenize::TokenKind;
 use caa_engine::types::Cat;
@@ -147,11 +147,42 @@ pub fn find_data_dir(candidates: &[PathBuf]) -> Option<PathBuf> {
         .cloned()
 }
 
+/// La politica dalla pagina: `complete`, `essential` oppure `custom:articles=reduced;clitics=full;
+/// che=text;preps=full;conj=full` (valori `full`, `reduced`, `text`, `hidden`). Nella tabella ciò che manca
+/// o non si capisce prende il valore di "Completo"; la tabella è poi normalizzata dal motore.
 pub fn parse_policy(s: &str) -> FunctionPolicy {
     match s {
         "essential" => FunctionPolicy::Essential,
-        _ => FunctionPolicy::Complete,
+        _ => match s.strip_prefix("custom:") {
+            Some(list) => FunctionPolicy::Custom(parse_table(list)),
+            None => FunctionPolicy::Complete,
+        },
     }
+}
+
+fn parse_table(list: &str) -> PolicyTable {
+    let mut t = PolicyTable::complete();
+    for item in list.split(';') {
+        let Some((key, value)) = item.split_once('=') else {
+            continue;
+        };
+        let rule = match value.trim() {
+            "full" => FunctionRule::Full,
+            "reduced" => FunctionRule::Reduced,
+            "text" => FunctionRule::TextOnly,
+            "hidden" => FunctionRule::Hidden,
+            _ => continue,
+        };
+        match key.trim() {
+            "articles" => t.articles = rule,
+            "clitics" => t.clitics = rule,
+            "che" => t.che = rule,
+            "preps" => t.prepositions = rule,
+            "conj" => t.conjunctions = rule,
+            _ => {}
+        }
+    }
+    t
 }
 
 /// Un token come lo vede la pagina. Gli offset sono in unità UTF-16 (come in JavaScript).
@@ -406,6 +437,25 @@ mod tests {
         assert_eq!(parse_policy("essential"), FunctionPolicy::Essential);
         assert_eq!(parse_policy("complete"), FunctionPolicy::Complete);
         assert_eq!(parse_policy("boh"), FunctionPolicy::Complete);
+        // Tabella personalizzata: ciò che manca o non si capisce vale come in "Completo".
+        let p = parse_policy("custom:articles=hidden;che=full;preps=text;conj=boh;x=full;rotto");
+        let FunctionPolicy::Custom(t) = p else {
+            panic!("{p:?}")
+        };
+        assert_eq!(
+            (t.articles, t.clitics, t.che, t.prepositions, t.conjunctions),
+            (
+                FunctionRule::Hidden,
+                FunctionRule::Full,
+                FunctionRule::Full,
+                FunctionRule::TextOnly,
+                FunctionRule::Full
+            )
+        );
+        assert_eq!(
+            parse_policy("custom:"),
+            FunctionPolicy::Custom(PolicyTable::complete())
+        );
     }
 
     #[test]

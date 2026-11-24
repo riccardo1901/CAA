@@ -958,3 +958,107 @@ fn nessun_simbolo_non_rende_visibile_una_parola_nascosta() {
     assert_eq!(t[0].display, Display::Hidden);
     assert_eq!(t[0].picto, None);
 }
+
+// ---- M8c-1: politica personalizzata per categoria ----
+
+use caa_engine::engine::{FunctionRule, PolicyTable};
+
+fn with_table(text: &str, edit: impl FnOnce(&mut PolicyTable)) -> Vec<Token> {
+    let mut table = PolicyTable::complete();
+    edit(&mut table);
+    with_policy(text, FunctionPolicy::Custom(table))
+}
+
+fn shown(tokens: &[Token]) -> Vec<(Display, Option<u32>)> {
+    tokens
+        .iter()
+        .map(|t| (t.display, t.picto.map(|p| p.id)))
+        .collect()
+}
+
+#[test]
+fn le_tabelle_predefinite_fanno_quello_che_facevano_completo_ed_essenziale() {
+    for text in [
+        "la porta",
+        "che porta.",
+        "nella porta",
+        "perché la porta",
+        "ma la porta in pane",
+        "la mangiare",
+    ] {
+        for (preset, table) in [
+            (FunctionPolicy::Complete, PolicyTable::complete()),
+            (FunctionPolicy::Essential, PolicyTable::essential()),
+        ] {
+            assert_eq!(
+                shown(&with_policy(text, preset)),
+                shown(&with_policy(text, FunctionPolicy::Custom(table))),
+                "{text:?} {preset:?}"
+            );
+            assert_eq!(preset.table(), table);
+        }
+    }
+}
+
+#[test]
+fn ogni_categoria_ha_la_sua_regola() {
+    // Articoli: simbolo pieno, ridotto, solo testo, nascosto ("la" ha il pittogramma 120).
+    for (rule, display) in [
+        (FunctionRule::Full, Display::Full),
+        (FunctionRule::Reduced, Display::Reduced),
+        (FunctionRule::TextOnly, Display::TextOnly),
+        (FunctionRule::Hidden, Display::Hidden),
+    ] {
+        let t = with_table("la porta", |p| p.articles = rule);
+        assert_eq!(t[0].display, display, "articoli {rule:?}");
+        assert_eq!(t[1].display, Display::Full, "il resto non cambia");
+    }
+    // "che" (pittogramma 138): con "Simbolo" si vede, con "Solo testo" no.
+    assert_eq!(
+        with_table("che porta.", |p| p.che = FunctionRule::Full)[0].display,
+        Display::Full
+    );
+    assert_eq!(
+        with_table("che porta.", |p| p.che = FunctionRule::Hidden)[0].display,
+        Display::Hidden
+    );
+    // Preposizioni articolate ("nella" mostra "in") e congiunzioni ("ma", pittogramma 139).
+    assert_eq!(with_table("nella porta", |_| {})[0].display, Display::Full);
+    assert_eq!(
+        with_table("nella porta", |p| p.prepositions = FunctionRule::TextOnly)[0].display,
+        Display::TextOnly
+    );
+    assert_eq!(with_table("ma la porta", |_| {})[0].display, Display::Full);
+    assert_eq!(
+        with_table("ma la porta", |p| p.conjunctions = FunctionRule::TextOnly)[0].display,
+        Display::TextOnly
+    );
+    // Una categoria non tocca le altre.
+    let t = with_table("ma la porta", |p| p.conjunctions = FunctionRule::TextOnly);
+    assert_eq!(t[1].display, Display::Reduced);
+}
+
+#[test]
+fn la_tabella_non_ammette_scelte_senza_senso() {
+    let weird = PolicyTable {
+        articles: FunctionRule::Hidden,
+        clitics: FunctionRule::Reduced,
+        che: FunctionRule::Reduced,
+        prepositions: FunctionRule::Hidden,
+        conjunctions: FunctionRule::Reduced,
+    };
+    let n = weird.normalized();
+    assert_eq!(n.articles, FunctionRule::Hidden);
+    // Il simbolo ridotto vale solo per gli articoli; preposizioni e congiunzioni non si nascondono.
+    assert_eq!(n.clitics, FunctionRule::Full);
+    assert_eq!(n.che, FunctionRule::Full);
+    assert_eq!(n.prepositions, FunctionRule::TextOnly);
+    assert_eq!(n.conjunctions, FunctionRule::Full);
+    // Le tabelle predefinite sono già valide.
+    for t in [PolicyTable::complete(), PolicyTable::essential()] {
+        assert_eq!(t.normalized(), t);
+    }
+    // Il motore applica la tabella normalizzata anche se gli arriva una scelta senza senso.
+    let t = with_policy("nella porta", FunctionPolicy::Custom(weird));
+    assert_eq!(t[0].display, Display::TextOnly);
+}
