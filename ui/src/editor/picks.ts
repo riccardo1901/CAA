@@ -11,6 +11,8 @@ import { schema } from "./schema";
 /** Valori speciali di `picto`. */
 export const PICTO_NONE = 0;
 export const PICTO_TEXT_ONLY = -1;
+/** Gli id dei simboli personali partono da qui (src-tauri/src/custom.rs); sotto ci sono i pittogrammi ARASAAC. */
+export const CUSTOM_BASE = 0x8000_0000;
 /** Valori speciali che il motore capisce su più parole (crates/caa-engine: ForcedPick::MERGE e ::SPLIT). */
 export const FORCED_MERGE = 4294967294;
 export const FORCED_SPLIT = 4294967295;
@@ -184,4 +186,22 @@ export function applyChoice(view: EditorView, w: WordRef, choice: Choice, all: b
     tr.addMark(from, to, type.create({ word, picto, lemma: w.lemma, cat: w.cat, uuid }));
   }
   view.dispatch(tr.scrollIntoView());
+}
+
+/**
+ * Tiene i simboli di prima per queste parole (la scelta «mantieni» dopo un aggiornamento del lessico): una scelta
+ * del docente per ogni parola, in un solo passo di annulla. Senza simbolo prima = «nessun simbolo».
+ */
+export function pinPictos(view: EditorView, words: Array<{ paraPos: number; s: number; e: number; picto: number }>): void {
+  const type = schema.marks.pick;
+  const tr = view.state.tr;
+  for (const w of words) {
+    const para = tr.doc.nodeAt(w.paraPos);
+    if (!para || !para.isTextblock) continue;
+    const from = w.paraPos + 1 + w.s;
+    const to = w.paraPos + 1 + w.e;
+    const word = para.textContent.slice(w.s, w.e).toLowerCase();
+    tr.removeMark(from, to, type).addMark(from, to, type.create({ word, picto: w.picto > 0 ? w.picto : PICTO_NONE, lemma: "", cat: "", uuid: "" }));
+  }
+  view.dispatch(tr);
 }

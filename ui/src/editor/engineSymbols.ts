@@ -12,7 +12,7 @@ import type { EditorView } from "prosemirror-view";
 import { Decoration, DecorationSet } from "prosemirror-view";
 import { AddMarkStep, RemoveMarkStep, type Step } from "prosemirror-transform";
 import type { EngineClient, LockReq, ParaReq, Policy, TokenDto } from "../engine/client";
-import { collectLocks, paraInfo, PICTO_TEXT_ONLY } from "./picks";
+import { collectLocks, CUSTOM_BASE, paraInfo, PICTO_TEXT_ONLY } from "./picks";
 import { pieceEnds, splitWord } from "./symbolPlugin";
 
 export interface EngineStats {
@@ -32,8 +32,24 @@ interface Entry {
   doubtful: number;
 }
 
+/** Un simbolo come stava nel documento quando è stato salvato (`render.json`). */
+interface LegacyToken {
+  picto: number;
+  display: TokenDto["display"];
+  mods: number;
+}
+
+/**
+ * I simboli salvati dei paragrafi (per testo del paragrafo, poi per intervallo "inizio-fine" della parola),
+ * mostrati al posto di quelli del lessico nuovo finché il docente non decide. Per testo e non per posizione:
+ * se si inserisce un paragrafo sopra, quelli già salvati restano al loro posto.
+ */
+type Legacy = Map<string, Map<string, LegacyToken>>;
+
 interface State {
   client: EngineClient | null;
+  /** Simboli vecchi (da `render.json`); `null` se nessuna decisione è in sospeso. */
+  legacy: Legacy | null;
   policy: Policy;
   cache: Map<string, Entry>;
   /** Blocchi di senso del documento ("usa per tutto il testo") e la loro firma. */
@@ -51,6 +67,10 @@ export interface EngineMeta {
   /** Attiva (o spegne, con `null`) il motore. */
   client?: EngineClient | null;
   policy?: Policy;
+  /** Imposta (o toglie, con `null`) i simboli vecchi da mostrare al posto di quelli del lessico nuovo. */
+  legacy?: Legacy | null;
+  /** Il docente ha deciso per un simbolo: il vecchio non si mostra più. */
+  dropLegacy?: { text: string; key: string };
   /** Risposte del motore: chiave del paragrafo (testo, scelte, blocchi) → token, per la politica indicata. */
   results?: { policy: Policy; items: Array<[string, TokenDto[]]> };
   refresh?: boolean;
@@ -107,7 +127,20 @@ function firstPiece(t: TokenDto, client: EngineClient, textOnly: boolean): { cla
   return { class: classes.join(" "), style };
 }
 
-function paragraphDecos(node: PMNode, pos: number, tokens: TokenDto[], client: EngineClient): Decoration[] {
+/** I token del motore con sopra i simboli vecchi del documento (se il testo del paragrafo è lo stesso). */
+function withLegacy(tokens: TokenDto[], text: string, legacy: Legacy | null | undefined): TokenDto[] {
+  const saved = legacy?.get(text);
+  if (!saved) return tokens;
+  return tokens.map((t) => {
+    const o = saved.get(`${t.s}-${t.e}`);
+    // Una scelta del docente (fatta dopo l'apertura) vince sempre sul simbolo vecchio.
+    if (!o || t.teacher) return t;
+    return { ...t, picto: o.picto > 0 ? o.picto : null, image: o.picto > 0, display: o.display, mods: o.mods, placeholder: false, doubtful: false };
+  });
+}
+
+function paragraphDecos(node: PMNode, pos: number, shown: TokenDto[], client: EngineClient, legacy?: Legacy | null): Decoration[] {
+  const tokens = withLegacy(shown, node.textContent, legacy);
   const out: Decoration[] = [];
   const ends = pieceEnds(node);
   const size = node.content.size;
@@ -168,7 +201,7 @@ function rebuildAll(doc: PMNode, value: State, mapped: DecorationSet): Decoratio
     if (!node.isTextblock) return true;
     const entry = value.cache.get(paraKey(node, value.locksSig));
     // Testo nuovo: finché non risponde il motore restano i simboli di prima, spostati dalla modifica.
-    if (entry) decos.push(...paragraphDecos(node, pos, entry.tokens, client));
+    if (entry) decos.push(...paragraphDecos(node, pos, entry.tokens, client, value.legacy));
     else decos.push(...mapped.find(pos, pos + node.nodeSize));
     return false;
   });
@@ -186,7 +219,7 @@ function rebuildSome(doc: PMNode, value: State, mapped: DecorationSet, starts: I
     const entry = value.cache.get(paraKey(node, value.locksSig));
     if (!entry) continue;
     decos = decos.remove(decos.find(pos, pos + node.nodeSize));
-    decos = decos.add(doc, paragraphDecos(node, pos, entry.tokens, client));
+    decos = decos.add(doc, paragraphDecos(node, pos, entry.tokens, client, value.legacy));
   }
   return decos;
 }
@@ -246,6 +279,7 @@ export function engineSymbolPlugin(): Plugin<State> {
         client: null,
         policy: "complete",
         cache: new Map(),
+        legacy: null,
         locks: [],
         locksSig: "",
         decos: DecorationSet.empty,
@@ -263,6 +297,21 @@ export function engineSymbolPlugin(): Plugin<State> {
         }
         if (meta?.policy !== undefined && meta.policy !== next.policy) {
           next = { ...next, policy: meta.policy, cache: new Map() };
+          full = true;
+        }
+        if (meta?.legacy !== undefined) {
+          next = { ...next, legacy: meta.legacy };
+          full = true;
+        }
+        if (meta?.dropLegacy && next.legacy) {
+          const map = new Map(next.legacy);
+          const saved = map.get(meta.dropLegacy.text);
+          if (saved) {
+            const tokens = new Map(saved);
+            tokens.delete(meta.dropLegacy.key);
+            map.set(meta.dropLegacy.text, tokens);
+          }
+          next = { ...next, legacy: map };
           full = true;
         }
         const mapped = tr.docChanged ? value.decos.map(tr.mapping, tr.doc) : value.decos;
@@ -502,4 +551,117 @@ export function nextDoubtful(view: EditorView, from: number): TokenAt | null {
     return false;
   });
   return after ?? first;
+}
+
+// ---- Istantanea dei simboli (`render.json`) e simboli vecchi (M9a) ----
+
+/** I simboli di un paragrafo come si salvano: `[inizio, fine, pittogramma (0 = nessuno), visualizzazione, segni]`. */
+export interface RenderPara {
+  i: number;
+  text: string;
+  tokens: Array<[number, number, number, string, number]>;
+}
+
+/**
+ * Cosa il motore ha deciso per ogni paragrafo, da salvare nel documento (`render.json`). Con simboli vecchi in
+ * sospeso si salvano quelli vecchi: salvare nel frattempo non deve far passare di nascosto il lessico nuovo.
+ */
+export function renderSnapshot(view: EditorView): RenderPara[] {
+  const st = engineKey.getState(view.state);
+  if (!st?.client) return [];
+  const out: RenderPara[] = [];
+  let index = 0;
+  view.state.doc.forEach((node) => {
+    const i = index++;
+    if (!node.isTextblock) return;
+    const entry = st.cache.get(paraKey(node, st.locksSig));
+    if (!entry) return;
+    const tokens = withLegacy(entry.tokens, node.textContent, st.legacy);
+    out.push({
+      i,
+      text: node.textContent,
+      // I simboli personali non si salvano nell'istantanea: il loro id vale solo su questo computer.
+      tokens: tokens
+        .filter((t) => t.kind !== "punct" && t.s < t.e && (t.picto ?? 0) < CUSTOM_BASE)
+        .map((t) => [t.s, t.e, t.picto ?? 0, t.display, t.mods]),
+    });
+  });
+  return out;
+}
+
+/** Ripulisce un `render.json` letto da un file (dato non fidato) e lo trasforma in simboli vecchi. */
+export function parseRender(value: unknown): Legacy {
+  const out: Legacy = new Map();
+  if (!Array.isArray(value)) return out;
+  for (const raw of value.slice(0, 20_000)) {
+    const p = raw as Partial<RenderPara> | null;
+    if (!p || typeof p.i !== "number" || !Number.isInteger(p.i) || p.i < 0 || typeof p.text !== "string" || !Array.isArray(p.tokens)) continue;
+    const tokens = new Map<string, LegacyToken>();
+    for (const t of p.tokens.slice(0, 100_000)) {
+      if (!Array.isArray(t) || t.length < 5) continue;
+      const [s, e, picto, display, mods] = t as unknown[];
+      if (typeof s !== "number" || typeof e !== "number" || typeof picto !== "number" || typeof mods !== "number") continue;
+      if (display !== "full" && display !== "reduced" && display !== "text" && display !== "hidden") continue;
+      if (!Number.isInteger(picto) || picto < 0 || picto > 0xfffffffd) continue;
+      tokens.set(`${s}-${e}`, { picto, display, mods: mods & 7 });
+    }
+    if (!out.has(p.text)) out.set(p.text, tokens);
+  }
+  return out;
+}
+
+/** Mostra i simboli salvati nel documento al posto di quelli del lessico nuovo, finché il docente non decide. */
+export function setLegacy(view: EditorView, render: unknown): void {
+  view.dispatch(view.state.tr.setMeta(engineKey, { legacy: parseRender(render) } satisfies EngineMeta).setMeta("addToHistory", false));
+}
+
+export function clearLegacy(view: EditorView): void {
+  view.dispatch(view.state.tr.setMeta(engineKey, { legacy: null } satisfies EngineMeta).setMeta("addToHistory", false));
+}
+
+/** Il lessico nuovo cambierebbe il simbolo di questa parola. */
+export interface LexChange {
+  /** Testo del paragrafo (la chiave dei simboli vecchi) e posizione della parola nel documento. */
+  text: string;
+  index: number;
+  paraPos: number;
+  s: number;
+  e: number;
+  word: string;
+  oldPicto: number;
+  newPicto: number;
+}
+
+/**
+ * Le parole di cui il lessico nuovo cambierebbe il simbolo (solo il pittogramma; segni e visualizzazione
+ * seguono la politica del documento). `pending`: il motore non ha ancora risposto per tutti i paragrafi.
+ */
+export function legacyDiff(view: EditorView): { changes: LexChange[]; pending: boolean; active: boolean } {
+  const st = engineKey.getState(view.state);
+  const changes: LexChange[] = [];
+  if (!st?.client || !st.legacy) return { changes, pending: false, active: false };
+  let pending = false;
+  let index = 0;
+  view.state.doc.forEach((node, offset) => {
+    const i = index++;
+    const old = node.isTextblock ? st.legacy?.get(node.textContent) : undefined;
+    if (!old) return;
+    const entry = st.cache.get(paraKey(node, st.locksSig));
+    if (!entry) {
+      pending = true;
+      return;
+    }
+    for (const t of entry.tokens) {
+      const o = old.get(`${t.s}-${t.e}`);
+      if (!o || t.kind === "punct" || t.teacher) continue;
+      const now = t.picto ?? 0;
+      if (o.picto !== now) changes.push({ text: node.textContent, index: i, paraPos: offset, s: t.s, e: t.e, word: node.textContent.slice(t.s, t.e), oldPicto: o.picto, newPicto: now });
+    }
+  });
+  return { changes, pending, active: true };
+}
+
+/** Il docente ha deciso per una parola (nuovo simbolo): il vecchio non si mostra più. */
+export function dropLegacyToken(view: EditorView, text: string, s: number, e: number): void {
+  view.dispatch(view.state.tr.setMeta(engineKey, { dropLegacy: { text, key: `${s}-${e}` } } satisfies EngineMeta).setMeta("addToHistory", false));
 }

@@ -8,6 +8,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { engineInfo, inTauri, tauriClient, type EngineClient, type EngineInfo, type Policy } from "./engine/client";
 import { createDocsPanel } from "./docs/panel";
+import { createLexBar } from "./docs/lexbar";
 import { createSession, type Session } from "./docs/session";
 import { createSidebar, installSidebar } from "./sidebar";
 import { createBars } from "./toolbar";
@@ -73,7 +74,8 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
   );
   // La riga dei documenti c'è solo se c'è l'archivio (nell'app); nelle prove senza archivio resta nascosta.
   bars.docbar.hidden = !docs;
-  app.append(bars.banner, bars.docbar, bars.toolbar, layoutEl, bars.statusbar);
+  const lexBar = createLexBar((p) => client?.url(p) ?? "");
+  app.append(bars.banner, lexBar.root, bars.docbar, bars.toolbar, layoutEl, bars.statusbar);
   if (docs) {
     const w = window as unknown as { __caaAutosaveMs?: number; __caaRetryMs?: number };
     const baseBanner = (): void => {
@@ -97,6 +99,7 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
       confirm: (m) => window.confirm(m),
       titleInput: bars.titleInput,
       saveStatus: bars.saveStatus,
+      lexBar,
       delayMs: w.__caaAutosaveMs,
       retryMs: w.__caaRetryMs,
     });
@@ -164,7 +167,7 @@ export function startApp(mount: HTMLElement): void {
     loadFragments: () => replaceDocument(fragmentsDoc()),
     setSymbols,
     // Motore (prove automatiche con un motore finto, app con quello vero).
-    enterEngineMode: (client: EngineClient) => enterEngineMode(client, { ok: true, dir: null, error: null, tagger: true, expressions: true }),
+    enterEngineMode: (client: EngineClient) => enterEngineMode(client, { ok: true, dir: null, error: null, tagger: true, expressions: true, lexicon: "lex-new" }),
     engineStats: () => engineStats(view),
     setPolicy: (p: Policy) => setPolicy(view, p),
     refresh: () => view.dispatch(view.state.tr.setMeta(symbolKey, { refresh: true })),

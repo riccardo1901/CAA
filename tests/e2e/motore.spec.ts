@@ -1292,3 +1292,148 @@ test("file che non si leggono: l'elenco lo dice; un documento non valido non si 
   // L'editor è rimasto com'era.
   expect(await page.evaluate(() => (window as any).caaProto.view.state.doc.textContent)).toBe("");
 });
+
+// ---- M9a: render.json e lessico nuovo ----
+
+/** Un documento salvato con il lessico «vecchio»: «mangia» e «pane» avevano altri simboli (il motore finto ne dà di nuovi). */
+async function storeOldDoc(page: Page, opts: { lexicon?: string; render?: boolean } = {}): Promise<void> {
+  await page.evaluate(
+    ([lexicon, withRender]) => {
+      const p = (window as any).caaProto;
+      const para = p.view.state.schema.nodes.paragraph.create(null, p.view.state.schema.text("Marco mangia pane"));
+      const d = p.view.state.schema.nodes.doc.create(null, [para]);
+      const render = withRender ? [{ i: 0, text: "Marco mangia pane", tokens: [[0, 5, 768, "full", 0], [6, 12, 5001, "full", 0], [13, 17, 5002, "full", 0]] }] : [];
+      (window as any).__mock.docsStore.set("Vecchio.caa", { entry: { file: "Vecchio.caa", id: "id-v", title: "Vecchio", modified: new Date().toISOString(), rev: 1, author: "X", origin: null }, payload: { document: d.toJSON(), prefs: {}, render, sense_locks: [], lexicon } });
+    },
+    [opts.lexicon ?? "lex-old", opts.render ?? true] as const,
+  );
+}
+
+const hue = (id: number) => encodeURIComponent("hsl(" + (id % 360));
+async function openStored(page: Page, title: string): Promise<void> {
+  await page.getByRole("button", { name: "Documenti" }).click();
+  await page.locator(".docs-row", { hasText: title }).getByRole("button", { name: "Apri" }).click();
+}
+
+test("render.json: al salvataggio i simboli risolti vanno nel documento (senza i simboli personali)", async ({ page }) => {
+  await open(page, "", true);
+  await page.locator(".ProseMirror").click();
+  await page.keyboard.type("Marco mangia pane.");
+  await expect.poll(async () => (await mockSaves(page)).length).toBeGreaterThan(0);
+  await page.waitForFunction(() => (window as any).caaProto.engineStats().pending === 0);
+  await page.keyboard.type(" ");
+  await expect.poll(async () => (await mockSaves(page)).at(-1)?.render?.length).toBe(1);
+  const last = (await mockSaves(page)).at(-1);
+  expect(last.lexicon).toBe("lex-new");
+  expect(last.render[0].i).toBe(0);
+  expect(last.render[0].text).toMatch(/^Marco mangia pane\.\s?$/);
+  // Parole con intervallo, pittogramma, visualizzazione e segni; la punteggiatura non c'è.
+  expect(last.render[0].tokens).toEqual([[0, 5, 768, "full", 0], [6, 12, 769, "full", 0], [13, 17, 788, "full", 0]]);
+});
+
+test("un documento salvato con un lessico più vecchio si apre con i simboli vecchi e la barra chiede cosa fare", async ({ page }) => {
+  await open(page, "", true);
+  await storeOldDoc(page);
+  await openStored(page, "Vecchio");
+  await expect(page.locator(".lexbar")).toContainText("cambierebbe 2 simboli");
+  // Si vedono i simboli VECCHI (5001 e 5002); «Marco» non è cambiato.
+  await expect.poll(() => imgOf(page, "mangia")).toContain(hue(5001));
+  expect(await imgOf(page, "pane")).toContain(hue(5002));
+  expect(await imgOf(page, "Marco")).toContain(hue(768));
+  // Un salvataggio nel frattempo (una modifica altrove) non fa passare di nascosto il lessico nuovo.
+  await page.locator(".ProseMirror").click();
+  await page.keyboard.press("End");
+  await page.keyboard.press("Enter");
+  await page.keyboard.type("Ciao a tutti");
+  await expect.poll(async () => (await mockSaves(page)).length).toBeGreaterThan(0);
+  const pending = (await mockSaves(page)).at(-1);
+  expect(pending.lexicon).toBe("lex-old");
+  expect(pending.render[0].tokens.map((t: number[]) => t[2])).toContain(5001);
+  await expect(page.locator(".lexbar")).toContainText("cambierebbe");
+});
+
+test("lessico nuovo: «Applica tutti» usa i simboli nuovi e salva con il lessico nuovo", async ({ page }) => {
+  await open(page, "", true);
+  await storeOldDoc(page);
+  await openStored(page, "Vecchio");
+  await expect(page.locator(".lexbar")).toBeVisible();
+  await page.locator(".lexbar").getByRole("button", { name: "Applica tutti" }).click();
+  await expect(page.locator(".lexbar")).toBeHidden();
+  await expect.poll(() => imgOf(page, "mangia")).toContain(hue(769));
+  expect(await imgOf(page, "pane")).toContain(hue(788));
+  expect(await docPicks(page)).toHaveLength(0);
+  await expect.poll(async () => (await mockSaves(page)).at(-1)?.lexicon).toBe("lex-new");
+});
+
+test("lessico nuovo: «Mantieni i vecchi» li fissa come scelte del docente", async ({ page }) => {
+  await open(page, "", true);
+  await storeOldDoc(page);
+  await openStored(page, "Vecchio");
+  await page.locator(".lexbar").getByRole("button", { name: "Mantieni i vecchi" }).click();
+  await expect(page.locator(".lexbar")).toBeHidden();
+  await expect.poll(async () => (await docPicks(page)).map((p) => [p.word, p.picto])).toEqual([["mangia", 5001], ["pane", 5002]]);
+  await expect.poll(() => imgOf(page, "mangia")).toContain(hue(5001));
+  await expect.poll(async () => (await mockSaves(page)).at(-1)?.lexicon).toBe("lex-new");
+  // Annulla toglie le scelte fissate in un solo passo.
+  await page.locator(".ProseMirror").click();
+  await page.keyboard.press("Control+z");
+  await expect.poll(async () => (await docPicks(page)).length).toBe(0);
+});
+
+test("lessico nuovo: «Rivedi» una parola alla volta", async ({ page }) => {
+  await open(page, "", true);
+  await storeOldDoc(page);
+  await openStored(page, "Vecchio");
+  await page.locator(".lexbar").getByRole("button", { name: "Rivedi" }).click();
+  await expect(page.locator(".lexbar")).toContainText("Parola 1 di 2: «mangia»");
+  await expect(page.locator(".w.cur")).toHaveText("mangia");
+  await expect(page.locator(".lex-thumb img")).toHaveCount(2);
+  // Salta passa alla successiva; Fine torna al riepilogo.
+  await page.locator(".lexbar").getByRole("button", { name: "Salta" }).click();
+  await expect(page.locator(".lexbar")).toContainText("Parola 2 di 2: «pane»");
+  await page.locator(".lexbar").getByRole("button", { name: "Fine revisione" }).click();
+  await expect(page.locator(".lexbar")).toContainText("cambierebbe 2 simboli");
+  // Una decisione per ciascuna: «mangia» → nuovo; «pane» → vecchio.
+  await page.locator(".lexbar").getByRole("button", { name: "Rivedi" }).click();
+  await page.locator(".lexbar").getByRole("button", { name: "Usa il nuovo" }).click();
+  await expect.poll(() => imgOf(page, "mangia")).toContain(hue(769));
+  await expect(page.locator(".lexbar")).toContainText("Parola 1 di 1: «pane»");
+  await page.locator(".lexbar").getByRole("button", { name: "Tieni il vecchio" }).click();
+  await expect(page.locator(".lexbar")).toBeHidden();
+  await expect.poll(async () => (await docPicks(page)).map((p) => [p.word, p.picto])).toEqual([["pane", 5002]]);
+  await expect.poll(() => imgOf(page, "pane")).toContain(hue(5002));
+  await expect.poll(async () => (await mockSaves(page)).at(-1)?.lexicon).toBe("lex-new");
+});
+
+test("lessico uguale, o documento senza istantanea: nessuna barra", async ({ page }) => {
+  await open(page, "", true);
+  await storeOldDoc(page, { lexicon: "lex-new" });
+  await openStored(page, "Vecchio");
+  await expect(page.locator(".w", { hasText: /^pane$/ })).toBeVisible();
+  await page.waitForTimeout(300);
+  await expect(page.locator(".lexbar")).toBeHidden();
+  expect(await imgOf(page, "pane")).toContain(hue(788)); // i simboli sono quelli del motore
+  await page.evaluate(() => (window as any).__mock.docsStore.delete("Vecchio.caa"));
+  await storeOldDoc(page, { lexicon: "lex-old", render: false });
+  await openStored(page, "Vecchio");
+  await expect(page.locator(".w", { hasText: /^pane$/ })).toBeVisible();
+  await page.waitForTimeout(300);
+  await expect(page.locator(".lexbar")).toBeHidden();
+});
+
+test("un lessico nuovo che non cambia niente non disturba", async ({ page }) => {
+  await open(page, "", true);
+  await page.evaluate(() => {
+    const p = (window as any).caaProto;
+    const para = p.view.state.schema.nodes.paragraph.create(null, p.view.state.schema.text("Marco mangia pane"));
+    const d = p.view.state.schema.nodes.doc.create(null, [para]);
+    const same = [{ i: 0, text: "Marco mangia pane", tokens: [[0, 5, 768, "full", 0], [6, 12, 769, "full", 0], [13, 17, 788, "full", 0]] }];
+    (window as any).__mock.docsStore.set("Uguale.caa", { entry: { file: "Uguale.caa", id: "id-u", title: "Uguale", modified: new Date().toISOString(), rev: 1, author: "X", origin: null }, payload: { document: d.toJSON(), prefs: {}, render: same, sense_locks: [], lexicon: "lex-old" } });
+  });
+  await openStored(page, "Uguale");
+  await expect(page.locator(".w", { hasText: /^pane$/ })).toBeVisible();
+  await page.waitForTimeout(400);
+  await expect(page.locator(".lexbar")).toBeHidden();
+  // Nessuna differenza: il documento si riscrive con il lessico nuovo alla prima modifica o subito.
+  await expect.poll(async () => (await mockSaves(page)).at(-1)?.lexicon).toBe("lex-new");
+});

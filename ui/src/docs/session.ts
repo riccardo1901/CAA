@@ -2,10 +2,12 @@
 // documento nuovo. Il salvataggio automatico scrive solo nei documenti personali locali, mai nel Drive.
 import type { Node as PMNode } from "prosemirror-model";
 import type { EditorView } from "prosemirror-view";
-import { onEngineUpdate } from "../editor/engineSymbols";
-import { sanitizeLocks } from "../editor/picks";
+import { clearLegacy, dropLegacyToken, legacyDiff, onEngineUpdate, renderSnapshot, setLegacy, type LexChange } from "../editor/engineSymbols";
+import { revealPos, setFocusWord } from "../editor/menuHooks";
+import { pinPictos, sanitizeLocks } from "../editor/picks";
 import { schema } from "../editor/schema";
 import type { DocClient, DocEntry, OpenedDoc, SavePayload } from "../engine/client";
+import type { LexBar } from "./lexbar";
 import { COMPLETE_TABLE, sanitizePrefs, type DocPrefs } from "./prefs";
 
 export interface SessionDeps {
@@ -23,6 +25,8 @@ export interface SessionDeps {
   confirm(message: string): boolean;
   titleInput: HTMLInputElement;
   saveStatus: HTMLElement;
+  /** La barra «il lessico è cambiato». */
+  lexBar: LexBar;
   /** Attesa prima del salvataggio automatico (ms). */
   delayMs?: number;
   /** Attesa prima di riprovare dopo un errore di salvataggio (ms). */
@@ -119,6 +123,11 @@ export function createSession(deps: SessionDeps): Session {
   let loading = false;
   let lastDoc = view.state.doc;
   let again = false;
+  // Aggiornamento del lessico: il documento si apre con i simboli vecchi finché il docente non decide.
+  let legacyActive = false;
+  let docLexicon = "";
+  let review: number | null = null;
+  let shownReview = "";
 
   const statusText = (): string => {
     if (st.readOnly) return "Sola lettura";
@@ -164,9 +173,10 @@ export function createSession(deps: SessionDeps): Session {
       prefs: deps.getPrefs(),
       sense_locks: sanitizeLocks(doc.attrs.locks),
       document: doc.toJSON() as unknown,
-      render: [],
+      render: renderSnapshot(view),
       media: usedMedia(doc),
-      lexicon: deps.lexicon,
+      // Con simboli vecchi in sospeso il documento resta alla versione vecchia del lessico.
+      lexicon: legacyActive ? docLexicon : deps.lexicon,
     };
   };
 
@@ -220,7 +230,75 @@ export function createSession(deps: SessionDeps): Session {
     return st.dirty ? save() : !st.error;
   }
 
+  const endLegacy = (save: boolean): void => {
+    const was = legacyActive;
+    legacyActive = false;
+    review = null;
+    shownReview = "";
+    deps.lexBar.set(null);
+    if (was) {
+      clearLegacy(view);
+      setFocusWord(view, null);
+      if (save) markDirty();
+    }
+  };
+
+  /** Dopo ogni risposta del motore: se i simboli vecchi sono in sospeso, aggiorna la barra del lessico. */
+  const refreshLexicon = (): void => {
+    if (!legacyActive) return;
+    const d = legacyDiff(view);
+    if (!d.active) return endLegacy(false);
+    if (d.pending) return;
+    if (d.changes.length === 0) return endLegacy(true);
+    const pin = (list: LexChange[]): void => pinPictos(view, list.map((c) => ({ paraPos: c.paraPos, s: c.s, e: c.e, picto: c.oldPicto })));
+    if (review === null) {
+      shownReview = "";
+      deps.lexBar.set({
+        kind: "summary",
+        count: d.changes.length,
+        onReview: () => {
+          review = 0;
+          refreshLexicon();
+        },
+        onApplyAll: () => endLegacy(true),
+        onKeepAll: () => {
+          pin(d.changes);
+          endLegacy(true);
+        },
+      });
+      return;
+    }
+    review = Math.min(review, d.changes.length - 1);
+    const c = d.changes[review];
+    const key = `${review}|${d.changes.length}|${c.text}|${c.s}|${c.e}|${c.oldPicto}|${c.newPicto}`;
+    if (key === shownReview) return;
+    shownReview = key;
+    const at = c.paraPos + 1 + c.s;
+    setFocusWord(view, [at, c.paraPos + 1 + c.e]);
+    revealPos(view, at);
+    deps.lexBar.set({
+      kind: "review",
+      k: review + 1,
+      total: d.changes.length,
+      word: c.word,
+      oldPicto: c.oldPicto,
+      newPicto: c.newPicto,
+      onKeep: () => pin([c]),
+      onUseNew: () => dropLegacyToken(view, c.text, c.s, c.e),
+      onSkip: () => {
+        review = ((review ?? 0) + 1) % d.changes.length;
+        refreshLexicon();
+      },
+      onEnd: () => {
+        review = null;
+        setFocusWord(view, null);
+        refreshLexicon();
+      },
+    });
+  };
+
   const reset = (): void => {
+    endLegacy(false);
     st.file = st.id = st.rev = st.created = st.origin = null;
     st.title = "";
     st.dirty = false;
@@ -280,9 +358,16 @@ export function createSession(deps: SessionDeps): Session {
     st.title = o.entry.title;
     st.readOnly = o.read_only;
     st.savedAt = null;
+    docLexicon = o.lexicon;
+    // Un lessico diverso da quello con cui è stato salvato: si mostrano i simboli vecchi e si chiede.
+    if (deps.lexicon && o.lexicon && o.lexicon !== deps.lexicon && Array.isArray(o.render) && o.render.length > 0 && !o.read_only) {
+      setLegacy(view, o.render);
+      legacyActive = true;
+    }
     deps.setReadOnly(o.read_only);
     deps.banner(o.read_only ? "Questo documento è stato scritto da una versione più recente del programma: si apre solo in lettura. Aggiorna il programma per modificarlo." : null);
     changed();
+    refreshLexicon();
   }
 
   // Le modifiche al documento e alle preferenze fanno partire il salvataggio automatico.
@@ -291,6 +376,7 @@ export function createSession(deps: SessionDeps): Session {
       lastDoc = view.state.doc;
       markDirty();
     }
+    refreshLexicon();
   });
   deps.titleInput.addEventListener("input", () => {
     st.title = deps.titleInput.value;
