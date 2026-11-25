@@ -13,7 +13,7 @@ Costruiamo un programma gratuito, installato sui PC della scuola, con cui i doce
 - **SymWriter** simbolizza bene mentre si scrive, ma ha un costo di licenza per postazione e usa simboli Widgit proprietari, diversi da quelli che gli studenti usano con logopedisti e CTS.
 - **SimCAA** è gratuito e usa ARASAAC, ma è macchinoso: bisogna creare progetto e capitolo prima di scrivere, scrittura e impaginazione sono due ambienti separati, e plurali e tempi verbali si sistemano a mano.
 
-**Cosa facciamo diversamente.** Apri, scrivi, i simboli si flettono da soli, correggi con un clic, stampi. Un solo schermo. I documenti di riferimento stanno in una biblioteca condivisa sul server della scuola; ognuno ne fa una copia e la adatta ai propri studenti.
+**Cosa facciamo diversamente.** Apri, scrivi, i simboli si flettono da soli, correggi con un clic, stampi. Un solo schermo. I documenti di riferimento stanno in una biblioteca condivisa su un Drive condiviso Google dell'istituto; ognuno ne fa una copia e la adatta ai propri studenti.
 
 **Simboli.** Pittogrammi ARASAAC (Governo d'Aragona, licenza CC BY-NC-SA): circa 14.000 simboli (13.924 a novembre 2026), con le parole italiane già associate. Il programma è e resta **non commerciale**: nessuna vendita, nessuna pubblicità.
 
@@ -55,7 +55,7 @@ La v1 fa una cosa sola molto bene: trasformare un testo italiano in testo simbol
 - 4 dimensioni di simbolo predefinite (piccolo, medio, grande, molto grande)
 - Regole per articoli e preposizioni configurabili per documento
 - Simboli personali: importare un'immagine (foto o disegno) e associarla a una parola
-- Biblioteca condivisa sul server della scuola, copie personali locali, "Adatta" e "Pubblica"
+- Biblioteca condivisa su Drive condiviso Google dell'istituto, copie personali locali, "Adatta" e "Pubblica"
 - Stampa A4 e esportazione PDF
 - Installer Windows (MSI) per distribuzione sui PC della scuola
 
@@ -104,7 +104,7 @@ Il motore non tocca mai la rete né il disco: legge solo il lessico già caricat
 | `caa-engine` | Rust (libreria pura, nessun I/O) | Testo → token annotati con lemma, categoria, tratti, pittogramma, modificatori, alternative | Lessico compilato |
 | `caa-lexicon-build` | Rust (strumento a riga di comando) | Costruisce il lessico compilato da ARASAAC, Morph-it! e correzioni curate | Dati sorgente |
 | `caa-eval` | Rust (riga di comando) | Esegue il motore sul corpus di test e produce le metriche | `caa-engine` |
-| `caa-store` | Rust | Documenti, biblioteca, copie personali, sincronizzazione su cartella di rete | File system |
+| `caa-store` | Rust | Documenti, biblioteca, copie personali, cartella del Drive condiviso | File system |
 | `src-tauri` | Rust | Comandi esposti all'interfaccia, accesso ai pittogrammi locali, impostazioni | Tutti i precedenti |
 | `ui` | TypeScript + Vite + ProseMirror (pannelli in Svelte) | Editor, menu alternative, biblioteca, stampa | Comandi Tauri |
 
@@ -537,7 +537,7 @@ In base a come sono fatti questi sistemi, i guadagni maggiori arrivano di solito
 
 ### Le correzioni dei docenti come carburante
 
-Ogni correzione nell'editor viene registrata in locale (forma, contesto di due parole, lettura e pittogramma scelti). Una funzione "Invia correzioni" copia il registro anonimo nella cartella condivisa. Periodicamente lo si rivede: le correzioni ricorrenti diventano righe dei file curati, e la versione successiva del lessico migliora per tutti.
+Ogni correzione nell'editor viene registrata in locale (forma, contesto di due parole, lettura e pittogramma scelti). Una funzione "Invia correzioni" copia il registro anonimo nella cartella `correzioni` del Drive condiviso. Periodicamente lo si rivede: le correzioni ricorrenti diventano righe dei file curati, e la versione successiva del lessico migliora per tutti.
 
 ## Editor e interazione
 
@@ -583,7 +583,7 @@ Il comportamento del cursore con parole impilate sotto un'immagine è l'unico pu
 
 **Incolla**: da Word o dal web si importa testo con titoli e paragrafi; tutta l'altra formattazione si scarta.
 
-**Primo avvio**: si chiede solo il nome da mostrare (per la biblioteca) e si verifica la cartella condivisa configurata dal tecnico. Poi documento vuoto.
+**Primo avvio**: si chiede solo il nome da mostrare (per la biblioteca) e si cerca la cartella della biblioteca nel Drive condiviso (vedi sotto). Poi documento vuoto.
 
 ## Biblioteca, copie personali, sincronizzazione
 
@@ -599,12 +599,14 @@ Modello **biblioteca + copie personali**: i documenti condivisi sono riferimenti
 | **Originale aggiornato** | Automatico | Chi ha una copia vede un avviso e può aprire l'originale accanto alla propria copia; niente fusione automatica |
 | **Ritira** | Autore o amministratore | Il documento esce dalla biblioteca (spostato in `archivio/`, non cancellato) |
 
-### Cartella condivisa (configurata dal tecnico)
+### Cartella della biblioteca: un Drive condiviso Google
+
+La scuola usa un **Drive condiviso** di Google Workspace per tutto l'istituto. Il programma **non parla con Google**: ogni PC ha installato **Google Drive per computer**, che fa comparire il Drive condiviso come una cartella (per esempio `G:\Drive condivisi\CAA Istituto\`) e pensa lui alla sincronizzazione. Per il programma la biblioteca è quindi una normale cartella; niente accesso, niente password, niente Internet nel programma.
 
 ```text
-\\server\CAA\
+<Drive condiviso>\CAA\
   biblioteca\<uuid>.caa          documenti di riferimento
-  biblioteca\<uuid>.lock         presente mentre l'autore aggiorna
+  biblioteca\<uuid>.lock         presente mentre l'autore aggiorna (indicativo)
   simboli\<uuid>.webp + .json    simboli personali condivisi dalla scuola
   correzioni\<utente>-<data>.tsv registri anonimi delle correzioni
   archivio\                      documenti ritirati
@@ -613,21 +615,40 @@ Modello **biblioteca + copie personali**: i documenti condivisi sono riferimenti
 
 Nessun file indice centrale: ogni `.caa` porta i suoi metadati, e il programma costruisce in locale un indice ricercabile (titolo, materia, livello, etichette, autore, data) rileggendo solo i file con data di modifica cambiata.
 
-**Mai SQLite o altri database sulla cartella di rete**: rischio di corruzione con accessi concorrenti. In locale, invece, SQLite va benissimo per l'indice e la cache.
+**Mai SQLite o altri database nella cartella del Drive**: la sincronizzazione lavora sui file interi e due copie di un database creerebbero conflitti. In locale, invece, SQLite va benissimo per l'indice e la cache.
+
+**Come si comporta una cartella sincronizzata** (cambia rispetto a una cartella di rete):
+
+- **I file arrivano con ritardo**: un documento pubblicato compare sugli altri PC dopo qualche secondo o minuto. Va bene: nessuna operazione dipende dall'istantaneità.
+- **Un file può arrivare a metà o non essere ancora scaricato** (Drive per computer in modalità "in streaming"). Si legge solo un file `.caa` completo e valido (lo ZIP si controlla per intero); un file incompleto si salta con un messaggio "in sincronizzazione" e si riprova.
+- **Conflitti**: se due PC modificano lo stesso file, Drive crea una copia "in conflitto". Il modello (solo l'autore modifica un documento di biblioteca) li rende rari; se compaiono, il programma li riconosce dal nome e li mostra come "copia in conflitto" da scegliere.
+- **Permessi**: chi può scrivere nel Drive condiviso può in teoria modificare qualsiasi file. Il "solo l'autore aggiorna" è una regola del programma (campo autore e revisione), non un permesso del Drive; per tutelare i documenti conviene dare ai docenti il ruolo "Collaboratore" e a un paio di persone quello di "Gestore dei contenuti".
+
+### Operazioni
+
+| Operazione | Chi | Cosa succede |
+| --- | --- | --- |
+| **Adatta** | Chiunque | Copia locale del documento di biblioteca; la copia ricorda id e revisione dell'originale |
+| **Pubblica** | Chiunque | Un proprio documento diventa nuovo documento di biblioteca (mai sovrascrive) |
+| **Aggiorna in biblioteca** | Solo l'autore | Nuova revisione dello stesso documento di biblioteca |
+| **Originale aggiornato** | Automatico | Chi ha una copia vede un avviso e può aprire l'originale accanto alla propria copia; niente fusione automatica |
+| **Ritira** | Autore o amministratore | Il documento esce dalla biblioteca (spostato in `archivio/`, non cancellato) |
 
 ### Scritture sicure
 
-- **Scrittura atomica**: si scrive `<uuid>.caa.tmp`, poi si rinomina sopra il file finale. Un'interruzione a metà non lascia mai un documento rotto.
-- **Lock** per l'aggiornamento in biblioteca: file `<uuid>.lock` con utente e ora; considerato scaduto dopo 2 ore.
+- **I documenti personali si salvano da soli, ma solo in locale** (`Documenti\CAA`). Il programma scrive nel Drive soltanto con **Pubblica** e **Aggiorna in biblioteca**, mai con il salvataggio automatico: così Drive non sincronizza a ogni battuta e non nascono conflitti.
+- **Scrittura atomica**: si scrive `<uuid>.caa.tmp` nella stessa cartella, poi si rinomina sopra il file finale; gli altri PC ignorano i `.tmp`. Un'interruzione a metà non lascia mai un documento rotto.
+- **Lock** per l'aggiornamento in biblioteca: file `<uuid>.lock` con utente e ora; considerato scaduto dopo 2 ore. Su un Drive sincronizzato è solo **indicativo** (arriva agli altri PC con ritardo): protegge dal caso comune, non da due scritture nello stesso istante.
 - **Revisione** nel manifest; prima di scrivere si verifica che la revisione su disco sia quella letta. Se è cambiata (caso raro: autore su due PC), si salva come nuovo documento e lo si segnala.
 
 ### Online e offline
 
-- **Online** = la cartella condivisa è raggiungibile (si prova ad aprirla, non si guarda il nome della rete). Controllo all'avvio e ogni 2 minuti.
-- **Offline**: la biblioteca resta consultabile dall'ultima copia in cache (in sola lettura), si può Adattare, e le pubblicazioni vanno in una coda "In attesa di pubblicazione", inviata al rientro.
-- **Documenti personali**: in `Documenti\CAA` dell'utente (così rientrano nei backup e si trovano anche fuori dal programma).
+- **Raggiungibile** = la cartella della biblioteca esiste ed è leggibile (si prova ad aprirla, non si guarda lo stato di Drive). Controllo all'avvio e ogni 2 minuti. Il programma non può sapere se Drive per computer è collegato a Internet: legge e scrive nella cartella, e lì la sincronizzazione è affare di Drive.
+- **Senza connessione**: Drive per computer tiene le copie già scaricate (modalità "mirror", consigliata ai tecnici per questo; in streaming i file mai aperti non si leggono) e sincronizza al rientro. Il programma tiene comunque una propria cache locale dell'ultima copia letta di ogni documento, in sola lettura. Non serve una coda di pubblicazioni: scrivere nella cartella offline funziona e Drive spedisce al rientro; l'avviso "in sincronizzazione" resta finché i file non sono completi.
+- **Documenti personali**: in `Documenti\CAA` dell'utente (così rientrano nei backup e si trovano anche fuori dal programma). Se `Documenti` è già sincronizzato con Drive o OneDrive, vale quanto sopra: niente di nuovo da gestire.
 - **Identità**: nome utente Windows + nome da mostrare scelto al primo avvio. Nessun account, nessuna password nel programma.
-- **Credenziali di rete**: sui PC del dominio la cartella si apre con l'utente Windows. Sui portatili personali, il tecnico configura le credenziali salvate di Windows; il programma non gestisce password.
+- **Accesso al Drive**: ogni docente accede con il proprio account Google dell'istituto in Google Drive per computer. Anche sui portatili personali basta installarlo e accedere. Il programma non gestisce password.
+- **Trovare la cartella**: al primo avvio il programma cerca da solo le unità con una cartella `Drive condivisi` (o `Shared drives`) e propone le cartelle `CAA` che contengono `biblioteca`; se non la trova, l'utente scrive il percorso. La lettera dell'unità cambia da PC a PC: il percorso scelto è salvato per utente, e `config.json` (se c'è) può dare un nome di Drive condiviso e di cartella invece di una lettera.
 
 ## Formato file
 
@@ -679,11 +700,11 @@ La stampa è l'uscita principale (le storie si stampano e si leggono su carta), 
 
 ## Deployment, aggiornamenti, privacy
 
-**Installazione nella scuola.** Installer MSI per macchina, generato da Tauri, distribuito dal tecnico (manualmente o via criteri di gruppo). I pittogrammi e il lessico sono dentro l'installazione, in sola lettura. Un file `config.json` in `ProgramData` contiene il percorso della cartella condivisa: il tecnico lo imposta una volta, gli utenti non lo vedono.
+**Installazione nella scuola.** Installer MSI per macchina, generato da Tauri, distribuito dal tecnico (manualmente o via criteri di gruppo). I pittogrammi e il lessico sono dentro l'installazione, in sola lettura. Un file `config.json` in `ProgramData` può contenere il nome del Drive condiviso e della cartella della biblioteca (non una lettera di unità, che cambia da PC a PC): il tecnico lo imposta una volta, gli utenti non lo vedono. Su ogni PC deve essere installato Google Drive per computer.
 
-**Installazione a casa.** Lo stesso installer, disponibile nella cartella condivisa (e, se vorrai, su una pagina pubblica di rilascio: la ridistribuzione non commerciale dei pittogrammi è consentita con l'attribuzione). Senza `config.json` il programma funziona solo in locale.
+**Installazione a casa.** Lo stesso installer, disponibile nel Drive condiviso (e, se vorrai, su una pagina pubblica di rilascio: la ridistribuzione non commerciale dei pittogrammi è consentita con l'attribuzione). Senza `config.json` il programma funziona solo in locale.
 
-**Aggiornamenti.** All'avvio il programma legge `aggiornamenti\version.json` nella cartella condivisa; se c'è una versione più recente mostra un avviso discreto. Nessun aggiornamento automatico in v1: la distribuzione resta in mano al tecnico, che è il modo più semplice con PC gestiti.
+**Aggiornamenti.** All'avvio il programma legge `aggiornamenti\version.json` nella cartella del Drive condiviso; se c'è una versione più recente mostra un avviso discreto. Nessun aggiornamento automatico in v1: la distribuzione resta in mano al tecnico, che è il modo più semplice con PC gestiti.
 
 **Firma del codice.** Un eseguibile non firmato fa comparire l'avviso SmartScreen. Con installazione per macchina fatta dal tecnico il problema è minore; per le installazioni a casa conviene valutare un certificato (costo annuo) oppure istruzioni chiare per l'avviso.
 
@@ -692,7 +713,7 @@ La stampa è l'uscita principale (le storie si stampano e si leggono su carta), 
 **Privacy.**
 
 - Nessuna telemetria, nessuna connessione a Internet in esecuzione.
-- I documenti della biblioteca restano sul server della scuola.
+- I documenti della biblioteca stanno nel Drive condiviso dell'istituto (Google Workspace): il programma non vi accede da solo, lo fa Google Drive per computer con l'account del docente. Le regole sulla protezione dei dati sono quelle già in uso nell'istituto per quel Drive.
 - Le **copie personali** possono finire su portatili personali: storie con nomi o foto di studenti escono dalla scuola. Da segnalare al DPO; in v1 il programma mostra un promemoria quando si inserisce una foto come simbolo personale.
 - Il registro delle correzioni contiene solo forma, lemma, pittogramma scelto e due parole di contesto, **togliendo i nomi propri**; nessun testo completo.
 
@@ -721,8 +742,8 @@ Dodici milestone in ordine di dipendenza. Ognuna si chiude solo quando il criter
     - *Esito di M8a* (`docs/RAPPORTO-M8.md`): motore collegato all'editor (comandi Tauri, protocollo `picto://`, cache per paragrafo, politica parole funzionali, grandezze, parole dubbie). Provato a mano su Windows: tutto ok. Convenzione dei segni ◀ passato, ▶ futuro, + plurale accettata. Un simbolo la cui immagine manca nel pacchetto di prova resta un riquadro tratteggiato (limite del pacchetto, non del motore). Parte motore di M8b (alternative, scelte forzate, blocchi di senso) pronta; restano editor di M8b (menu, ricerca, Tab/F8) e M8c (simboli personali, unisci/dividi, politica personalizzata).
     - *Esito di M8b* (`docs/RAPPORTO-M8.md`): correzione di un simbolo con **barra laterale fissa** (scelta dell'utente al posto del menu): clic sul simbolo, Alt+↓, F8 o contatore; fino a 8 alternative, "Nessun simbolo", "Solo testo", "Automatico", ricerca in cima, casella "usa per tutto il testo" (blocco di senso che sostituisce le scelte singole). Scelte come mark `pick` con annulla/ripeti; impostazione "Contorna simbolo e parola" (card). Provato a mano su Windows e rivisto da un revisore indipendente (6 difetti corretti). Divergenza da risolvere in M9: il blocco di senso oggi sta sul mark della parola scelta, non nel documento (`sense_locks` del manifest). Tab (fuori dal testo) non implementato: F8 e clic sul contatore.
     - *Esito di M8c* (`docs/RAPPORTO-M8.md`, prove a mano su Windows ancora da fare, vedi `docs/PROVE-DA-FARE.md`): (1) politica «Personalizzato» con tabella per cinque categorie (articoli, clitici non riflessivi, «che», preposizioni, congiunzioni; «Completo» ed «Essenziale» sono due tabelle); (2) Unisci e Dividi/Riunisci parole (mark `group` merge/split; motore: `ForcedPick::MERGE`/`SPLIT`); (3) simboli personali (importa PNG/JPG, ritaglio quadrato, WebP salvato in `%APPDATA%\Editor CAA\simboli-personali`, id da 2^31, riuso e ricerca per etichetta). Fino a M9 politica, gruppi e scelte valgono nel documento aperto; i simboli personali restano nella cartella locale. Mancano: cancellazione di un simbolo salvato, raccolta della scuola, memoria delle correzioni fra documenti.
-10. **M9 — Archivio e biblioteca.** Formato `.caa`, documenti personali, biblioteca su cartella condivisa, Adatta/Pubblica/Aggiorna, lock, scritture atomiche, modalità offline, avviso cambio lessico.
-    - *Accettazione*: test con due PC sulla stessa cartella; interruzione di rete a metà salvataggio senza file corrotti.
+10. **M9 — Archivio e biblioteca.** Formato `.caa`, documenti personali, biblioteca nel Drive condiviso (cartella sincronizzata da Google Drive per computer), Adatta/Pubblica/Aggiorna, lock indicativo, scritture atomiche, file incompleti, cache offline, avviso cambio lessico.
+    - *Accettazione*: prova con due PC sulla stessa cartella del Drive condiviso; interruzione a metà salvataggio e file incompleti senza documenti corrotti.
 11. **M10 — Stampa ed esportazione.** Impaginazione, preset, piè di pagina di attribuzione, PDF.
     - *Accettazione*: stampa di prova di 3 storie sulle stampanti della scuola, nessuna parola separata dal suo simbolo.
 12. **M11 — Pilota.** MSI, `config.json`, installazione su 3–5 PC, prova con 3–5 docenti per due settimane.
@@ -742,7 +763,7 @@ Dodici milestone in ordine di dipendenza. Ognuna si chiude solo quando il criter
 - [ ] **Segni di plurale, passato e futuro**: riprodurre esattamente la convenzione ARASAAC (da verificare su esempi scaricati) o adottare quella già in uso nella scuola.
 - [ ] **Politica predefinita delle parole funzionali**: "Completo" o "Essenziale" come default? Da decidere con il gruppo inclusione e, se possibile, con i logopedisti che seguono gli studenti.
 - [ ] **Dimensioni reali dei simboli** in stampa: da tarare con prove su carta.
-- [ ] **Cartella condivisa**: percorso, permessi (lettura per tutti, scrittura in `biblioteca\` per tutti i docenti), backup del server. Da concordare con il tecnico.
+- [ ] **Drive condiviso**: creare la cartella `CAA` (con `biblioteca`, `simboli`, `correzioni`, `archivio`, `aggiornamenti`) nel Drive condiviso dell'istituto; ruoli (docenti: Collaboratore; due o tre persone: Gestore dei contenuti); Google Drive per computer installato su ogni PC (modalità mirror per i file della cartella `CAA`) e sui portatili personali. Da concordare con il tecnico e con chi amministra Google Workspace.
 - [ ] **Corpus**: quali 20–40 testi, chi li annota, se esistono già versioni SymWriter da confrontare.
 - [x] **Etichette `WH` e `WH-CHE` di Morph-it!**: deciso in M5. Le etichette restano come sono (`WH` → avverbio, `WH-CHE` → congiunzione) e le letture mancanti si aggiungono in `forms_extra.tsv`: "che" anche pronome, "quando", "come", "perché", "qualora" anche congiunzioni.
 - [ ] **Nome del programma.**
