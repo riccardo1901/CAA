@@ -79,6 +79,7 @@ cargo run --release -q -p caa-eval -- corpus             # correzioni per 100 pa
 cargo run --release -q -p caa-eval -- corpus --gruppo prova
 cargo run --release -q -p caa-eval -- prepara corpus/testi/X.txt   # bozza TSV da correggere a mano
 cargo run --release -q -p caa-eval -- candidati sale     # pittogrammi dell'indice per una parola
+cargo run -q -p caa-eval -- correzioni /percorso/correzioni   # (M9c) registri anonimi dei docenti: scelte ricorrenti da portare nei file curati
 
 # Strutture (M6): clitici, tempi composti, pronominali, multiparola (serve data/build con arasaac/mwe.bin)
 cargo run --release -q -p caa-eval -- strutture          # i 20 test dorati di SPEC.md, parola per parola

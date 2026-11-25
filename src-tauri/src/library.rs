@@ -356,6 +356,37 @@ impl LibraryState {
             .map_err(|e| e.to_string())
     }
 
+    /// Raccolta delle correzioni anonime: accesa di partenza, l'utente la può spegnere.
+    pub fn corrections_enabled(&self) -> bool {
+        !self.settings().corrections_off
+    }
+
+    pub fn set_corrections_enabled(&self, on: bool) -> Result<(), String> {
+        let mut s = self.settings();
+        let before = s.corrections_off;
+        s.corrections_off = !on;
+        if let Err(e) = save_settings(&self.settings_dir, &s) {
+            s.corrections_off = before;
+            return Err(format!("non riesco a salvare l'impostazione: {e}"));
+        }
+        Ok(())
+    }
+
+    /// Invia le correzioni anonime al Drive (`correzioni\`): un file nuovo, mai sopra uno esistente.
+    pub fn send_corrections(&self, lines: &[String], anon_id: &str) -> Result<String, String> {
+        let root = self.writable_root()?;
+        let stamp: String = caa_doc::now_iso()
+            .chars()
+            .filter(char::is_ascii_digit)
+            .collect();
+        let stamp = format!(
+            "{}-{}",
+            &stamp[..8.min(stamp.len())],
+            &stamp[8.min(stamp.len())..]
+        );
+        caa_lib::corrections::send(&root, anon_id, lines, &stamp).map_err(|e| e.to_string())
+    }
+
     /// Condivide con la scuola un simbolo personale (solo se il Drive risponde: si scrive nel Drive).
     pub fn share_symbol(
         &self,
@@ -1034,5 +1065,31 @@ mod tests {
         assert!(!l.configured && l.symbols.is_empty());
         assert!(st.share_symbol("x", &custom, "M", "m").is_err());
         let _ = std::fs::remove_dir_all(sd);
+    }
+
+    #[test]
+    fn correzioni_anonime_si_spengono_e_si_inviano_solo_con_il_drive() {
+        let (sd, lib, dd, st, _docs) = setup("correzioni");
+        assert!(st.corrections_enabled());
+        st.set_corrections_enabled(false).unwrap();
+        assert!(!st.corrections_enabled());
+        // Ricordata anche da una nuova apertura del programma.
+        let again = LibraryState::new(sd.clone(), SharedConfig::default(), vec![]);
+        assert!(!again.corrections_enabled());
+        st.set_corrections_enabled(true).unwrap();
+        let lines = vec!["pesca\tla\tè\tpesca\tNOUN\t11\t12".to_string()];
+        let name = st.send_corrections(&lines, "ab12cd").unwrap();
+        assert!(
+            name.starts_with("ab12cd-") && name.ends_with(".tsv"),
+            "{name}"
+        );
+        let body = std::fs::read_to_string(lib.join("correzioni").join(&name)).unwrap();
+        assert!(body.starts_with("forma\t") && body.contains("pesca"));
+        // Senza biblioteca collegata non si scrive niente.
+        let none = LibraryState::new(tmp("corr-vuota"), SharedConfig::default(), vec![]);
+        assert!(none.send_corrections(&lines, "ab12cd").is_err());
+        for d in [sd, lib, dd] {
+            let _ = std::fs::remove_dir_all(d);
+        }
     }
 }

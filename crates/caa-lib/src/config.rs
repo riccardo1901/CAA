@@ -35,6 +35,8 @@ pub struct Settings {
     pub display_name: String,
     /// La cartella della biblioteca scelta da questo utente.
     pub library_path: Option<String>,
+    /// L'utente ha spento la raccolta delle correzioni anonime (di partenza è accesa).
+    pub corrections_off: bool,
 }
 
 const SETTINGS_FILE: &str = "settings.json";

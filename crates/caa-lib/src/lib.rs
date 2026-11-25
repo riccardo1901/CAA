@@ -12,6 +12,7 @@
 
 pub mod cache;
 pub mod config;
+pub mod corrections;
 pub mod detect;
 pub mod index;
 pub mod publish;

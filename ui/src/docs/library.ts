@@ -1,6 +1,6 @@
 // La scheda «Biblioteca» (M9b-1): trovare la cartella del Drive condiviso, elencare i documenti di
 // riferimento, cercarli e farne una copia da adattare.
-import type { LibEntry, LibraryClient, LibScan, LibStatus } from "../engine/client";
+import type { CorrectionsClient, LibEntry, LibraryClient, LibScan, LibStatus } from "../engine/client";
 import { formatWhen } from "./panel-format";
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string): HTMLElementTagNameMap[K] {
@@ -43,6 +43,8 @@ export interface LibraryTabDeps {
   /** Lo stato della biblioteca è cambiato (cartella scelta): aggiorna l'indicatore in alto. */
   changed(status: LibStatus): void;
   confirm(message: string): boolean;
+  /** Le correzioni anonime (M9c-3): se c'è, in fondo alla scheda c'è la sezione per vederle e inviarle. */
+  corrections?: CorrectionsClient;
 }
 
 /** Due nomi sono lo stesso (senza badare a maiuscole e spazi ai lati). */
@@ -233,6 +235,83 @@ export function showLibraryTab(body: HTMLElement, deps: LibraryTabDeps): void {
     for (const input of [q, subject, level]) input.addEventListener("input", draw);
     draw();
     body.replaceChildren(top, filters, notes, msg, ul);
+    if (deps.corrections) void correctionsSection(deps.corrections, scan.offline);
+  }
+
+  /** «Correzioni anonime»: si vede cosa partirebbe, si può spegnere la raccolta e inviare a mano. */
+  async function correctionsSection(c: CorrectionsClient, offline: boolean): Promise<void> {
+    let info;
+    try {
+      info = await c.info();
+    } catch {
+      return;
+    }
+    const box = el("section", "lib-corrections");
+    box.append(el("h3", "", "Correzioni anonime"));
+    box.append(
+      el(
+        "p",
+        "docs-note",
+        "Quando scegli un simbolo diverso da quello proposto, il programma ricorda solo la parola, una parola prima e una dopo (senza nomi propri né numeri) e il simbolo scelto. Mai il testo, mai il tuo nome. Parte solo se premi «Invia»: servono a migliorare i simboli per tutti.",
+      ),
+    );
+    const on = el("input");
+    on.type = "checkbox";
+    on.checked = info.enabled;
+    const label = el("label", "pm-all");
+    label.append(on, " Raccogli le correzioni");
+    on.addEventListener("change", () => {
+      c.setEnabled(on.checked).catch(() => (on.checked = !on.checked));
+    });
+    const count = el("p", "docs-note", info.pending === 0 ? "Nessuna correzione in attesa." : `${info.pending} ${info.pending === 1 ? "correzione in attesa" : "correzioni in attesa"}.`);
+    const msg = el("p", "docs-note");
+    const preview = el("pre", "lib-corr-preview");
+    preview.hidden = true;
+    const actions = el("div", "lib-actions");
+    const show = el("button", "", "Vedi cosa parte");
+    show.type = "button";
+    show.disabled = info.pending === 0;
+    show.addEventListener("click", () => {
+      c.preview().then((lines) => {
+        preview.hidden = false;
+        preview.textContent = ["forma · prima · dopo · lemma · categoria · simbolo scelto · proposto", ...lines.map((l) => l.split("\t").join(" · "))].join("\n");
+      }, () => undefined);
+    });
+    const send = el("button", "", "Invia correzioni");
+    send.type = "button";
+    send.disabled = info.pending === 0 || offline;
+    send.title = offline ? "Serve il Drive" : "Le copia nella cartella «correzioni» del Drive";
+    send.addEventListener("click", () => {
+      send.disabled = true;
+      msg.textContent = "";
+      c.send().then(
+        (n) => {
+          msg.textContent = `Inviate ${n} ${n === 1 ? "correzione" : "correzioni"}. Grazie!`;
+          count.textContent = "Nessuna correzione in attesa.";
+          show.disabled = true;
+          preview.hidden = true;
+        },
+        (e: unknown) => {
+          send.disabled = false;
+          msg.textContent = `Non sono riuscito a inviarle: ${String(e)}`;
+          msg.classList.add("warn");
+        },
+      );
+    });
+    const discard = el("button", "", "Butta via");
+    discard.type = "button";
+    discard.disabled = info.pending === 0;
+    discard.addEventListener("click", () => {
+      if (!deps.confirm("Buttare via le correzioni raccolte senza inviarle?")) return;
+      c.discard().then(() => {
+        count.textContent = "Nessuna correzione in attesa.";
+        show.disabled = send.disabled = discard.disabled = true;
+        preview.hidden = true;
+      }, () => undefined);
+    });
+    actions.append(show, send, discard);
+    box.append(label, count, actions, msg, preview);
+    body.append(box);
   }
 
   void list();

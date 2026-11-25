@@ -102,6 +102,7 @@ fn configurazione_e_impostazioni() {
     // Impostazioni: andata e ritorno; un file rovinato si mette da parte.
     assert_eq!(load_settings(&dir.join("sub")), Settings::default());
     let s = Settings {
+        corrections_off: false,
         display_name: "Maria Rossi".into(),
         library_path: Some("G:\\x".into()),
     };

@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod bridge;
+mod corrections;
 mod custom;
 mod docs;
 mod library;
@@ -16,6 +17,7 @@ use serde::Serialize;
 use tauri::http::Response;
 use tauri::{Emitter, Manager, State};
 
+use corrections::CorrectionStore;
 use custom::{app_dir, custom_dir, is_custom, CustomStore, CustomSymbol};
 use docs::{docs_dir, DocEntry, DocStore, Opened, SavePayload};
 use library::{
@@ -39,6 +41,8 @@ struct Backend {
     library: LibraryState,
     /// Cosa il docente ha scelto «per sempre» (M9c-1).
     memory: MemoryStore,
+    /// Il registro locale delle correzioni anonime (M9c-3).
+    corrections: CorrectionStore,
     engine: Option<MappedEngine>,
     dir: Option<PathBuf>,
     error: Option<String>,
@@ -81,6 +85,7 @@ fn load_backend() -> Backend {
         exe_dir.as_deref(),
     );
     let memory = MemoryStore::open(&data_dir);
+    let corrections = CorrectionStore::new(&data_dir);
     let library = LibraryState::new(
         data_dir,
         caa_lib::config::load_config(&caa_lib::config::config_path(
@@ -97,6 +102,7 @@ fn load_backend() -> Backend {
             docs,
             library,
             memory,
+            corrections,
             engine: None,
             dir: None,
             error: Some(format!(
@@ -111,6 +117,7 @@ fn load_backend() -> Backend {
             docs,
             library,
             memory,
+            corrections,
             engine: Some(engine),
             dir: Some(dir),
             error: None,
@@ -120,6 +127,7 @@ fn load_backend() -> Backend {
             docs,
             library,
             memory,
+            corrections,
             engine: None,
             dir: Some(dir),
             error: Some(e.to_string()),
@@ -262,6 +270,79 @@ fn memory_forget(state: State<'_, Arc<Backend>>, entry: MemoryEntry) -> Result<(
 #[tauri::command]
 fn memory_clear(state: State<'_, Arc<Backend>>) -> Result<(), String> {
     state.memory.clear()
+}
+
+#[derive(Serialize)]
+struct CorrectionsInfo {
+    enabled: bool,
+    pending: usize,
+}
+
+#[derive(serde::Deserialize)]
+struct CorrectionDto {
+    text: String,
+    s: u32,
+    e: u32,
+    lemma: String,
+    cat: String,
+    picto: u32,
+    auto: u32,
+}
+
+/// Registra una scelta del docente come riga anonima (se la raccolta è accesa e la parola è adatta).
+#[tauri::command]
+fn correction_log(state: State<'_, Arc<Backend>>, entry: CorrectionDto) -> Result<(), String> {
+    if !state.library.corrections_enabled() || entry.text.len() > 20_000 {
+        return Ok(());
+    }
+    match caa_lib::corrections::make(
+        &entry.text,
+        entry.s,
+        entry.e,
+        &entry.lemma,
+        &entry.cat,
+        entry.picto,
+        entry.auto,
+    ) {
+        Some(c) => state.corrections.log(&c),
+        None => Ok(()),
+    }
+}
+
+#[tauri::command]
+fn corrections_info(state: State<'_, Arc<Backend>>) -> CorrectionsInfo {
+    CorrectionsInfo {
+        enabled: state.library.corrections_enabled(),
+        pending: state.corrections.pending().len(),
+    }
+}
+
+/// Le prime righe da inviare, così il docente vede cosa parte.
+#[tauri::command]
+fn corrections_preview(state: State<'_, Arc<Backend>>) -> Vec<String> {
+    state.corrections.pending().into_iter().take(30).collect()
+}
+
+#[tauri::command]
+fn corrections_set_enabled(state: State<'_, Arc<Backend>>, on: bool) -> Result<(), String> {
+    state.library.set_corrections_enabled(on)
+}
+
+/// Butta via le correzioni raccolte (senza inviarle).
+#[tauri::command]
+fn corrections_discard(state: State<'_, Arc<Backend>>) -> Result<(), String> {
+    let n = state.corrections.pending().len();
+    state.corrections.drop_first(n)
+}
+
+/// Invia le correzioni al Drive; se riesce le toglie dal registro locale (restano quelle nuove).
+#[tauri::command(async)]
+fn corrections_send(state: State<'_, Arc<Backend>>) -> Result<usize, String> {
+    let lines = state.corrections.pending();
+    let id = state.corrections.anon_id()?;
+    state.library.send_corrections(&lines, &id)?;
+    state.corrections.drop_first(lines.len())?;
+    Ok(lines.len())
 }
 
 /// Simboli personali: cancellazione dalla raccolta di questo computer.
@@ -555,6 +636,12 @@ fn main() {
             memory_forget,
             memory_clear,
             custom_symbol_delete,
+            correction_log,
+            corrections_info,
+            corrections_preview,
+            corrections_set_enabled,
+            corrections_discard,
+            corrections_send,
             shared_symbol_share,
             shared_symbols,
             shared_symbol_import,

@@ -270,6 +270,7 @@ version = "0.1.0"
 dependencies = [
  "caa-engine",
  "caa-lexicon-build",
+ "caa-lib",
  "caa-store",
  "tempfile",
 ]

@@ -1,6 +1,6 @@
 // Il pannello «Documenti» (M9a): due schede, «I miei documenti» (la cartella `Documenti\CAA`) e
 // «Biblioteca» (il Drive condiviso dell'istituto, in arrivo con M9b).
-import type { DocClient, DocEntry, LibraryClient, LibStatus } from "../engine/client";
+import type { CorrectionsClient, DocClient, DocEntry, LibraryClient, LibStatus } from "../engine/client";
 import { distinct } from "./library";
 import { showLibraryTab } from "./library";
 import { formatWhen } from "./panel-format";
@@ -25,6 +25,8 @@ export interface PanelOptions {
   libraryChanged?: (status: LibStatus) => void;
   /** Si chiude il pannello (il cursore torna nel testo). */
   onClose?: () => void;
+  /** Le correzioni anonime (M9c-3). */
+  corrections?: CorrectionsClient;
 }
 
 export function createDocsPanel(docs: DocClient, session: Session, confirmDelete: (title: string) => boolean, opts: PanelOptions = {}): DocsPanel {
@@ -267,6 +269,7 @@ export function createDocsPanel(docs: DocClient, session: Session, confirmDelete
         library: opts.library,
         changed: (s) => opts.libraryChanged?.(s),
         confirm: (m) => window.confirm(m),
+        corrections: opts.corrections,
         openCopy: async (file) => {
           await session.openFile(file);
           close();

@@ -92,5 +92,16 @@ Ogni difetto confermato ha la prova scritta prima (sul codice vecchio falliva).
 - **Editor**: «Condividi con tutta la scuola» nel ritaglio (solo con la biblioteca; un errore non toglie il simbolo), «Simboli della scuola…» nella barra, × per eliminare/ritirare con conferma.
 - Non fatto (per scelta): cache offline dell'elenco della scuola (senza Drive l'elenco è vuoto, ma quelli già presi restano nella raccolta locale).
 
+# M9c-3 — correzioni anonime
+
+**Stato**: codice e prove automatiche fatti; prova a mano su Windows da fare (`docs/PROVE-M9c3.md`).
+
+- **`caa-lib::corrections`**: una riga per scelta = forma, una parola di contesto per lato, lemma, categoria, pittogramma scelto (0 = nessun simbolo), pittogramma proposto. Mai il testo intero né il nome di chi scrive. Non si registrano: parole senza lemma (sconosciute, forse nomi), maiuscola in mezzo alla frase (nomi propri), cifre, parole troppo lunghe, simboli personali. Nei contesti nomi, numeri e parole lunghe diventano `_`. Offset in UTF-16 (prova con accentate ed emoji).
+- **Invio**: `correzioni\<id casuale>-<data>-<ora>.tsv`, mai sopra un file esistente; l'id è un numero casuale in `anon-id`, non il nome utente. Se riesce si tolgono dal registro locale solo le righe inviate (quelle arrivate nel frattempo restano). Senza Drive non si invia.
+- **App**: registro locale `correzioni-locali.tsv` (tetto 20.000 righe, righe rovinate ignorate), interruttore «Raccogli le correzioni» (acceso di partenza, salvato nelle impostazioni).
+- **Editor**: ogni scelta di un pittogramma diverso dal proposto, o «Nessun simbolo», si registra; sezione «Correzioni anonime» nella scheda Biblioteca (testo di spiegazione, anteprima, Invia, Butta via).
+- **`caa-eval correzioni DIR [--tutte]`**: aggrega i registri (docenti, volte, forma, lemma, categoria, scelto, proposto) per decidere a mano cosa portare nei file curati; non modifica niente.
+- Limite noto: un nome conosciuto dal lessico come parola comune a inizio frase può finire nella forma; per questo c'è l'anteprima prima dell'invio.
+
 ## Metriche del motore
 Invariate (la memoria è vuota nelle misure): dorati 48/48; strutture 20/20; corpus sviluppo 6,9 (134/1945); prova 13,4 (86/643).

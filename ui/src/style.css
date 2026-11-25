@@ -457,3 +457,8 @@ body { margin: 0; }
 .pm-school-msg { font-size: 13px; color: #555; }
 .crop-share { display: block; margin: 8px 0; font-size: 14px; }
 .crop-share[hidden] { display: none; }
+
+/* Correzioni anonime (M9c-3) */
+.lib-corrections { margin-top: 18px; border-top: 1px solid var(--line, #d0d0d0); padding-top: 10px; }
+.lib-corrections h3 { font-size: 15px; margin: 0 0 6px; }
+.lib-corr-preview { max-height: 180px; overflow: auto; font-size: 12px; background: #f4f4f4; padding: 6px; white-space: pre-wrap; }

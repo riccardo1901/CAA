@@ -43,8 +43,41 @@ Comandi:\n\
   candidati  pittogrammi dell'indice per una parola\n\
   tara       cerca i pesi migliori e la temperatura della confidenza (opzione --conllu FILE)\n\
   mostra     lettura, categoria e pittogramma di ogni parola di una frase\n\
+  correzioni registri anonimi dei docenti (cartella `correzioni` del Drive): scelte ricorrenti da portare nei file curati (correzioni DIR [--tutte])\n\
 \n\
 Opzioni comuni: --lexicon DIR (predefinito data/build), --help, --version";
+
+/// `caa-eval correzioni DIR`: le scelte dei docenti, dalle più ripetute. Di solito si guardano quelle fatte da
+/// almeno due docenti o due volte; con `--tutte` anche le altre. Sono proposte per i file curati, non modifiche.
+fn corrections_report(dir: &str, all: bool) -> ExitCode {
+    if dir.is_empty() {
+        eprintln!("indica la cartella dei registri (la cartella `correzioni` del Drive)");
+        return ExitCode::FAILURE;
+    }
+    let rows = caa_lib::corrections::aggregate(std::path::Path::new(dir));
+    let shown: Vec<_> = rows
+        .iter()
+        .filter(|r| all || r.users >= 2 || r.count >= 2)
+        .collect();
+    println!("docenti\tvolte\tforma\tlemma\tcat\tscelto\tautomatico");
+    for r in &shown {
+        println!(
+            "{}\t{}\t{}\t{}\t{}\t{}\t{}",
+            r.users, r.count, r.form, r.lemma, r.cat, r.picto, r.auto
+        );
+    }
+    println!(
+        "{} scelte diverse in tutto, {} mostrate{}",
+        rows.len(),
+        shown.len(),
+        if all {
+            ""
+        } else {
+            " (ripetute: aggiungi --tutte per tutte)"
+        }
+    );
+    ExitCode::SUCCESS
+}
 
 fn main() -> ExitCode {
     let mut args = std::env::args().skip(1);
@@ -61,7 +94,7 @@ fn main() -> ExitCode {
     let mut sentence = String::new();
     if matches!(
         command.as_str(),
-        "mostra" | "prepara" | "prepara-candidati" | "candidati" | "pacchetto"
+        "mostra" | "prepara" | "prepara-candidati" | "candidati" | "pacchetto" | "correzioni"
     ) {
         sentence = args.next().unwrap_or_default();
     }
@@ -102,6 +135,10 @@ fn main() -> ExitCode {
             return ExitCode::SUCCESS;
         }
         _ => {}
+    }
+    if command == "correzioni" {
+        // Non serve il lessico: si leggono solo i registri (M9c-3).
+        return corrections_report(&sentence, std::env::args().any(|a| a == "--tutte"));
     }
     let mut engine = match open_engine(&lexicon) {
         Ok(e) => e,

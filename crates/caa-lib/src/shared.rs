@@ -57,7 +57,7 @@ fn clean_label(l: &str) -> String {
         .collect()
 }
 
-fn write_new(path: &Path, bytes: &[u8]) -> Result<(), LibError> {
+pub(crate) fn write_new(path: &Path, bytes: &[u8]) -> Result<(), LibError> {
     let tmp = caa_doc::tmp_path(path);
     let res = std::fs::write(&tmp, bytes).and_then(|_| {
         // Mai sopra un file che c'è già (un altro PC può averlo appena scritto).

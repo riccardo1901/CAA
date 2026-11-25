@@ -126,6 +126,7 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
     const panel = createDocsPanel(docs, session, (title) => window.confirm(`Eliminare «${title}»? Non si può annullare.`), {
       library: lib,
       libraryChanged: showLib,
+      corrections: client?.corrections,
       onClose: () => view.focus(),
     });
     bars.docsButton.addEventListener("click", () => panel.open());

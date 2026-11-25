@@ -272,6 +272,33 @@ export interface SharedClient {
   retire(uuid: string): Promise<void>;
 }
 
+/** Una scelta del docente da registrare come correzione anonima (la riga la costruisce il programma). */
+export interface CorrectionReq {
+  text: string;
+  s: number;
+  e: number;
+  lemma: string;
+  cat: string;
+  picto: number;
+  auto: number;
+}
+
+export interface CorrectionsInfo {
+  enabled: boolean;
+  pending: number;
+}
+
+export interface CorrectionsClient {
+  log(entry: CorrectionReq): Promise<void>;
+  info(): Promise<CorrectionsInfo>;
+  /** Le prime righe che partirebbero. */
+  preview(): Promise<string[]>;
+  setEnabled(on: boolean): Promise<void>;
+  /** Invia al Drive; restituisce quante righe. */
+  send(): Promise<number>;
+  discard(): Promise<void>;
+}
+
 /** Quello che serve all'editor per parlare con il motore. */
 export interface EngineClient {
   symbolize(paras: ParaReq[], policy: Policy, locks: LockReq[]): Promise<TokenDto[][]>;
@@ -283,6 +310,8 @@ export interface EngineClient {
   docs?: DocClient;
   /** La biblioteca nel Drive condiviso e il nome da mostrare; assenti nelle prove senza archivio. */
   library?: LibraryClient;
+  /** Le correzioni anonime (M9c-3); assenti nelle prove senza archivio. */
+  corrections?: CorrectionsClient;
   /** I simboli della scuola nel Drive (M9c-2); assenti nelle prove senza biblioteca. */
   shared?: SharedClient;
   /** Toglie un simbolo personale dalla raccolta di questo computer. */
@@ -331,6 +360,14 @@ export function tauriClient(): EngineClient {
     },
     listCustom: () => invoke<CustomSymbol[]>("list_custom_symbols"),
     deleteCustom: (uuid) => invoke<void>("custom_symbol_delete", { uuid }),
+    corrections: {
+      log: (entry) => invoke<void>("correction_log", { entry }),
+      info: () => invoke<CorrectionsInfo>("corrections_info"),
+      preview: () => invoke<string[]>("corrections_preview"),
+      setEnabled: (on) => invoke<void>("corrections_set_enabled", { on }),
+      send: () => invoke<number>("corrections_send"),
+      discard: () => invoke<void>("corrections_discard"),
+    },
     shared: {
       share: (uuid) => invoke<SharedSymbol>("shared_symbol_share", { uuid }),
       list: () => invoke<SharedList>("shared_symbols"),
