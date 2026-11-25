@@ -65,6 +65,20 @@
 - **Prove**: `tests/e2e/finestre.spec.ts` (12) con le finestre vere; nelle altre prove le conferme dicono «sì» da sole tramite `window.__caaConferma` (come prima la conferma del browser), `rispondiConferma(page, false)` per «Annulla». Prove esistenti aggiornate solo nei selettori (`.toasts` al posto di `.statusbar` per i messaggi), nessuna tolta.
 - **Schermate**: nuovi stati «15-conferma» e «16-notifica-errore»; lo stato «09-messaggio» non selezionava le parole giuste da M11-0 (rifatto anche il «prima» sul codice di M11-2).
 
+### M11-4 — fatto (in attesa del via libera)
+
+- **Decisioni dell'utente**: niente zoom del foglio (vale la 3.2); finestra all'avvio all'85% dello schermo, centrata (vale la sezione 0).
+- **Intestazione** (`toolbar.ts`, `header.app-header`): segno e «Editor CAA» (il nome sparisce sotto 72em), Documenti, Nuovo, titolo, stato del salvataggio, biblioteca, **Stampa…** (unica azione principale), menu **«Altro»** (`ui/menu.ts`): Testo di esempio, Informazioni, versione nuova (voce `.update-note` + pallino sul pulsante), e i gruppi della barra degli strumenti che non ci stanno. Frecce, Invio, Esc; scegliendo una voce il fuoco torna su «Altro».
+- **Barra degli strumenti su una riga**: gruppi Annulla/Ripeti, Unisci/Dividi, Simboli (scelta unica), Parole funzionali, Contorna. Quando manca spazio escono interi verso «Altro» (prima Contorna, poi Parole funzionali, Simboli, Unisci/Dividi; Annulla e Ripeti restano sempre); testo a 15 px (la barra compatta provvisoria di M11-1 non serve più).
+- **Avvisi del documento** in una zona sola (`.strip-zone`, `role="region"`) sotto la barra degli strumenti: fascia gialla con la × (K9; tolto «Clicca qui per chiudere»), lessico nuovo, originale aggiornato; pulsanti un po' più bassi.
+- **Barra di stato**: contatore delle parole da controllare come vero pulsante con la bandierina (K8), numero di parole, stato del motore solo se c'è un problema. Tolti «Motore attivo» e la politica ripetuta; se il motore gira senza tagger o espressioni lo dice una notifica.
+- **Pannello laterale richiudibile** (`side/panel.ts`, K11): accanto al foglio quando c'è posto; su schermo stretto (il foglio, verticale o orizzontale, non sta intero accanto) parte chiuso, si apre da solo con clic sul simbolo, Alt+↓, F8 e sta SOPRA la scrivania; la scrivania scorre perché la parola scelta resti scoperta; Esc o il pulsante lo richiudono. Per ora la sola scheda «Simbolo» (Pagina in M11-5, Memoria in M11-7).
+- **Ctrl+Z, Ctrl+Y, Ctrl+Maiusc+Z ovunque** fuori dai campi di testo (K3). La riga di registro su Windows prevista in M8b non c'è: da vedere a mano.
+- **Tabella «Personalizzato»** come riquadro a comparsa: il fuoco entra, Esc e clic fuori chiudono (K10); scegliendola dal menu «Altro» il menu si chiude.
+- **Finestra all'avvio** (K12, `src-tauri`): nascosta nella configurazione, poi 85% dello schermo in punti (minimo 800×500, mai oltre lo schermo), centrata e mostrata. Funzione `dimensione_iniziale` con la sua prova (qui compilata a parte: l'app si compila solo in CI).
+- **Matrice dei 19 schermi**: tutti i controlli verdi su tutti gli schermi, tranne l'A4 orizzontale su 1024×600, 1366×768 al 125% e 1440×900 al 125% (meno di 1200 punti di larghezza: senza zoom non ci sta; segnati come fallimenti accettati).
+- **Prove**: `tests/e2e/barre.spec.ts` (10). Prove esistenti adattate: «Testo di esempio» e «Informazioni» dal menu «Altro» (`voceAltro`), «Contorna» dalla barra o dal menu (`casellaContorno`), la politica letta dalla tendina, la fascia gialla chiusa con la ×.
+
 ---
 
 ## 1. Diagnosi dell'interfaccia attuale

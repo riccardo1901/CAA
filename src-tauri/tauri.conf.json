@@ -11,7 +11,16 @@
   },
   "app": {
     "windows": [
-      { "title": "Editor CAA", "width": 1100, "height": 800 }
+      {
+        "label": "main",
+        "title": "Editor CAA",
+        "width": 1100,
+        "height": 720,
+        "minWidth": 800,
+        "minHeight": 500,
+        "center": true,
+        "visible": false
+      }
     ],
     "security": {
       "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost; img-src 'self' picto: http://picto.localhost https://picto.localhost data: blob:; style-src 'self' 'unsafe-inline'"

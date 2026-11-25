@@ -151,7 +151,8 @@ const SITUAZIONI: Array<[string, (page: Page) => Promise<void>]> = [
   }],
   ["informazioni", async (page) => {
     await apriCompleto(page);
-    await page.getByRole("button", { name: "Informazioni" }).click();
+    await page.getByRole("button", { name: "Altro", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Informazioni" }).click();
   }],
   ["avvisi", (page) => tuttiGliAvvisi(page)],
 ];

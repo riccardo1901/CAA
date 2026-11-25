@@ -218,3 +218,16 @@ export async function rispondiConferma(page: Page, si: boolean): Promise<void> {
     (window as any).__caaConferma = () => r;
   }, si);
 }
+
+/** Sceglie una voce del menu «Altro» (M11-4: «Testo di esempio», «Informazioni»…). */
+export async function voceAltro(page: Page, nome: string | RegExp): Promise<void> {
+  await page.getByRole("button", { name: "Altro", exact: true }).click();
+  await page.getByRole("menuitem", { name: nome }).click();
+}
+
+/** «Contorna simbolo e parola»: nella barra degli strumenti o, se non ci sta, nel menu «Altro» (M11-4). */
+export async function casellaContorno(page: Page) {
+  const c = page.getByLabel("Contorna simbolo e parola");
+  if (!(await c.isVisible())) await page.getByRole("button", { name: "Altro", exact: true }).click();
+  return c;
+}

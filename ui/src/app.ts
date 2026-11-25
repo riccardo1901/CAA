@@ -24,6 +24,7 @@ import type { Node as PMNode } from "prosemirror-model";
 import { icona } from "./ui/icons";
 import { installaSuggerimenti } from "./ui/tooltip";
 import { conferma } from "./ui/confirm";
+import { creaPannelloLaterale } from "./side/panel";
 
 let view: EditorView;
 let size = 68;
@@ -58,9 +59,19 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
   }
   engineModeOn = true;
   panelEl.remove();
-  // La barra dei simboli sostituisce il pannello di prova: fissa a destra, si riempie quando si agisce su una parola.
+  // La barra dei simboli sostituisce il pannello di prova: a destra, si riempie quando si agisce su una parola. Sta in
+  // un pannello che si richiude (M11-4): da solo quando il foglio non entra accanto, e si riapre quando serve.
   sideEl = createSidebar();
-  layoutEl.appendChild(sideEl);
+  const pannello = creaPannelloLaterale(sideEl, layoutEl, layoutEl.querySelector<HTMLElement>(".sheet-wrap")!);
+  layoutEl.appendChild(pannello.root);
+  hooks.apriBarra = () => {
+    pannello.apri();
+    // Dopo che la parola è evidenziata: se il pannello sta sopra il foglio, la parola non deve restare coperta.
+    requestAnimationFrame(() => pannello.mostraParola());
+  };
+  hooks.lasciaBarra = () => {
+    if (pannello.sopra()) pannello.chiudi();
+  };
   const app = document.createElement("div");
   app.className = "app";
   // "Nuovo" e "Testo di esempio" buttano via il documento aperto (il salvataggio arriva con M9): si chiede conferma
@@ -82,20 +93,24 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
   // Per le prove automatiche: le preferenze del documento (stampa, contorno, dimensione) senza passare dai pulsanti,
   // che in M11 cambiano posto. Nessun effetto per il docente.
   Object.assign((window as unknown as { caaProto: object }).caaProto, { getPrefs: bars.getPrefs, setPrefs: bars.setPrefs, setAuthor: bars.setAuthor });
-  // La riga dei documenti c'è solo se c'è l'archivio (nell'app); nelle prove senza archivio resta nascosta.
-  bars.docbar.hidden = !docs;
+  // Le parti dei documenti ci sono solo se c'è l'archivio (nell'app); nelle prove senza archivio restano nascoste.
+  bars.mostraDocumenti(!!docs);
   const lexBar = createLexBar((p) => client?.url(p) ?? "");
   const originalBar = createOriginalBar();
-  app.append(bars.banner, lexBar.root, originalBar.root, bars.docbar, bars.toolbar, layoutEl, bars.statusbar);
+  // Gli avvisi del documento in un posto solo, sotto la barra degli strumenti e sopra il foglio (M11-4).
+  const avvisi = document.createElement("div");
+  avvisi.className = "strip-zone";
+  avvisi.setAttribute("role", "region");
+  avvisi.setAttribute("aria-label", "Avvisi del documento");
+  avvisi.append(bars.banner, lexBar.root, originalBar.root);
+  app.append(bars.header, bars.toolbar, avvisi, layoutEl, bars.statusbar);
+  document.body.append(bars.menu.panel);
   if (docs) {
     const w = window as unknown as { __caaAutosaveMs?: number; __caaRetryMs?: number; __caaLibPollMs?: number };
     const baseBanner = (): void => {
-      bars.banner.hidden = !!info?.ok;
-      bars.banner.textContent = info && !info.ok ? `Il motore non è attivo: ${info.error ?? "errore sconosciuto"}` : "";
+      bars.setBanner(info && !info.ok ? `Il motore non è attivo: ${info.error ?? "errore sconosciuto"}` : null);
     };
-    // Gli avvisi importanti stanno in alto finché non si clicca.
-    bars.banner.title = "Clicca per chiudere";
-    bars.banner.addEventListener("click", baseBanner);
+    // Gli avvisi importanti stanno in alto finché non si chiudono con la × (K9).
     session = createSession({
       view,
       docs,
@@ -105,11 +120,7 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
       replaceDocument,
       emptyDoc,
       setReadOnly: (ro) => setReadOnly(view, ro),
-      banner: (message) => {
-        if (message === null) return baseBanner();
-        bars.banner.hidden = false;
-        bars.banner.textContent = message;
-      },
+      banner: (message) => (message === null ? baseBanner() : bars.setBanner(message)),
       confirm: conferma,
       notice: (m) => hooks.notice?.(m),
       titleInput: bars.titleInput,
@@ -150,14 +161,13 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
           () => showLib(null),
         );
         void lib.version().then(
-          (v) => {
-            bars.updateNote.hidden = !v;
-            if (v) {
-              bars.updateNote.textContent = `È disponibile la versione ${v.version} del programma`;
-              bars.updateNote.title = v.notes ? `${v.notes} — chiedi al tecnico di aggiornare i computer` : "Chiedi al tecnico di aggiornare i computer";
-            }
-          },
-          () => (bars.updateNote.hidden = true),
+          // La versione nuova serve al tecnico: è una voce del menu «Altro», con un pallino sul pulsante.
+          (v) =>
+            bars.mostraVersione(
+              v ? `È disponibile la versione ${v.version} del programma` : null,
+              v?.notes ? `${v.notes} — chiedi al tecnico di aggiornare i computer` : "Chiedi al tecnico di aggiornare i computer",
+            ),
+          () => bars.mostraVersione(null, ""),
         );
       };
       poll();

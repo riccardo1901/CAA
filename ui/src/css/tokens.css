@@ -78,7 +78,8 @@
 
   /* Misure */
   --h-control: 2rem;    /* 32 px */
-  --w-side: 21.25rem;   /* 340 px, come prima (la barra richiudibile arriva in M11-4) */
+  --w-side: 21.25rem;        /* 340 px: il pannello laterale aperto */
+  --w-side-closed: 2.75rem;  /* 44 px: il pannello laterale chiuso (una striscia con il pulsante) */
 
   /* Movimento: breve, e nullo per chi lo ha chiesto a Windows */
   --t-fast: 120ms;

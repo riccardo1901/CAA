@@ -47,6 +47,10 @@ const ICONE = {
   invia: "send",
   cartella: "folder-search",
   ok: "check",
+  altro: "ellipsis",
+  apriPannello: "panel-right-open",
+  chiudiPannello: "panel-right-close",
+  bandierina: "flag",
 };
 
 const mancano = Object.entries(ICONE).filter(([, v]) => !nodi[v]);

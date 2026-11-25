@@ -1,5 +1,6 @@
-// Barra degli strumenti (politica delle parole funzionali, dimensione dei simboli) e barra di stato
-// (parole da controllare, numero di parole, stato del motore).
+// Le barre attorno al foglio (M11-4, PIANO-M11.md 3.1): intestazione (nome, Documenti, Nuovo, titolo, salvataggio,
+// biblioteca, Stampa, menu «Altro»), barra degli strumenti su una riga sola (quello che non ci sta passa in «Altro»),
+// fascia gialla del documento con la × e barra di stato (parole da controllare, numero di parole).
 import { redo, redoDepth, undo, undoDepth } from "prosemirror-history";
 import type { EditorView } from "prosemirror-view";
 import type { EngineInfo, Policy, PolicyTable, Rule } from "./engine/client";
@@ -15,6 +16,8 @@ import { openAbout } from "./about";
 import { conIcona, etichetta, soloIcona } from "./ui/icons";
 import { suggerimento } from "./ui/tooltip";
 import { notifica } from "./ui/toast";
+import { creaMenuAltro, type MenuAltro } from "./ui/menu";
+import { icona } from "./ui/icons";
 
 const SIZES: Array<[string, number]> = [
   ["Piccolo", 45],
@@ -53,6 +56,7 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls = "", text = ""):
   return e;
 }
 
+
 interface PolicyDialog {
   root: HTMLElement;
   show(): void;
@@ -61,8 +65,9 @@ interface PolicyDialog {
   sync(): void;
 }
 
-/** La tabella del preset «Personalizzato»: una riga per categoria, le modifiche valgono subito. */
-function createPolicyDialog(table: PolicyTable, changed: () => void, closed: () => void): PolicyDialog {
+/** La tabella del preset «Personalizzato»: una riga per categoria, le modifiche valgono subito. È un riquadro a
+ *  comparsa (M11-4, K10): il fuoco entra, Esc o un clic fuori lo chiudono. */
+function createPolicyDialog(table: PolicyTable, changed: () => void, closed: () => void, anchors: () => HTMLElement[]): PolicyDialog {
   const root = el("div", "policy-dialog");
   root.hidden = true;
   root.setAttribute("role", "dialog");
@@ -94,34 +99,65 @@ function createPolicyDialog(table: PolicyTable, changed: () => void, closed: () 
   const note = el("p", "note", "Ausiliari dei tempi composti: sempre nascosti (il tempo è nel segno). Punteggiatura: sempre testo.");
   const close = el("button", "", "Chiudi");
   close.type = "button";
-  const hide = (): void => {
+  const fuori = (e: Event): void => {
+    const t = e.target as Node;
+    if (root.contains(t) || anchors().some((a) => a.contains(t))) return;
+    hide();
+  };
+  function hide(): void {
+    if (root.hidden) return;
     root.hidden = true;
+    document.removeEventListener("pointerdown", fuori, true);
+  }
+  const show = (): void => {
+    root.hidden = false;
+    document.addEventListener("pointerdown", fuori, true);
+    selects[0]?.[1].focus();
   };
   close.addEventListener("click", () => {
     hide();
     closed();
   });
+  root.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      hide();
+      closed();
+    }
+  });
   root.append(grid, note, close);
   const sync = (): void => {
     for (const [key, select] of selects) select.value = table[key];
   };
-  return { root, show: () => (root.hidden = false), hide, sync };
+  return { root, show, hide, sync };
 }
 
 export interface Bars {
-  /** La riga dei documenti: «Documenti», il titolo, lo stato del salvataggio. */
-  docbar: HTMLElement;
+  /** L'intestazione: nome del programma, Documenti, Nuovo, titolo, salvataggio, biblioteca, Stampa, Altro. */
+  header: HTMLElement;
+  /** Mostra o nasconde le parti dei documenti (ci sono solo con l'archivio, cioè nell'app). */
+  mostraDocumenti(si: boolean): void;
   docsButton: HTMLButtonElement;
   titleInput: HTMLInputElement;
   saveStatus: HTMLElement;
   /** Lo stato della biblioteca nel Drive condiviso (nascosto finché non c'è). */
   libStatus: HTMLButtonElement;
-  /** «È disponibile la versione X»: nascosto finché il Drive non annuncia una versione più recente. */
-  updateNote: HTMLElement;
+  /** «È disponibile la versione X»: una voce del menu «Altro» (e un pallino sul pulsante). */
+  mostraVersione(testo: string | null, note: string): void;
+  /** Il menu «Altro» (il suo riquadro va messo nel documento). */
+  menu: MenuAltro;
   toolbar: HTMLElement;
   statusbar: HTMLElement;
+  /** La fascia gialla del documento (salvato come copia, sola lettura, motore non attivo): si chiude con la ×. */
   banner: HTMLElement;
+  /** Il testo della fascia gialla (null la nasconde). */
+  setBanner(testo: string | null): void;
+  /** Quando si chiude la fascia con la ×. */
+  onBannerClose(cb: () => void): void;
   refresh(): void;
+  /** Rimette nella barra i gruppi che ci stanno (dopo un cambio di dimensione o di contenuto). */
+  adatta(): void;
   /** Le preferenze del documento (politica, tabella, dimensione, contorno). */
   getPrefs(): DocPrefs;
   /** Le imposta (all'apertura di un documento): non conta come una modifica. */
@@ -130,6 +166,23 @@ export interface Bars {
   onPrefsChange(cb: () => void): void;
   /** Il nome di chi scrive, per il piè di pagina facoltativo. */
   setAuthor(name: string): void;
+}
+
+/** Il segno del programma: un quadratino (il simbolo) sopra una riga (la parola). */
+function segno(): SVGSVGElement {
+  const s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  s.setAttribute("viewBox", "0 0 24 24");
+  s.setAttribute("aria-hidden", "true");
+  s.classList.add("brand-mark");
+  s.innerHTML = '<rect x="7" y="3" width="10" height="10" rx="2.5" fill="currentColor"/><rect x="4" y="17" width="16" height="3" rx="1.5" fill="currentColor"/>';
+  return s;
+}
+
+/** Il fuoco è in un campo dove si scrive (lì Ctrl+Z e Ctrl+Y sono del campo). */
+function inUnCampo(t: EventTarget | null): boolean {
+  const e = t as HTMLElement | null;
+  if (!e || !e.tagName) return false;
+  return e.tagName === "INPUT" || e.tagName === "TEXTAREA" || e.tagName === "SELECT" || e.isContentEditable;
 }
 
 export function createBars(
@@ -142,21 +195,51 @@ export function createBars(
 ): Bars {
   const toolbar = el("div", "toolbar");
   toolbar.setAttribute("role", "toolbar");
-  const statusbar = el("div", "statusbar");
-  const banner = el("div", "banner");
-  banner.hidden = !!info?.ok;
-  if (info && !info.ok) banner.textContent = `Il motore non è attivo: ${info.error ?? "errore sconosciuto"}`;
+  toolbar.setAttribute("aria-label", "Strumenti");
+  const statusbar = el("footer", "statusbar");
+  const menu = creaMenuAltro();
 
-  const doc = el("div");
+  // ---- Fascia gialla del documento, con la × (K9) ----
+  const banner = el("div", "banner");
+  banner.setAttribute("role", "status");
+  const bannerText = el("span", "banner-text");
+  const bannerClose = el("button", "banner-close icon-only");
+  bannerClose.type = "button";
+  bannerClose.setAttribute("aria-label", "Chiudi l'avviso");
+  bannerClose.append(icona("chiudi"));
+  banner.append(icona("avviso"), bannerText, bannerClose);
+  const bannerListeners: Array<() => void> = [];
+  const setBanner = (testo: string | null): void => {
+    banner.hidden = testo === null || testo === "";
+    bannerText.textContent = testo ?? "";
+  };
+  bannerClose.addEventListener("click", () => {
+    setBanner(null);
+    bannerListeners.forEach((cb) => cb());
+  });
+  setBanner(info && !info.ok ? `Il motore non è attivo: ${info.error ?? "errore sconosciuto"}` : null);
+
+  // ---- Intestazione ----
   const newBtn = el("button", "", "Nuovo");
   newBtn.type = "button";
   newBtn.addEventListener("click", newDocument);
   conIcona(newBtn, "nuovo");
   suggerimento(newBtn, "Un documento nuovo, vuoto");
-  const sampleBtn = el("button", "", "Testo di esempio");
-  sampleBtn.type = "button";
-  sampleBtn.addEventListener("click", sampleDocument);
-  suggerimento(sampleBtn, "Apri un testo di esempio per provare");
+  // «Testo di esempio» e «Informazioni» si usano di rado: stanno nel menu «Altro».
+  menu.voce("Testo di esempio", sampleDocument, "esempio");
+  menu.voce("Informazioni", () => openAbout(), "info");
+  const updateNote = menu.voce("", () => openAbout(), "avviso");
+  updateNote.classList.add("update-note");
+  updateNote.hidden = true;
+  const mostraVersione = (testo: string | null, note: string): void => {
+    updateNote.hidden = !testo;
+    menu.pallino(!!testo);
+    if (testo) {
+      etichetta(updateNote, testo);
+      updateNote.title = note;
+    }
+  };
+
   // Annulla e Ripeti anche con il mouse (Ctrl+Z, Ctrl+Y o Ctrl+Maiusc+Z da tastiera).
   const undoBtn = el("button", "", "Annulla");
   undoBtn.type = "button";
@@ -173,6 +256,18 @@ export function createBars(
   redoBtn.addEventListener("click", () => {
     redo(view.state, view.dispatch);
     view.focus();
+  });
+  // Ctrl+Z, Ctrl+Y e Ctrl+Maiusc+Z funzionano anche con il fuoco fuori dal testo, per esempio dopo un clic nella
+  // barra laterale (K3). Nel testo li gestisce già l'editor; nei campi (titolo, ricerca) sono del campo.
+  document.addEventListener("keydown", (e) => {
+    if (!(e.ctrlKey || e.metaKey) || e.altKey || e.defaultPrevented || inUnCampo(e.target)) return;
+    const k = e.key.toLowerCase();
+    const annulla = k === "z" && !e.shiftKey;
+    const ripeti = (k === "y" && !e.shiftKey) || (k === "z" && e.shiftKey);
+    if (!annulla && !ripeti) return;
+    e.preventDefault();
+    if (annulla) undo(view.state, view.dispatch);
+    else redo(view.state, view.dispatch);
   });
   // Unisci e dividi parole (M8c-2).
   const mergeBtn = el("button", "", "Unisci");
@@ -197,9 +292,9 @@ export function createBars(
     hooks.split?.();
     view.focus();
   });
-  doc.append(newBtn, " ", sampleBtn, " ", undoBtn, " ", redoBtn, " ", mergeBtn, " ", splitBtn);
 
-  const policyLabel = el("label", "", "Parole funzionali: ");
+  const policyLabel = el("label", "tb-label");
+  policyLabel.append(el("span", "", "Parole funzionali"));
   const select = el("select");
   select.setAttribute("aria-label", "Politica delle parole funzionali");
   for (const [value, label] of POLICIES) {
@@ -218,13 +313,15 @@ export function createBars(
     setPolicy(view, tablePolicy(table));
     refresh();
     notifyPrefs();
-  }, () => view.focus());
+  }, () => (editBtn.hidden ? select : editBtn).focus(), () => [editBtn, select]);
   const applyPolicy = (): void => {
     const custom = select.value === "custom";
+    const cambia = editBtn.hidden === custom;
     editBtn.hidden = !custom;
     if (!custom) dialog.hide();
     setPolicy(view, custom ? tablePolicy(table) : (select.value as Policy));
     refresh();
+    if (cambia) adatta();
   };
   // La tabella si apre da sola la prima volta che si sceglie «Personalizzato»; poi c'è «Modifica…».
   let tableShown = false;
@@ -233,14 +330,20 @@ export function createBars(
     notifyPrefs();
     if (select.value === "custom" && !tableShown) {
       tableShown = true;
+      // Se la scelta arriva dal menu «Altro», il menu si chiude: la tabella non deve stargli sotto.
+      menu.chiudi(false);
       dialog.show();
     }
   });
-  editBtn.addEventListener("click", () => dialog.show());
-  policyLabel.append(select, " ", editBtn);
+  editBtn.addEventListener("click", () => {
+    menu.chiudi(false);
+    dialog.show();
+  });
+  policyLabel.append(select);
 
   // Contorno: ogni coppia simbolo-parola in una "card" (impostazione dell'editor, ricordata sul computer).
-  const cardsLabel = el("label", "", " ");
+  // (In M11-5 va nella scheda «Pagina».)
+  const cardsLabel = el("label", "tb-check");
   const cards = el("input");
   cards.type = "checkbox";
   cards.setAttribute("aria-label", "Contorna simbolo e parola");
@@ -265,10 +368,14 @@ export function createBars(
     }
     view.focus();
   });
-  cardsLabel.append(cards, " Contorna simbolo e parola");
+  cardsLabel.append(cards, "Contorna simbolo e parola");
 
-  const sizes = el("div");
-  sizes.append("Simboli: ");
+  // Dimensione dei simboli: un gruppo a scelta unica.
+  const sizes = el("div", "tb-sizes");
+  sizes.setAttribute("role", "group");
+  sizes.setAttribute("aria-label", "Dimensione dei simboli");
+  sizes.append(el("span", "tb-caption", "Simboli"));
+  const segmented = el("div", "segmented");
   const sizeButtons: HTMLButtonElement[] = SIZES.map(([label, px], i) => {
     const b = el("button", "", label);
     b.type = "button";
@@ -279,9 +386,10 @@ export function createBars(
       notifyPrefs();
       view.focus();
     });
-    sizes.append(b, " ");
+    segmented.append(b);
     return b;
   });
+  sizes.append(segmented);
 
   // Stampa (M10): le impostazioni della pagina stanno nel documento; Ctrl+P apre la finestra.
   let printPrefs: PrintPrefs = { ...DEFAULT_PRINT };
@@ -322,45 +430,89 @@ export function createBars(
   });
   applyPrintPrefs(printPrefs, printMeta());
 
-  const aboutBtn = el("button", "", "Informazioni");
-  aboutBtn.type = "button";
-  suggerimento(aboutBtn, "Crediti e licenze");
-  aboutBtn.addEventListener("click", () => openAbout());
-  toolbar.append(doc, el("span", "grow"), cardsLabel, policyLabel, sizes, printBtn, aboutBtn, dialog.root);
+  // ---- La barra degli strumenti: gruppi; quelli che non ci stanno vanno nel menu «Altro» ----
+  const gruppo = (cls: string, ...figli: Array<HTMLElement | string>): HTMLElement => {
+    const g = el("div", `tb-group ${cls}`);
+    g.append(...figli);
+    return g;
+  };
+  const gStoria = gruppo("tb-history", undoBtn, redoBtn);
+  const gParole = gruppo("tb-words", mergeBtn, splitBtn);
+  const gSimboli = gruppo("tb-symbols", sizes);
+  const gPolitica = gruppo("tb-policy", policyLabel, editBtn);
+  const gContorno = gruppo("tb-cards", cardsLabel);
+  /** In ordine nella barra; `esce` dice chi esce per primo quando manca spazio (prima i meno usati). */
+  const gruppi: Array<{ el: HTMLElement; esce: number }> = [
+    { el: gStoria, esce: 0 },
+    { el: gParole, esce: 4 },
+    { el: gSimboli, esce: 3 },
+    { el: gPolitica, esce: 2 },
+    { el: gContorno, esce: 1 },
+  ];
+  toolbar.append(...gruppi.map((g) => g.el), dialog.root);
+  function adatta(): void {
+    // Tutti nella barra, nell'ordine; poi fuori uno alla volta finché la barra sta su una riga.
+    for (const g of gruppi) toolbar.insertBefore(g.el, dialog.root);
+    const uscita = gruppi.filter((g) => g.esce > 0).sort((a, b) => a.esce - b.esce);
+    const fuori: HTMLElement[] = [];
+    for (const g of uscita) {
+      if (toolbar.scrollWidth <= toolbar.clientWidth + 1) break;
+      fuori.push(g.el);
+      g.el.remove();
+    }
+    // Nel menu nello stesso ordine della barra.
+    menu.strumenti.replaceChildren(...gruppi.filter((g) => fuori.includes(g.el)).map((g) => g.el));
+    menu.strumenti.hidden = fuori.length === 0;
+  }
+  new ResizeObserver(() => adatta()).observe(toolbar);
+  void document.fonts?.ready.then(() => adatta());
 
-  const wordsInfo = el("span");
-  const doubtInfo = el("span", "link");
+  // ---- Barra di stato ----
+  const wordsInfo = el("span", "words");
+  // Il contatore delle parole da controllare è un vero pulsante (raggiungibile con Tab; K8).
+  const doubtInfo = el("button", "link doubt");
+  doubtInfo.type = "button";
+  conIcona(doubtInfo, "bandierina");
   suggerimento(doubtInfo, "Vai alla prossima parola da controllare", { tasti: "F8" });
-  doubtInfo.setAttribute("role", "button");
   doubtInfo.addEventListener("click", () => hooks.next?.());
-  const policyInfo = el("span");
-  const engineInfoEl = el("span");
-  const errorInfo = el("span");
+  const errorInfo = el("span", "engine-state");
   // I messaggi per il docente sono notifiche (M11-3): prima erano un testo piccolo qui in basso che spariva da solo
   // dopo 6 secondi, anche quando era un errore.
   hooks.notice = (message, tipo = "avviso") => void notifica(message, { tipo });
-  statusbar.append(doubtInfo, wordsInfo, errorInfo, el("span", "grow"), policyInfo, engineInfoEl);
+  statusbar.append(doubtInfo, wordsInfo, errorInfo);
+  // «Motore attivo» non si scrive più: si dice solo se c'è un problema.
+  if (info?.ok && (!info.tagger || !info.expressions)) {
+    const manca = [!info.tagger ? "la disambiguazione" : "", !info.expressions ? "le espressioni di più parole" : ""].filter(Boolean).join(" e ");
+    queueMicrotask(() => notifica(`I simboli funzionano, ma senza ${manca}: possono essere meno precisi. Se continua, chiama il tecnico.`, { tipo: "avviso" }));
+  }
 
+  let ultimoDividi = "";
   function refresh(): void {
     undoBtn.disabled = undoDepth(view.state) === 0;
     redoBtn.disabled = redoDepth(view.state) === 0;
     mergeBtn.disabled = !canMerge(view);
     const here = tokenAt(view, view.state.selection.head);
     const act = here ? groupAction(view, here) : null;
-    etichetta(splitBtn, act?.label ?? "Dividi");
+    const dividi = act?.label ?? "Dividi";
+    etichetta(splitBtn, dividi);
     splitBtn.disabled = !act;
     const s = engineStats(view);
-    sizeButtons.forEach((b, i) => b.classList.toggle("on", SIZES[i][1] === getSize()));
+    sizeButtons.forEach((b, i) => {
+      const on = SIZES[i][1] === getSize();
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-pressed", String(on));
+    });
     wordsInfo.textContent = `${s.words} parole`;
-    doubtInfo.textContent = s.doubtful === 1 ? "1 parola da controllare" : `${s.doubtful} parole da controllare`;
+    etichetta(doubtInfo, s.doubtful === 1 ? "1 parola da controllare" : `${s.doubtful} parole da controllare`);
     doubtInfo.classList.toggle("warn", s.doubtful > 0);
     // Il motore ha dato errore e sta riprovando: lo si dice, altrimenti i simboli mancano senza spiegazione.
     errorInfo.textContent = s.error ? "Il motore non risponde: riprovo…" : s.pending > 0 ? "Analisi in corso…" : "";
     errorInfo.classList.toggle("warn", !!s.error);
-    policyInfo.textContent = `Parole funzionali: ${select.selectedOptions[0]?.textContent ?? ""}`;
-    engineInfoEl.textContent = info?.ok
-      ? `Motore attivo${info.tagger ? "" : " (senza tagger)"}${info.expressions ? "" : " (senza espressioni)"}`
-      : "Motore non attivo";
+    // «Riunisci» è più lungo di «Dividi»: la barra si ricontrolla solo quando cambia.
+    if (dividi !== ultimoDividi) {
+      ultimoDividi = dividi;
+      adatta();
+    }
   }
 
   // Ctrl+1–4: dimensione dei simboli.
@@ -374,14 +526,17 @@ export function createBars(
     notifyPrefs();
   });
 
-  refresh();
-  // La riga dei documenti (M9a): la riempie la sessione del documento.
-  const docbar = el("div", "docbar");
+  // ---- Intestazione: nome, documenti, titolo, stato, Stampa, Altro ----
+  const header = el("header", "app-header");
+  const brand = el("div", "brand");
+  brand.append(segno(), el("span", "brand-name", "Editor CAA"));
   const docsButton = el("button", "", "Documenti");
   docsButton.type = "button";
   conIcona(docsButton, "documenti");
   suggerimento(docsButton, "I miei documenti e la biblioteca della scuola");
-  const titleInput = el("input", "doc-title");
+  const docbar = el("div", "docbar docs-only");
+  docbar.append(docsButton);
+  const titleInput = el("input", "doc-title docs-only");
   titleInput.type = "text";
   titleInput.placeholder = "Senza titolo";
   titleInput.maxLength = 120;
@@ -389,13 +544,17 @@ export function createBars(
   titleInputRef = titleInput;
   // Il titolo scritto aggiorna il piè di pagina facoltativo.
   titleInput.addEventListener("input", () => applyPrintPrefs(printPrefs, printMeta()));
-  const saveStatus = el("span", "save-status");
+  const saveStatus = el("span", "save-status docs-only");
+  saveStatus.setAttribute("role", "status");
   const libStatus = el("button", "lib-status");
   libStatus.type = "button";
   libStatus.hidden = true;
-  const updateNote = el("span", "update-note");
-  updateNote.hidden = true;
-  docbar.append(docsButton, titleInput, el("span", "grow"), updateNote, libStatus, saveStatus);
+  header.append(brand, docbar, newBtn, titleInput, el("span", "grow"), saveStatus, libStatus, printBtn, menu.button);
+  const mostraDocumenti = (si: boolean): void => {
+    for (const e of header.querySelectorAll<HTMLElement>(".docs-only")) e.hidden = !si;
+  };
+
+  refresh();
 
   const getPrefs = (): DocPrefs => ({ preset: select.value as Preset, table: { ...table }, size: getSize(), cards: cards.checked, print: { ...printPrefs } });
   const setPrefs = (p: Partial<DocPrefs>): void => {
@@ -417,7 +576,25 @@ export function createBars(
     refresh();
   };
 
-  return { docbar, docsButton, titleInput, saveStatus, libStatus, updateNote, toolbar, statusbar, banner, refresh, getPrefs, setPrefs, onPrefsChange: (cb) => prefsListeners.push(cb),
+  return {
+    header,
+    mostraDocumenti,
+    docsButton,
+    titleInput,
+    saveStatus,
+    libStatus,
+    mostraVersione,
+    menu,
+    toolbar,
+    statusbar,
+    banner,
+    setBanner,
+    onBannerClose: (cb) => bannerListeners.push(cb),
+    refresh,
+    adatta,
+    getPrefs,
+    setPrefs,
+    onPrefsChange: (cb) => prefsListeners.push(cb),
     setAuthor: (name) => {
       author = name;
       applyPrintPrefs(printPrefs, printMeta());

@@ -36,7 +36,12 @@ const fuocoSu = (page: Page, nome: RegExp) =>
 test.describe("finestre: Tab dentro, Esc chiude, il fuoco torna a chi le ha aperte", () => {
   test("Informazioni", async ({ page }) => {
     await apriCompleto(page);
-    await page.getByRole("button", { name: "Informazioni" }).focus();
+    // «Informazioni» sta nel menu «Altro» (M11-4): tutto da tastiera.
+    await page.getByRole("button", { name: "Altro", exact: true }).focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("menuitem", { name: "Testo di esempio" })).toBeFocused();
+    await page.keyboard.press("ArrowDown");
+    await expect(page.getByRole("menuitem", { name: "Informazioni" })).toBeFocused();
     await page.keyboard.press("Enter");
     const box = page.locator(".about-dialog");
     await expect(box).toBeVisible();
@@ -44,7 +49,7 @@ test.describe("finestre: Tab dentro, Esc chiude, il fuoco torna a chi le ha aper
     await tabRestaDentro(page, box);
     await page.keyboard.press("Escape");
     await expect(box).toHaveCount(0);
-    await fuocoSu(page, /^Informazioni$/);
+    await fuocoSu(page, /^Altro$/);
   });
 
   test("Stampa", async ({ page }) => {

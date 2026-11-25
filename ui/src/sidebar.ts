@@ -482,6 +482,7 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
     if (e.key === "Escape") {
       e.preventDefault();
       view.focus();
+      hooks.lasciaBarra?.();
       return;
     }
     const inSearch = (e.target as HTMLElement | null)?.tagName === "INPUT" && (e.target as HTMLInputElement).type === "search";
@@ -540,6 +541,8 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
   };
 
   const activate = (t: TokenAt, focusSide: boolean): void => {
+    // Se il pannello è chiuso si apre (M11-4).
+    hooks.apriBarra?.();
     // Cambiando l'evidenziazione l'editor si aggiorna e chiama `refresh`: con la parola vecchia ancora
     // "in mostra" lo scambierebbe per una parola cambiata e svuoterebbe la barra.
     target = null;

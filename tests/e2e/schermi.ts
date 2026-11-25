@@ -152,6 +152,7 @@ export async function tuttiGliAvvisi(page: Page): Promise<void> {
   await page.locator(".docs-row", { hasText: "Le frazioni" }).getByRole("button", { name: "Apri" }).click();
   await page.locator(".lexbar").waitFor({ state: "visible" });
   await page.locator(".origbar").waitFor({ state: "visible" });
-  await page.locator(".update-note").waitFor({ state: "visible" });
+  // La versione nuova è una voce del menu «Altro» (M11-4): si vede il pallino sul pulsante.
+  await page.locator(".menu-dot").waitFor({ state: "visible" });
   await attendi(page);
 }

@@ -59,7 +59,8 @@ test("il suggerimento compare subito con la tastiera, con nome e scorciatoia, ed
   await page.keyboard.press("Escape");
   await expect(tip(page)).toBeHidden();
   // Il suggerimento non esce dallo schermo.
-  await page.getByRole("button", { name: /^Informazioni$/ }).evaluate((b: HTMLElement) => b.focus({ focusVisible: true } as FocusOptions));
+  // «Altro» sta al bordo destro: il suggerimento deve restare dentro lo schermo.
+  await page.getByRole("button", { name: "Altro", exact: true }).evaluate((b: HTMLElement) => b.focus({ focusVisible: true } as FocusOptions));
   const box = (await tip(page).boundingBox())!;
   const vw = page.viewportSize()!.width;
   expect(box.x).toBeGreaterThanOrEqual(0);

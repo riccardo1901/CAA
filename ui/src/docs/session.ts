@@ -308,7 +308,7 @@ export function createSession(deps: SessionDeps): Session {
     changed();
     if (entry.conflict) {
       // In alto e finché non si clicca: un avviso di pochi secondi in fondo allo schermo non si vede.
-      deps.banner(`Il file era stato cambiato da un'altra copia del programma: ho salvato questo documento come «${entry.title}» (${entry.file}). Nessun testo è andato perso. (Clicca qui per chiudere.)`);
+      deps.banner(`Il file era stato cambiato da un'altra copia del programma: ho salvato questo documento come «${entry.title}» (${entry.file}). Nessun testo è andato perso.`);
     }
     if (st.dirty) schedule(delay);
     return true;

@@ -28,11 +28,9 @@ type Controllo = "scorrimento" | "foglio-verticale" | "foglio-orizzontale" | "un
 /** Fallimenti noti del codice di partenza (M10), per controllo: gli schermi (nome di SCHERMI) dove oggi fallisce,
  *  e il blocco di M11 che deve sistemarlo. "*" = tutti gli schermi. */
 const ATTESI: Partial<Record<Controllo, { schermi: string[] | "*"; blocco: string }>> = {
-  scorrimento: { blocco: "M11-4", schermi: ["1024x600 al 100%","1366x768 al 125%","1440x900 al 125%"] },
-  "foglio-verticale": { blocco: "M11-4", schermi: ["1024x600 al 100%","1366x768 al 125%"] },
-  "foglio-orizzontale": { blocco: "M11-4", schermi: ["1024x600 al 100%","1280x720 al 100%","1366x768 al 100%","1366x768 al 125%","1440x900 al 100%","1440x900 al 125%","1536x864 al 125%","1920x1080 al 150%","2560x1440 al 200%"] },
-  "una-riga": { blocco: "M11-4", schermi: ["1024x600 al 100%","1280x720 al 100%","1366x768 al 100%","1366x768 al 125%","1440x900 al 100%","1440x900 al 125%","1536x864 al 125%","1920x1080 al 150%","2560x1440 al 200%"] },
-  "niente-a-capo": { blocco: "M11-4", schermi: ["1024x600 al 100%","1280x720 al 100%","1366x768 al 100%","1366x768 al 125%","1440x900 al 100%","1440x900 al 125%","1536x864 al 125%","1920x1080 al 150%","2560x1440 al 200%"] },
+  // Schermi larghi meno di circa 1200 punti: un A4 orizzontale (1123 px) più i margini non ci sta nemmeno con il
+  // pannello chiuso. Senza zoom del foglio (deciso dall'utente per M11: rischio su cursore e clic) si scorre.
+  "foglio-orizzontale": { blocco: "nessun blocco: deciso, niente zoom del foglio in M11", schermi: ["1024x600 al 100%", "1366x768 al 125%", "1440x900 al 125%"] },
 };
 
 /** Le azioni principali: devono essere raggiungibili su ogni schermo. */
@@ -194,7 +192,7 @@ for (const s of SCHERMI) {
     const prova = (c: Controllo, fn: () => Promise<void>) =>
       test(c, async () => {
         const blocco = atteso(c, s);
-        test.fail(!!blocco, `fallimento atteso, da sistemare in ${blocco}`);
+        test.fail(!!blocco, blocco?.startsWith("nessun blocco") ? `fallimento accettato (${blocco})` : `fallimento atteso, da sistemare in ${blocco}`);
         await fn();
       });
 
@@ -213,6 +211,8 @@ for (const s of SCHERMI) {
         const p = (window as any).caaProto;
         p.setPrefs({ print: { ...p.getPrefs().print, orientation: "landscape" } });
       });
+      // Il pannello laterale si richiude al fotogramma dopo il cambio di orientamento (M11-4): si aspetta.
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
       const m = await misure(page);
       await page.evaluate(() => {
         const p = (window as any).caaProto;

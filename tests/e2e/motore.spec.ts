@@ -2,7 +2,7 @@
 // motore finto (in pagina) che riconosce le parole con regole semplici e risponde dopo qualche
 // millisecondo. Le prove con il motore vero e con le immagini ARASAAC sono a mano (app Tauri).
 import { expect, test, type Page } from "@playwright/test";
-import { open, rispondiConferma } from "./fixtures";
+import { casellaContorno, open, rispondiConferma, voceAltro } from "./fixtures";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -197,7 +197,7 @@ test("dopo «Testo di esempio» o «Nuovo» i simboli del motore tornano (e la p
   await open(page, "Marco mangia pane");
   await page.selectOption("select[aria-label='Politica delle parole funzionali']", "essential");
   // «Testo di esempio»: sostituisce tutto il documento.
-  await page.getByRole("button", { name: "Testo di esempio" }).click();
+  await voceAltro(page, "Testo di esempio"); // M11-4: nel menu «Altro»
   await expect(page.locator(".w[style*='--img']").first()).toBeVisible();
   await page.waitForFunction(() => (window as any).caaProto.engineStats().pending === 0);
   expect((await stats(page)).words).toBeGreaterThan(50);
@@ -505,7 +505,7 @@ test("il menu si apre in meno di 100 ms @perf", async ({ page }) => {
 
 test("annulla e ripeti una scelta nel testo di esempio, con attese realistiche", async ({ page }) => {
   await open(page, "Marco mangia pane");
-  await page.getByRole("button", { name: "Testo di esempio" }).click();
+  await voceAltro(page, "Testo di esempio"); // M11-4: nel menu «Altro»
   await page.waitForFunction(() => (window as any).caaProto.engineStats().pending === 0);
   const marks = () => page.evaluate(() => { const d = (window as any).caaProto.view.state.doc; let n = d.attrs.locks.length; d.descendants((x: any) => { for (const m of x.marks ?? []) if (m.type.name === "pick") n++; }); return n; });
   await page.locator(".w[style*='--img']").nth(4).click({ position: { x: 20, y: 8 } });
@@ -563,7 +563,7 @@ test("impostazione «Contorna simbolo e parola»: una card per ogni coppia, rico
   await open(page, "Marco mangia pane");
   const card = page.locator(".w", { hasText: /^pane$/ });
   expect(await card.evaluate((e) => getComputedStyle(e).borderTopWidth)).toBe("0px");
-  await page.getByLabel("Contorna simbolo e parola").check();
+  await (await casellaContorno(page)).check();
   expect(await card.evaluate((e) => getComputedStyle(e).borderTopWidth)).toBe("2px");
   await expect(page.locator(".sheet.cards")).toHaveCount(1);
   // Simbolo e parola restano uniti nella card (un solo blocco).
@@ -572,7 +572,7 @@ test("impostazione «Contorna simbolo e parola»: una card per ogni coppia, rico
   await page.waitForFunction(() => (window as any).caaProto);
   await page.evaluate(() => { (window as any).caaProto.enterEngineMode({ symbolize: async () => [], alternatives: async () => [], search: async () => [], listCustom: async () => [], importCustom: async () => ({ id: 0, uuid: '', label: '' }), url: () => "" }); });
   await expect(page.locator(".sheet.cards")).toHaveCount(1);
-  await page.getByLabel("Contorna simbolo e parola").uncheck();
+  await (await casellaContorno(page)).uncheck();
   await expect(page.locator(".sheet.cards")).toHaveCount(0);
 });
 
@@ -705,7 +705,7 @@ test("«Personalizzato»: una tabella per categoria, subito visibile e ricordata
   await dialog.getByLabel("Articoli").selectOption("hidden");
   await dialog.getByRole("button", { name: "Chiudi" }).click();
   await expect(dialog).toBeHidden();
-  await expect(page.locator(".statusbar")).toContainText("Parole funzionali: Personalizzato");
+  await expect(page.getByLabel("Politica delle parole funzionali")).toHaveValue("custom"); // M11-4: la politica non è più ripetuta in basso
   // Tornando a «Completo» e poi a «Personalizzato» la tabella è ancora quella; «Modifica…» la riapre.
   await page.selectOption("select[aria-label='Politica delle parole funzionali']", "complete");
   await expect(page.locator(".w.red")).toHaveCount(2);
@@ -1022,7 +1022,7 @@ test("il titolo scritto dal docente si salva e le preferenze cambiate fanno salv
   await page.getByRole("button", { name: "Grande", exact: true }).click();
   await expect.poll(async () => (await mockSaves(page)).length).toBe(3);
   expect((await mockSaves(page))[2].prefs.size).toBe(94);
-  await page.getByLabel("Contorna simbolo e parola").check();
+  await (await casellaContorno(page)).check();
   await expect.poll(async () => (await mockSaves(page)).length).toBe(4);
   expect((await mockSaves(page))[3].prefs.cards).toBe(true);
   await page.selectOption("select[aria-label='Politica delle parole funzionali']", "essential");
@@ -1454,7 +1454,10 @@ test("se il file è stato cambiato da un'altra copia, il documento si salva come
   await expect(banner).toContainText("un'altra copia del programma");
   await page.waitForTimeout(7000);
   await expect(banner).toBeVisible();
+  // Si chiude con la × (M11-4, K9), non più cliccando il testo.
   await banner.click();
+  await expect(banner).toBeVisible();
+  await banner.getByRole("button", { name: "Chiudi l'avviso" }).click();
   await expect(banner).toBeHidden();
 });
 
@@ -2327,7 +2330,7 @@ test("stampa: Ctrl+P apre la finestra con Stampa e Chiudi", async ({ page }) => 
 
 test("Informazioni: attribuzioni obbligatorie (ARASAAC, Morph-it!, ISDT, caratteri) e versione; non si stampa", async ({ page }) => {
   await open(page, "Marco mangia pane");
-  await page.getByRole("button", { name: "Informazioni" }).click();
+  await voceAltro(page, "Informazioni"); // M11-4: nel menu «Altro»
   const d = page.locator(".about-dialog");
   await expect(d).toContainText("Sergio Palao per ARASAAC");
   await expect(d).toContainText("CC BY-NC-SA");

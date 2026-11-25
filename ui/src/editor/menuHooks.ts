@@ -16,10 +16,13 @@ export const hooks: {
   merge: (() => boolean) | null;
   /** Divide l'unione o l'espressione della parola al cursore, o riunisce una divisione (Ctrl+Maiusc+D). */
   split: (() => boolean) | null;
-  /** Un messaggio breve per il docente (barra di stato). */
   /** Un messaggio per il docente: diventa una notifica (M11-3). Di partenza «avviso» (resta finché non si chiude). */
   notice: ((message: string, tipo?: "info" | "ok" | "avviso" | "errore") => void) | null;
-} = { openAtCursor: null, next: null, openAt: null, merge: null, split: null, notice: null };
+  /** La barra laterale mostra una parola: se è chiusa si apre (M11-4). */
+  apriBarra: (() => void) | null;
+  /** Si torna al testo dalla barra (Esc): se la barra sta sopra il foglio si richiude (M11-4). */
+  lasciaBarra: (() => void) | null;
+} = { openAtCursor: null, next: null, openAt: null, merge: null, split: null, notice: null, apriBarra: null, lasciaBarra: null };
 
 /** Altezza (px) della zona del simbolo in una parola: il clic lì mostra le alternative, sul testo sposta il cursore. */
 function symbolHeight(view: EditorView): number {

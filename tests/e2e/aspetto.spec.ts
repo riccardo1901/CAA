@@ -41,7 +41,10 @@ const STATI: Array<[string, (page: Page) => Promise<void>]> = [
   }],
   ["03-personalizzato", async (page) => {
     await apriCompleto(page);
-    await page.selectOption("select[aria-label='Politica delle parole funzionali']", "custom");
+    // Sugli schermi stretti la politica sta nel menu «Altro» (M11-4).
+    const politica = page.getByLabel("Politica delle parole funzionali");
+    if (!(await politica.isVisible())) await page.getByRole("button", { name: "Altro", exact: true }).click();
+    await politica.selectOption("custom");
     await page.locator(".policy-dialog").waitFor();
   }],
   ["04-documenti", async (page) => {
@@ -70,7 +73,8 @@ const STATI: Array<[string, (page: Page) => Promise<void>]> = [
   }],
   ["07-informazioni", async (page) => {
     await apriCompleto(page);
-    await page.getByRole("button", { name: "Informazioni" }).click();
+    await page.getByRole("button", { name: "Altro", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Informazioni" }).click();
     await page.locator(".about-dialog").waitFor();
   }],
   ["08-ritaglio", async (page) => {
@@ -148,6 +152,11 @@ const STATI: Array<[string, (page: Page) => Promise<void>]> = [
     await clicSimbolo(page, "mamma");
     await page.locator(".side input[type=file]").setInputFiles({ name: "rotto.png", mimeType: "image/png", buffer: Buffer.from("non sono un'immagine") });
     await page.locator(".toast").waitFor();
+  }],
+  ["17-menu-altro", async (page) => {
+    await apriCompleto(page);
+    await page.getByRole("button", { name: "Altro", exact: true }).click();
+    await page.locator("#menu-altro").waitFor();
   }],
 ];
 

@@ -1,12 +1,46 @@
 /* Barra laterale dei simboli (M11-1): stessa disposizione di prima, nuovo aspetto. Le schede Simbolo, Pagina e
    Memoria arrivano in M11-4 e M11-7. La parola scelta sul foglio (.cur) è del foglio: sta in sheet.css. */
-.side {
+/* Il pannello laterale richiudibile (M11-4): accanto al foglio quando c'è posto, una striscia stretta quando è chiuso,
+   sopra la scrivania (con l'ombra) quando lo schermo è stretto e lo si apre. */
+.side-panel {
   flex: none;
+  position: relative;
   width: var(--w-side);
+  border-left: 1px solid var(--c-line);
+  background: var(--c-panel);
+}
+.side-panel.closed, .side-panel.sopra { width: var(--w-side-closed); }
+/* Con il pannello sopra il foglio, la scrivania ha spazio a destra: il foglio può scorrere da sotto il pannello. */
+.layout.con-pannello-sopra .sheet-wrap { padding-right: calc(var(--w-side) - var(--w-side-closed) + var(--s-4)); }
+.side-inner { display: flex; flex-direction: column; height: 100%; background: var(--c-panel); }
+.side-panel.sopra .side-inner {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  width: var(--w-side);
+  max-width: calc(100vw - var(--w-side-closed));
+  border-left: 1px solid var(--c-line);
+  box-shadow: var(--sh-3);
+}
+.side-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-2) var(--s-2) var(--s-4);
+  border-bottom: 1px solid var(--c-line);
+}
+.side-panel.closed .side-head { flex-direction: column; padding: var(--s-2) 0; border-bottom: 0; }
+.side-title { flex: 1; font-family: var(--f-title); font-weight: 700; color: var(--c-text-2); }
+.side-toggle { border-color: transparent; background: transparent; }
+.side {
+  flex: 1;
+  min-height: 0;
   overflow: auto;
   padding: var(--s-3) var(--s-4);
   background: var(--c-panel);
-  border-left: 1px solid var(--c-line);
   color: var(--c-text);
   outline: none;
 }

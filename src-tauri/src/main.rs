@@ -600,11 +600,51 @@ fn list_custom_symbols(state: State<'_, Arc<Backend>>) -> Vec<CustomSymbol> {
     state.custom.list()
 }
 
+/// La misura della finestra all'avvio (M11-4, K12): l'85% dello schermo in larghezza e in altezza (in punti, cioè
+/// già divisi per il «ridimensionamento» di Windows), mai sotto il minimo e mai più grande dello schermo.
+fn dimensione_iniziale(schermo_l: f64, schermo_a: f64) -> (f64, f64) {
+    const MIN_L: f64 = 800.0;
+    const MIN_A: f64 = 500.0;
+    let l = (schermo_l * 0.85).max(MIN_L.min(schermo_l));
+    let a = (schermo_a * 0.85).max(MIN_A.min(schermo_a));
+    (l.round(), a.round())
+}
+
+/// All'avvio la finestra (nascosta nella configurazione) prende la sua misura dallo schermo su cui si apre, si centra
+/// e solo allora si mostra. Se qualcosa non va, si mostra comunque con la misura della configurazione.
+fn prepara_finestra(app: &tauri::App) {
+    let Some(win) = app.get_webview_window("main") else {
+        return;
+    };
+    let schermo = match win.current_monitor() {
+        Ok(Some(m)) => Some(m),
+        _ => win.primary_monitor().ok().flatten(),
+    };
+    if let Some(m) = schermo {
+        let scala = if m.scale_factor() > 0.0 {
+            m.scale_factor()
+        } else {
+            1.0
+        };
+        let (l, a) = dimensione_iniziale(
+            m.size().width as f64 / scala,
+            m.size().height as f64 / scala,
+        );
+        let _ = win.set_size(tauri::LogicalSize::new(l, a));
+        let _ = win.center();
+    }
+    let _ = win.show();
+}
+
 fn main() {
     let backend = Arc::new(load_backend());
     let for_protocol = Arc::clone(&backend);
     tauri::Builder::default()
         .manage(backend)
+        .setup(|app| {
+            prepara_finestra(app);
+            Ok(())
+        })
         // Chiudere la finestra non chiude subito: la pagina salva il documento e poi chiede di uscire. Se la
         // pagina non risponde (errore, blocco) il programma esce comunque dopo qualche secondo.
         .on_window_event(|window, event| {
@@ -686,7 +726,20 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::must_force_exit;
+    use super::{dimensione_iniziale, must_force_exit};
+
+    #[test]
+    fn la_finestra_parte_all_85_per_cento_dello_schermo() {
+        // Portatile 1366×768 al 100%.
+        assert_eq!(dimensione_iniziale(1366.0, 768.0), (1161.0, 653.0));
+        // Full HD al 150% (1280×720 punti).
+        assert_eq!(dimensione_iniziale(1280.0, 720.0), (1088.0, 612.0));
+        // Schermo piccolissimo: almeno il minimo, ma mai più grande dello schermo.
+        assert_eq!(dimensione_iniziale(900.0, 560.0), (800.0, 500.0));
+        assert_eq!(dimensione_iniziale(700.0, 450.0), (700.0, 450.0));
+        // 4K al 100%: grande, ma sempre l'85%.
+        assert_eq!(dimensione_iniziale(3840.0, 2160.0), (3264.0, 1836.0));
+    }
 
     #[test]
     fn uscita_forzata_solo_se_la_pagina_non_risponde() {
