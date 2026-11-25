@@ -14,7 +14,7 @@ body { margin: 0; }
   width: 794px; /* A4 a 96 dpi */
   min-height: 1123px;
   margin: 0 auto;
-  padding: 57px; /* 15 mm */
+  padding: var(--p-margin, 57px); /* 15 mm di partenza: gli a capo sullo schermo sono quelli della stampa */
   background: #fff;
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
 }
@@ -476,7 +476,9 @@ body { margin: 0; }
 .p-border .w:not(.wc):not(.txt):not(.ns):not(.ph)::before { border: 0.4mm solid #1c1c1c; border-radius: 1.5mm; }
 /* «Una frase per riga»: i segnaposto <br> esistono solo mentre si stampa. */
 .snl { display: none; }
-.p-oneper .snl { display: inline; }
+/* A schermo il testo scorre; gli a capo di «una frase per riga» si vedono solo nella stampa. */
+.print-attr-flow { display: none; }
+.p-landscape .sheet { width: 1123px; } /* A4 orizzontale a 96 dpi */
 .print-overlay { position: fixed; inset: 0; z-index: 95; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.4); }
 .print-dialog { width: min(460px, 94vw); max-height: 92vh; overflow: auto; padding: 18px 20px; background: #fff; border-radius: 8px; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35); font-size: 14px; }
 .print-dialog h2 { margin: 0 0 10px; font-size: 18px; }
@@ -503,6 +505,9 @@ body { margin: 0; }
   .w.ph::before { border: none; }
   .w.dbt { text-decoration: none; }
   .w.hid { opacity: 1; }
+  .w.dbt { background: none; border-bottom: 0; font-size: inherit; }
+  .p-oneper .snl { display: inline; }
+  .p-nofooter .print-attr-flow { display: block; margin-top: 8mm; font-size: 7.5pt; color: #666; text-align: center; }
   .cur { background: none; box-shadow: none; }
   /* Simbolo e parola non si separano mai tra righe o pagine. */
   .w { break-inside: avoid; page-break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact; }

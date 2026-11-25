@@ -2398,23 +2398,66 @@ test("stampa: un titolo con virgolette, barre e a capo non rompe il piè di pagi
   expect(outside.match(/[{}]/g)?.length).toBe(4); // @page { ... @bottom-center { ... } }
 });
 
-test("stampa: con un motore di pagine vecchio la finestra avvisa che il piè di pagina potrebbe mancare", async ({ page }) => {
+test("stampa: con un motore di pagine vecchio la finestra avvisa e l'attribuzione va in fondo al testo", async ({ page }) => {
   await open(page, "Marco mangia pane");
-  await page.evaluate(() => Object.defineProperty(navigator, "userAgent", { value: "Mozilla/5.0 Chrome/120.0.0.0 Safari/537.36", configurable: true }));
+  await page.evaluate(() => { delete (window as any).CSSMarginRule; });
   const d = await openPrintDialog(page);
   await expect(d).toContainText("Aggiorna WebView2");
+  await d.getByRole("button", { name: "Chiudi" }).click();
+  expect(await page.evaluate(() => document.documentElement.classList.contains("p-nofooter"))).toBe(true);
+  const text = pdfPages(await pdfOf(page)).join("\n");
+  expect(text).toContain(ATTR); // in fondo al testo, visibile solo in stampa
+  await page.emulateMedia({ media: "screen" });
+  await expect(page.locator(".print-attr-flow")).toBeHidden();
 });
 
-test("stampa: una frase per riga solo mentre si stampa, poi torna tutto com'era", async ({ page }) => {
+test("stampa: caratteri di controllo (form feed, a capo, NUL) nel titolo non cancellano l'attribuzione", async ({ page }) => {
+  await open(page, STORIES, true);
+  const d = await openPrintDialog(page);
+  await d.getByLabel("il titolo").check();
+  await d.getByRole("button", { name: "Chiudi" }).click();
+  for (const bad of ["a\fb", "a\u000bb", "a\u0085b", "a\rb\nc", "a\u2028b", "x\\"]) {
+    await page.emulateMedia({ media: "screen" });
+    await page.getByLabel("Titolo del documento").fill(bad);
+    const text = pdfPages(await pdfOf(page)).join("\n");
+    expect(text, JSON.stringify(bad)).toContain(ATTR);
+  }
+});
+
+test("stampa: lo schermo segue i margini e l'orientamento scelti; un documento nuovo riparte dalle impostazioni di partenza", async ({ page }) => {
+  await open(page, "", true);
+  await page.locator(".ProseMirror").click();
+  await page.keyboard.type("Pane e latte");
+  const d = await openPrintDialog(page);
+  await d.getByLabel("Orientamento").selectOption("landscape");
+  await d.getByLabel("Margini (mm)").fill("25");
+  await d.getByLabel("Margini (mm)").dispatchEvent("change");
+  await d.getByRole("button", { name: "Chiudi" }).click();
+  const box = await page.locator(".sheet").evaluate((e) => ({ w: e.getBoundingClientRect().width, pad: getComputedStyle(e).paddingLeft }));
+  expect(Math.round(box.w)).toBe(1123); // A4 orizzontale a 96 dpi
+  expect(parseFloat(box.pad)).toBeCloseTo((25 / 25.4) * 96, 0);
+  await expect.poll(async () => (await mockSaves(page)).at(-1)?.prefs?.print?.margin).toBe(25);
+  await page.getByRole("button", { name: "Nuovo" }).click();
+  const cls = await page.evaluate(() => [...document.documentElement.classList]);
+  expect(cls).not.toContain("p-landscape");
+  expect(await page.evaluate(() => document.documentElement.style.getPropertyValue("--p-margin"))).toBe("15mm");
+});
+
+
+test("stampa: una frase per riga: gli a capo ci sono ma sullo schermo non si vedono; il testo non cambia", async ({ page }) => {
   await open(page, "Marco mangia. La mamma beve. Il gatto dorme.");
   await page.evaluate(() => { (window as any).__snap = null; window.print = () => { (window as any).__snap = { br: document.querySelectorAll("br.snl").length, cls: document.documentElement.classList.contains("p-oneper") }; }; });
   const d = await openPrintDialog(page);
   await d.getByLabel("Una frase per riga").check();
+  await expect(page.locator("br.snl")).toHaveCount(2);
+  expect(await page.locator("br.snl").first().evaluate((e) => getComputedStyle(e).display)).toBe("none"); // a schermo no
   await d.getByRole("button", { name: "Stampa" }).click();
   await expect.poll(() => page.evaluate(() => (window as any).__snap)).toEqual({ br: 2, cls: true });
-  // Dopo la stampa i segnaposto spariscono e il testo del documento non è cambiato.
-  await expect.poll(() => page.locator("br.snl").count(), { timeout: 4000 }).toBe(0);
+  // Il testo del documento non è cambiato; spegnendo l'opzione gli a capo spariscono.
   expect(await page.evaluate(() => (window as any).caaProto.view.state.doc.textContent)).toBe("Marco mangia. La mamma beve. Il gatto dorme.");
+  const d2 = await openPrintDialog(page);
+  await d2.getByLabel("Una frase per riga").uncheck();
+  await expect(page.locator("br.snl")).toHaveCount(0);
 });
 
 test("stampa: «una frase per riga» nel PDF: ogni frase comincia su una riga nuova", async ({ page }) => {
@@ -2429,7 +2472,9 @@ test("stampa: «una frase per riga» nel PDF: ogni frase comincia su una riga nu
   expect(["Anna", "Il"].some((w) => !startsLine(text, w))).toBe(true);
   // Con l'opzione (accesa solo per la stampa) ogni frase va a capo.
   await page.emulateMedia({ media: "screen" });
-  await page.evaluate(() => { (window as any).caaProto.setOneLine(true); document.documentElement.classList.add("p-oneper"); });
+  const dlg = await openPrintDialog(page);
+  await dlg.getByLabel("Una frase per riga").check();
+  await dlg.getByRole("button", { name: "Chiudi" }).click();
   text = pdfPages(await pdfOf(page)).join("\n");
   for (const w of firstWords) expect(startsLine(text, w)).toBe(true);
 });
@@ -2461,8 +2506,8 @@ test("stampa: le impostazioni stanno nel documento (si salvano, si ritrovano, va
   await d.getByRole("button", { name: "Chiudi" }).click();
   await expect.poll(async () => (await mockSaves(page)).at(-1)?.prefs?.print?.orientation).toBe("landscape");
   expect((await mockSaves(page)).at(-1).prefs.print).toMatchObject({ orientation: "landscape", font: "atkinson", uppercase: true, margin: 15 });
-  // Un documento nuovo riparte dalle impostazioni di stampa del documento aperto? No: si riapre quello salvato e si ritrovano.
   await page.getByRole("button", { name: "Nuovo" }).click();
+  expect(await page.evaluate(() => [...document.documentElement.classList])).not.toContain("pf-atkinson"); // il nuovo riparte da zero
   await page.evaluate(() => {
     const save = (window as any).__mock.saves.at(-1);
     (window as any).__mock.docsStore.set("Strano.caa", { entry: { file: "Strano.caa", id: "id-x", title: "Strano", modified: new Date().toISOString(), rev: 1, author: "X", origin: null }, payload: { document: save.document, prefs: { print: { orientation: "sideways", margin: 9999, font: "comic", border: "sì", uppercase: true } }, render: [], sense_locks: [], lexicon: "lex-new" } });

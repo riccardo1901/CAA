@@ -1,8 +1,6 @@
 // Stampa (M10): le impostazioni si traducono in classi, variabili CSS e una regola `@page` generata; il foglio
 // dell'editor è lo stesso che si stampa (le regole `@media print` stanno in style.css). L'attribuzione ARASAAC nel
 // piè di pagina c'è sempre e non dipende da nessuna impostazione.
-import type { EditorView } from "prosemirror-view";
-import { setOneLine } from "../editor/printLines";
 import type { PrintPrefs } from "../docs/prefs";
 
 export const ATTRIBUTION =
@@ -23,7 +21,7 @@ let pageStyle: HTMLStyleElement | null = null;
 
 /** Un testo dentro una stringa CSS: barre, virgolette e a capo non devono poter uscire dalla stringa. */
 export function cssString(t: string): string {
-  return `"${t.replace(/[\\"]/g, "\\$&").replace(/[\r\n\u2028\u2029]+/g, " ")}"`;
+  return `"${t.replace(/[\\"]/g, "\\$&").replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]+/g, " ")}"`;
 }
 
 /** Il piè di pagina: sempre l'attribuzione; titolo, autore e numero di pagina se richiesti. Sono righe di testo. */
@@ -45,8 +43,8 @@ export function pageRule(p: PrintPrefs, meta: PrintMeta = { title: "", author: "
   const content = (first.length ? [...first, CSS_NEWLINE] : []).concat(cssString(f.attribution)).join(" ");
   return (
     `@page { size: A4 ${p.orientation}; margin: ${m}mm ${m}mm ${m + FOOTER_MM}mm ${m}mm; ` +
-    `@bottom-center { content: ${content}; white-space: pre; text-align: center; vertical-align: bottom; ` +
-    `padding-bottom: 3mm; font: 7.5pt "Segoe UI", system-ui, sans-serif; color: #666; } }`
+    `@bottom-center { content: ${content}; white-space: pre; text-align: center; vertical-align: top; ` +
+    `padding-top: 2.5mm; font: 7.5pt "Segoe UI", system-ui, sans-serif; color: #666; } }`
   );
 }
 
@@ -65,26 +63,29 @@ export function applyPrintPrefs(p: PrintPrefs, meta: PrintMeta): void {
   root.classList.toggle("p-oneper", p.onePerLine);
   root.classList.toggle("p-landscape", p.orientation === "landscape");
   root.style.setProperty("--p-margin", `${p.margin}mm`);
+  // Motore vecchio: l'attribuzione va in fondo al testo (altrimenti non comparirebbe).
+  const noFooter = !footerSupported();
+  root.classList.toggle("p-nofooter", noFooter);
+  if (noFooter) ensureFlowAttribution();
   pageStyle.textContent = pageRule(p, meta);
 }
 
-/** Il motore di pagine del programma sa scrivere il piè di pagina nel margine (Chromium 131 o più recente)? */
-export function footerSupported(ua: string = navigator.userAgent): boolean {
-  const m = /Chrom(?:e|ium)\/(\d+)/.exec(ua) ?? /Edg\/(\d+)/.exec(ua);
-  return m === null ? true : Number(m[1]) >= 131;
+/** Il motore di pagine sa scrivere il piè di pagina nel margine (Chromium 131+, che ha la regola dei riquadri)? */
+export function footerSupported(): boolean {
+  return typeof (window as unknown as { CSSMarginRule?: unknown }).CSSMarginRule !== "undefined";
 }
 
-/** Stampa: si accende «una frase per riga» (se richiesto), si aspetta che la pagina si ridisegni, si apre il dialogo di
- *  sistema e, alla fine, si rimette tutto com'era. */
-export async function printNow(view: EditorView, p: PrintPrefs): Promise<void> {
-  const restore = (): void => setOneLine(view, false);
-  window.addEventListener("afterprint", restore, { once: true });
-  setOneLine(view, p.onePerLine);
-  await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
-  try {
-    window.print();
-  } finally {
-    // Su alcuni sistemi `print()` torna subito, su altri solo a stampa finita: in ogni caso, senza l'evento, si ripristina.
-    window.setTimeout(restore, 1500);
-  }
+/** L'attribuzione in fondo al testo: serve solo se il motore non scrive il piè di pagina nel margine (si vede solo in stampa). */
+function ensureFlowAttribution(): void {
+  const sheet = document.querySelector(".sheet");
+  if (!sheet || sheet.querySelector(".print-attr-flow")) return;
+  const d = document.createElement("div");
+  d.className = "print-attr-flow";
+  d.textContent = ATTRIBUTION;
+  sheet.append(d);
+}
+
+/** Stampa: si apre il dialogo di sistema. (Gli a capo di «una frase per riga» ci sono già nella pagina e si vedono solo in stampa.) */
+export function printNow(): void {
+  window.print();
 }

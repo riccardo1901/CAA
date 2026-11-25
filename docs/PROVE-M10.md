@@ -16,6 +16,8 @@ Serve l'app nuova (`caa-app.exe` della CI) e il pacchetto dati più recente. **S
 | 10 | Nella finestra di stampa scegli la stampante **Microsoft Print to PDF** e salva. Apri il PDF. | Il PDF è uguale all'anteprima, con l'attribuzione su ogni pagina. |
 | 11 | Chiudi, riapri il documento da **Documenti**. | Le impostazioni di stampa (orientamento, carattere, bordo…) ci sono ancora: sono salvate con il documento. |
 | 12 | Clicca **Informazioni**. | Vedi versione, attribuzione ARASAAC, Morph-it!, ISDT e caratteri; Esc chiude. |
+| 13 | Nel dialogo di stampa di Windows prova **Margini: Nessuno**, poi **Minimo**, e accendi/spegni **Intestazioni e piè di pagina** e **Grafica di sfondo**. | Con «Grafica di sfondo» spenta i **simboli escono lo stesso**. Con «Nessuno» o «Minimo» l'attribuzione in fondo può essere ridotta o tagliata dal dialogo di sistema: dimmi cosa vedi. |
+| 14 | Stampa su carta con **margine 5 mm**: guarda se la riga dell'attribuzione è tagliata dalla stampante (molte non stampano negli ultimi 4–6 mm). | La riga sta subito sotto il testo, non sul bordo del foglio. Se è tagliata dimmelo: allargo il margine in fondo. |
 
 ## Come mi riporti il risultato
 - Se tutto va bene: "M10 ok".

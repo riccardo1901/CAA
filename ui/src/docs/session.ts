@@ -9,7 +9,7 @@ import { schema } from "../editor/schema";
 import type { DocClient, DocEntry, LibEntry, LibraryClient, OpenedDoc, SavePayload } from "../engine/client";
 import type { OriginalBar } from "./originalbar";
 import type { LexBar } from "./lexbar";
-import { COMPLETE_TABLE, sanitizePrefs, type DocPrefs } from "./prefs";
+import { COMPLETE_TABLE, DEFAULT_PRINT, sanitizePrefs, type DocPrefs } from "./prefs";
 
 export interface SessionDeps {
   view: EditorView;
@@ -425,7 +425,7 @@ export function createSession(deps: SessionDeps): Session {
     if (timer) clearTimeout(timer);
     timer = null;
     reset();
-    deps.setPrefs({ preset: "complete", table: { ...COMPLETE_TABLE } });
+    deps.setPrefs({ preset: "complete", table: { ...COMPLETE_TABLE }, print: { ...DEFAULT_PRINT } });
     load(doc ?? deps.emptyDoc());
     changed();
   };

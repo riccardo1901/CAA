@@ -76,7 +76,7 @@ export function openPrintDialog(deps: PrintDialogDeps): () => void {
     select("Carattere", "Carattere", [["system", "Normale"], ["atkinson", "Atkinson Hyperlegible"], ["lexend", "Lexend"]], p.font, (v) => update({ font: v })),
     check("Bordo attorno a ogni simbolo", p.border, (v) => update({ border: v })),
     check("Una frase per riga", p.onePerLine, (v) => update({ onePerLine: v })),
-    check("Tutto maiuscolo (solo nella stampa, il testo non cambia)", p.uppercase, (v) => update({ uppercase: v })),
+    check("Tutto maiuscolo (il testo scritto non cambia)", p.uppercase, (v) => update({ uppercase: v })),
     el("h3", "", "Piè di pagina"),
     el("p", "print-note", "L'attribuzione ARASAAC c'è sempre. In più puoi mettere:"),
     check("il titolo", p.footerTitle, (v) => update({ footerTitle: v })),

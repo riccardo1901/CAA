@@ -73,7 +73,7 @@ export const COMPLETE_TABLE: PolicyTable = { articles: "reduced", clitics: "full
 
 /** Da un valore qualunque (letto da un file) alle sole preferenze valide; il resto resta com'è. */
 export function sanitizePrefs(value: unknown): Partial<DocPrefs> {
-  const out: Partial<DocPrefs> = {};
+  const out: Partial<DocPrefs> = { print: { ...DEFAULT_PRINT } };
   if (!value || typeof value !== "object") return out;
   const v = value as Record<string, unknown>;
   if (v.preset === "complete" || v.preset === "essential" || v.preset === "custom") out.preset = v.preset;
@@ -88,6 +88,7 @@ export function sanitizePrefs(value: unknown): Partial<DocPrefs> {
   }
   if (typeof v.size === "number" && Number.isFinite(v.size) && v.size >= 20 && v.size <= 400) out.size = Math.round(v.size);
   if (typeof v.cards === "boolean") out.cards = v.cards;
-  if (v.print !== undefined) out.print = sanitizePrint(v.print);
+  // Sempre: un documento senza impostazioni di stampa non eredita quelle del precedente.
+  out.print = sanitizePrint(v.print);
   return out;
 }

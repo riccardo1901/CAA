@@ -8,7 +8,8 @@ import { engineStats, setPolicy, tokenAt } from "./editor/engineSymbols";
 import { canMerge, groupAction } from "./editor/groups";
 import { hooks } from "./editor/menuHooks";
 import { DEFAULT_PRINT, type PrintPrefs } from "./docs/prefs";
-import { applyPrintPrefs, printNow } from "./print/print";
+import { applyPrintPrefs as applyPrintStyle, printNow } from "./print/print";
+import { setOneLine } from "./editor/printLines";
 import { openPrintDialog } from "./print/dialog";
 import { openAbout } from "./about";
 
@@ -269,12 +270,18 @@ export function createBars(
   // Stampa (M10): le impostazioni della pagina stanno nel documento; Ctrl+P apre la finestra.
   let printPrefs: PrintPrefs = { ...DEFAULT_PRINT };
   let author = "";
+  // Applica le impostazioni alla pagina e accende (o spegne) gli a capo di «una frase per riga».
+  const applyPrintPrefs = (p: PrintPrefs, m: { title: string; author: string }): void => {
+    applyPrintStyle(p, m);
+    setOneLine(view, p.onePerLine);
+  };
   const printMeta = () => ({ title: titleInputRef?.value ?? "", author });
   let titleInputRef: HTMLInputElement | null = null;
   const printBtn = el("button", "", "Stampa…");
   printBtn.type = "button";
   printBtn.title = "Ctrl+P";
   const openPrint = (): void => {
+    if (document.querySelector(".print-overlay")) return; // già aperta
     applyPrintPrefs(printPrefs, printMeta());
     openPrintDialog({
       get: () => printPrefs,
@@ -285,7 +292,7 @@ export function createBars(
       },
       print: () => {
         applyPrintPrefs(printPrefs, printMeta());
-        void printNow(view, printPrefs);
+        printNow();
       },
     });
   };

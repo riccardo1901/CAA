@@ -14,6 +14,19 @@
 ## Prove automatiche (Playwright con PDF veri di Chromium 157)
 PDF A4 verticale 595×842 pt e orizzontale 842×595; attribuzione su **ogni** pagina (12 pagine con simboli molto grandi); nessuna parola persa fra le pagine; interfaccia assente dal PDF; titolo con virgolette e `@page` dentro; una frase per riga nel PDF; impostazioni salvate e ritrovate; valori non validi ripuliti; avviso con motore vecchio; Ctrl+P; Informazioni non stampata.
 
+## Revisione indipendente (Opus) e correzioni
+Ogni difetto con la prova scritta prima.
+- **Simboli senza «Grafica di sfondo»** (trovato da me prima della revisione): `print-color-adjust: exact` va messo anche su `::before`/`::after`; la revisione ha confermato che così non serve passare a `<img>`.
+- **Attribuzione cancellata da un carattere di controllo** nel titolo o nell'autore (per esempio un form feed in un `.caa` ostile: il CSS scartava tutta la regola) → ora tutti i caratteri di controllo diventano spazi.
+- **Motore di pagine vecchio**: oltre all'avviso, l'attribuzione si stampa in fondo al testo (riconosciuto con `CSSMarginRule`, non con lo user-agent).
+- **Attribuzione troppo vicina al bordo** (2,5 mm: molte stampanti non stampano gli ultimi mm) → ora subito sotto il testo.
+- **Impostazioni di stampa che passavano al documento successivo** → ogni documento riparte da quelle sue o di partenza.
+- **Schermo ≠ stampa**: il foglio segue margini e orientamento scelti (A4 orizzontale = 1123 px).
+- **«Una frase per riga»**: gli a capo ci sono sempre quando l'opzione è accesa e si vedono solo in stampa (niente ripristino a tempo che poteva sbagliare con l'anteprima).
+- **Parole «da controllare»** non si stampano più con sfondo e riga.
+- Piccoli: Ctrl+P con la finestra già aperta non ne apre un'altra; etichetta del maiuscolo corretta.
+- **Resta da provare a mano**: con «Margini: Nessuno/Minimo» il dialogo di sistema ignora i margini della pagina e può ridurre il riquadro del piè di pagina (prove 13–14); il rimedio sicuro sarebbe stampare l'attribuzione sempre anche in fondo al testo. Noto e non corretto: «Autore» nel piè di pagina è chi usa il programma, non l'autore dell'originale della biblioteca; una riga titolo+autore molto lunga può uscire dal foglio.
+
 ## Metriche del motore
 Non toccato: dorati 48/48; strutture 20/20; corpus sviluppo 6,9 (134/1945); prova 13,4 (86/643).
 
