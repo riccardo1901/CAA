@@ -88,7 +88,7 @@ export function openPrintDialog(deps: PrintDialogDeps): () => void {
     dialog.append(el("p", "print-note warn", "Il motore di pagine di questo computer è vecchio: l'attribuzione ARASAAC in fondo a ogni pagina potrebbe non comparire. Aggiorna WebView2 (o Edge) prima di stampare."));
   }
   const actions = el("div", "print-actions");
-  const go = el("button", "", "Stampa");
+  const go = el("button", "primary", "Stampa");
   go.type = "button";
   const close = el("button", "", "Chiudi");
   close.type = "button";

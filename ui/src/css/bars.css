@@ -1,0 +1,132 @@
+/* Barre attorno al foglio (M11-1): documenti, strumenti, stato, avvisi del documento. Stessa disposizione di prima;
+   cambiano colori, caratteri, spazi e controlli (la nuova struttura delle barre arriva in M11-4). */
+.app { display: flex; flex-direction: column; height: 100vh; }
+.app .layout { flex: 1; min-height: 0; height: auto; }
+
+/* ---- Barra degli strumenti e barra di stato ---- */
+.toolbar, .statusbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-2) var(--s-4);
+  background: var(--c-bar);
+}
+.toolbar { position: relative; border-bottom: 1px solid var(--c-line); }
+/* Fino a M11-4 (nuova struttura, su una riga con il menu «Altro») la barra degli strumenti resta compatta come prima:
+   testo a 14 px e spazi stretti, altrimenti sugli schermi larghi 1536-1700 punti andrebbe su due righe. */
+.toolbar { gap: var(--s-2) var(--s-3); font-size: 0.875rem; }
+.toolbar :where(button) { padding-inline: 0.625rem; }
+.toolbar .grow, .statusbar .grow { flex: 1; }
+.toolbar label { white-space: normal; }
+.statusbar {
+  padding-block: var(--s-1);
+  border-top: 1px solid var(--c-line);
+  color: var(--c-text-2);
+  font-size: var(--fs-sm);
+}
+.statusbar .warn { color: var(--doubt-fg); font-weight: 600; }
+/* Contatore delle parole da controllare: si può cliccare. */
+.statusbar .link { cursor: pointer; }
+.statusbar .link:hover { text-decoration: underline; }
+
+/* ---- Tabella «Personalizzato» delle parole funzionali (riquadro sotto la barra) ---- */
+.policy-dialog {
+  position: absolute;
+  right: var(--s-4);
+  top: 100%;
+  z-index: 40;
+  width: 25rem;
+  max-width: calc(100vw - 2 * var(--s-4));
+  max-height: calc(100vh - 8rem);
+  overflow: auto;
+  padding: var(--s-4);
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-2);
+}
+.policy-dialog[hidden] { display: none; }
+.policy-dialog h2 { font-family: var(--f-title); font-size: var(--fs-lg); margin: 0 0 var(--s-2); }
+.policy-dialog table { width: 100%; border-collapse: collapse; }
+.policy-dialog th { text-align: left; font-weight: 400; padding: var(--s-1) var(--s-2) var(--s-1) 0; }
+.policy-dialog td { text-align: right; padding: var(--s-1) 0; }
+.policy-dialog .note { color: var(--c-text-2); font-size: var(--fs-sm); margin: var(--s-2) 0; }
+
+/* ---- Riga dei documenti ---- */
+.docbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-2) var(--s-4);
+  background: var(--c-panel);
+  border-bottom: 1px solid var(--c-line);
+}
+.docbar[hidden] { display: none; }
+.docbar .grow { flex: 1; }
+.doc-title {
+  flex: 0 1 26rem;
+  min-width: 7.5rem;
+  font-weight: 600;
+  border-color: transparent;
+  background: transparent;
+}
+.doc-title:hover, .doc-title:focus { border-color: var(--c-control-line); background: var(--c-surface); }
+.save-status { color: var(--c-text-3); font-size: var(--fs-sm); }
+.save-status.warn { color: var(--err-fg); font-weight: 600; }
+/* Indicatore della biblioteca: parola e pallino, mai solo colore. */
+.lib-status {
+  min-height: 0;
+  padding: 1px var(--s-3);
+  border: 1px solid transparent;
+  border-radius: var(--r-pill);
+  background: transparent;
+  font-size: var(--fs-sm);
+}
+.lib-status:hover { background: var(--c-accent-soft); border-color: var(--c-line); }
+.lib-status[hidden] { display: none; }
+.lib-status.on { color: var(--ok-fg); }
+.lib-status.off { color: var(--warn-fg); border-color: var(--warn-line); background: var(--warn-bg); }
+.update-note {
+  padding: 1px var(--s-3);
+  border: 1px solid var(--warn-line);
+  border-radius: var(--r-pill);
+  background: var(--warn-bg);
+  color: var(--warn-fg);
+  font-size: var(--fs-sm);
+}
+.update-note[hidden] { display: none; }
+
+/* ---- Avvisi del documento ---- */
+.banner {
+  flex: none;
+  padding: var(--s-2) var(--s-4);
+  background: var(--warn-bg);
+  border-bottom: 1px solid var(--warn-line);
+  color: var(--warn-fg);
+}
+.lexbar, .origbar {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-3);
+  padding: var(--s-2) var(--s-4);
+}
+.lexbar { background: var(--warn-bg); border-bottom: 1px solid var(--warn-line); color: var(--warn-fg); }
+.origbar { background: var(--c-accent-soft); border-bottom: 1px solid var(--p-200); color: var(--p-800); }
+.lexbar[hidden], .origbar[hidden] { display: none; }
+.lex-text, .orig-text { flex: 1 1 20rem; }
+.lex-thumb { display: inline-flex; flex-direction: column; align-items: center; font-size: var(--fs-xs); color: var(--c-text-2); }
+.lex-thumb img { width: 2.75rem; height: 2.75rem; object-fit: contain; }
+.lex-none {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 2px dashed var(--n-500);
+  border-radius: var(--r-sm);
+}
+.lex-arrow { font-size: 1.25rem; color: var(--warn-fg); }

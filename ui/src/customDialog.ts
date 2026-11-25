@@ -57,7 +57,7 @@ export function cropImage(file: File, word: string, canShare = false): Promise<C
       const shareLabel = el("label", "crop-share");
       shareLabel.append(shareBox, " Condividi con tutta la scuola (lo vedranno e potranno usarlo tutti i docenti)");
       shareLabel.hidden = !canShare;
-      const ok = el("button", "pm-btn", "Usa questo simbolo");
+      const ok = el("button", "pm-btn primary", "Usa questo simbolo");
       ok.type = "button";
       const cancel = el("button", "pm-btn", "Annulla");
       cancel.type = "button";

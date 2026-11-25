@@ -176,7 +176,7 @@ export function createDocsPanel(docs: DocClient, session: Session, confirmDelete
       const tags = field("Etichette (separate da virgole)", "", undefined, "Etichette");
       const err = el("p", "docs-note warn");
       const actions = el("div", "lib-actions");
-      const go = el("button", "", "Pubblica");
+      const go = el("button", "primary", "Pubblica");
       go.type = "submit";
       const cancel = el("button", "", "Annulla");
       cancel.type = "button";

@@ -158,6 +158,13 @@ function impronta(page: Page) {
     // (la CI non ha esattamente lo stesso Chromium) si annullano da sole e resta solo quello che fa il nostro CSS.
     const box = document.createElement("div");
     box.style.all = "initial";
+    // Fuori dalla pagina visibile, senza occupare spazio: non deve spostare niente (barre di scorrimento comprese).
+    box.style.position = "fixed";
+    box.style.left = "-10000px";
+    box.style.top = "0";
+    box.style.width = "0";
+    box.style.height = "0";
+    box.style.overflow = "hidden";
     const neutro = document.createElement("span");
     box.append(neutro);
     document.body.append(box);
@@ -174,6 +181,8 @@ function impronta(page: Page) {
         for (let i = 0; i < cs.length; i++) {
           const k = cs[i];
           if (SKIP.has(k) || k.startsWith("--")) continue;
+          // Il margine che centra il foglio nella scrivania dipende dalla larghezza dell'interfaccia, non dal foglio.
+          if (path === "div.sheet" && !pseudo && /^margin-(left|right|inline-start|inline-end)$/.test(k)) continue;
           const val = cs.getPropertyValue(k);
           if (val !== partenza[k]) o[k] = v(val);
         }
@@ -392,7 +401,13 @@ async function fotoFoglio(page: Page): Promise<Buffer> {
     return { top: r.top, left: r.left, meta };
   });
   expect(posto, "il foglio deve stare all'inizio di una piastrella per la foto").toEqual({ top: posto.meta.top, left: posto.meta.left, meta: posto.meta });
-  const png = await page.locator(".sheet").screenshot({ animations: "disabled", caret: "hide" });
+  // Solo le righe intere del foglio: se il foglio è alto, per esempio, 1483,6 px, l'ultima riga sarebbe metà foglio e
+  // metà scrivania, e cambierebbe ogni volta che cambia il colore della scrivania (che è interfaccia, non foglio).
+  const box = await page.evaluate(() => {
+    const r = document.querySelector(".sheet")!.getBoundingClientRect();
+    return { x: r.left, y: r.top, width: Math.floor(r.width), height: Math.floor(r.height) };
+  });
+  const png = await page.screenshot({ clip: box, animations: "disabled", caret: "hide" });
   // Via il ritocco, altrimenti resterebbe anche nella stampa che si controlla subito dopo.
   await page.evaluate(() => document.querySelector<HTMLElement>(".sheet-wrap")!.removeAttribute("style"));
   return png;

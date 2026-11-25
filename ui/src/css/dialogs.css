@@ -1,0 +1,76 @@
+/* Finestre (M11-1): ritaglio del simbolo personale, primo avvio, Stampa, Informazioni. Stesso velo, stessi raggi,
+   stessa ombra, titoli in Lexend. Mai più alte o più larghe dello schermo: scorrono dentro. (Il comportamento unico
+   da tastiera arriva in M11-3; la finestra Stampa diventa la scheda Pagina in M11-5.) */
+.crop-overlay, .first-overlay, .print-overlay, .about-overlay, .docs-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-4);
+  background: var(--c-overlay);
+}
+.docs-overlay { z-index: 90; }
+.print-overlay, .about-overlay { z-index: 95; }
+.crop-overlay { z-index: 100; }
+.first-overlay { z-index: 120; }
+
+.crop-dialog, .first-box, .print-dialog, .about-dialog {
+  max-width: 100%;
+  max-height: 100%;
+  overflow: auto;
+  padding: var(--s-6);
+  background: var(--c-surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-3);
+}
+.crop-dialog { width: 24rem; }
+.first-box { width: 27rem; }
+.print-dialog { width: 29rem; }
+.about-dialog { width: 35rem; }
+.crop-dialog h2, .first-box h2, .print-dialog h2, .about-dialog h2 {
+  margin: 0 0 var(--s-2);
+  font-family: var(--f-title);
+  font-size: var(--fs-xl);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+/* Ritaglio del simbolo personale. */
+.crop-help, .crop-privacy { color: var(--c-text-2); font-size: var(--fs-sm); margin: var(--s-2) 0; }
+.crop-privacy { color: var(--warn-fg); }
+.crop-canvas {
+  display: block;
+  width: 320px;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  margin: var(--s-2) auto;
+  border: 2px solid var(--c-control-line);
+  border-radius: var(--r-sm);
+  background: repeating-conic-gradient(#eee 0 25%, #fff 0 50%) 0 0 / 20px 20px;
+  cursor: grab;
+  touch-action: none;
+}
+.crop-dialog input[type="range"] { width: 100%; }
+.crop-dialog .pm-btn { margin-top: var(--s-2); margin-right: var(--s-2); }
+.crop-share { display: block; margin: var(--s-2) 0; }
+.crop-share[hidden] { display: none; }
+
+/* Primo avvio. */
+.first-box input { width: 100%; margin: var(--s-2) 0; }
+
+/* Stampa. */
+.print-dialog h3 { margin: var(--s-4) 0 var(--s-1); font-size: var(--fs-md); }
+.print-row { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); margin: var(--s-2) 0; }
+.print-row input[type="number"] { width: 5rem; }
+.print-check { display: block; margin: var(--s-1) 0; }
+.print-note { color: var(--c-text-2); font-size: var(--fs-sm); margin: var(--s-2) 0; }
+.print-note.warn { color: var(--doubt-fg); font-weight: 600; }
+.print-actions { display: flex; gap: var(--s-3); justify-content: flex-end; margin-top: var(--s-4); }
+
+/* Informazioni. */
+.about-version { color: var(--c-text-2); margin: 0 0 var(--s-3); }
+.about-dialog dt { font-weight: 600; margin-top: var(--s-3); }
+.about-dialog dd { margin: 2px 0 0; color: var(--c-text-2); }
+.about-dialog button { margin-top: var(--s-4); }

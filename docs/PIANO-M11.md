@@ -37,7 +37,17 @@
 - **Schermate prima/dopo** (`tests/e2e/aspetto.spec.ts`, 17 stati × 4 schermi; `scripts/confronto-ui.mjs`). Diverso dal piano: si attivano con `CAA_ASPETTO=<etichetta>` invece dell'etichetta `@aspetto`, e lo script distingue «identica», «solo rumore» (differenze di colore ≤ 2/255, che danno già due giri dello stesso codice) e «cambiata».
 - **Interfaccia di prova**: `caaProto.getPrefs/setPrefs/setAuthor` (per le prove; nessun effetto per il docente). Motore finto e `open()` spostati in `tests/e2e/fixtures.ts`.
 - **Esito**: 128 prove di prima + 19 del foglio + 152 della matrice verdi; confronto m10 → m11-0: 57 schermate identiche al pixel, 11 con solo rumore, 0 cambiate.
+- **Dopo la prima CI**: l'impronta salva solo i valori diversi da quelli di partenza del browser (la CI ha un Chromium un po' diverso); il margine automatico che centra il foglio non conta (è interfaccia); la foto del foglio prende solo le righe intere; la CI installa `poppler-utils` (le 9 prove di stampa di M10 fallivano lì da prima).
 - **Da decidere prima di M11-4**: la sezione 0 chiede «Adatta alla larghezza» e zoom del foglio, la 3.2 dice «niente zoom del foglio in M11»; la sezione 0 dice finestra all'85% dello schermo, la 3.2 «massimizzata».
+
+### M11-1 — fatto (in attesa del via libera)
+
+- **CSS per zone**: `css/tokens.css` (tavolozza 2.2 e misure 2.8, in rem), `css/base.css` (pulsanti, campi, selezioni, caselle, anello di fuoco 2 px staccato 2 px, `.primary`), `css/bars.css`, `css/side.css`, `css/dialogs.css`, `css/docs.css`; `style.css` tolto. Le regole di base stanno dentro `:where()` (peso zero) e `[hidden]` vince sempre (senza, i pulsanti nascosti come «Modifica…» comparivano).
+- **Azioni principali** (`primary`): Stampa…, Stampa, Continua, Usa questo simbolo, Pubblica, Adatta.
+- **Barra degli strumenti compatta fino a M11-4** (testo 14 px): con 15 px sugli schermi larghi 1536–1700 punti andava su due righe (la matrice l'ha visto).
+- **Prove** `tests/e2e/stile.spec.ts`: coppie della tavolozza (WCAG AA), contrasto vero dei testi in 8 situazioni, anello di fuoco su ogni controllo e giro con Tab. Sul codice di M10 trovano 15 difetti (fra cui «?» a 3,54:1 e anelli da 1 px).
+- **Difetto di M10 trovato e conservato** (stampa): la radice della pagina in stampa era grigia (#e8e8ec) e lascia una striscia chiara sopra il primo titolo o paragrafo. Con la tavolozza nuova sparirebbe; per la regola «la stampa non cambia» è conservato in `sheet.css` in attesa di decisione.
+- **Ombra del foglio** (`.sheet`): resta quella di prima (è nel foglio), non quella più morbida del piano.
 
 ---
 

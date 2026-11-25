@@ -1,0 +1,88 @@
+/* Tavolozza, caratteri e misure dell'interfaccia (M11-1, docs/PIANO-M11.md sezione 2.8). Il foglio (.sheet) NON usa
+   queste variabili: le sue misure e i suoi colori stanno in sheet.css e non cambiano.
+   Le misure sono in rem: seguono la dimensione del testo dell'interfaccia (M11-8, «Dimensione dell'interfaccia»). */
+:root {
+  /* Neutri caldi (carta) */
+  --n-0: #ffffff;
+  --n-25: #fbfaf7;   /* pannelli e finestre secondarie */
+  --n-50: #f6f5f1;   /* barre */
+  --n-100: #e9e8e2;  /* scrivania attorno al foglio */
+  --n-200: #dfddd5;  /* separatori */
+  --n-400: #807f77;  /* bordi dei controlli (almeno 3:1) */
+  --n-500: #a9a8a0;  /* testo disattivato */
+  --n-600: #6b6a63;  /* testo terziario */
+  --n-700: #5c5b55;  /* testo secondario */
+  --n-900: #1c1c1a;  /* testo */
+
+  /* Principale: blu inchiostro */
+  --p-50: #eaf1fc;
+  --p-100: #d5e3f8;
+  --p-200: #afc8ef;
+  --p-600: #2456b3;
+  --p-700: #1b4489;
+  --p-800: #14336a;
+
+  /* Stati */
+  --ok-fg: #1e6b3a;    --ok-bg: #e6f4ea;    --ok-line: #9ccfae;
+  --warn-fg: #7a4100;  --warn-bg: #fff3d1;  --warn-line: #e8c35a;
+  --err-fg: #b42318;   --err-bg: #fdecea;   --err-line: #f1a9a2;
+  --doubt-fg: #b35400; --doubt-bg: #fff1e0;
+
+  /* Ruoli (nei componenti si usano questi) */
+  --c-text: var(--n-900);
+  --c-text-2: var(--n-700);
+  --c-text-3: var(--n-600);
+  --c-text-off: var(--n-500);
+  --c-bar: var(--n-50);
+  --c-surface: var(--n-0);
+  --c-panel: var(--n-25);
+  --c-desk: var(--n-100);
+  --c-line: var(--n-200);
+  --c-control-line: var(--n-400);
+  --c-accent: var(--p-600);
+  --c-accent-hover: var(--p-700);
+  --c-accent-press: var(--p-800);
+  --c-accent-soft: var(--p-50);
+  --c-selected: var(--p-100);
+  --c-focus: var(--p-700);
+  --c-overlay: rgb(28 28 26 / 0.45);
+
+  /* Caratteri */
+  --f-ui: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --f-title: "Lexend", "Segoe UI", system-ui, sans-serif;
+  --fs-xs: 0.75rem;    /* 12 px: solo numeri piccoli ed etichette */
+  --fs-sm: 0.8125rem;  /* 13 px */
+  --fs-md: 0.9375rem;  /* 15 px: testo normale */
+  --fs-lg: 1.125rem;   /* 18 px: titoli di sezione */
+  --fs-xl: 1.375rem;   /* 22 px: titoli di finestra */
+  --lh: 1.45;
+
+  /* Spaziatura (griglia di 4 px) */
+  --s-1: 0.25rem;
+  --s-2: 0.5rem;
+  --s-3: 0.75rem;
+  --s-4: 1rem;
+  --s-6: 1.5rem;
+  --s-8: 2rem;
+
+  /* Raggi */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-pill: 999px;
+
+  /* Ombre: leggera (schede), media (menu), forte (finestre) */
+  --sh-1: 0 1px 2px rgb(28 28 26 / 0.08), 0 1px 4px rgb(28 28 26 / 0.06);
+  --sh-2: 0 4px 12px rgb(28 28 26 / 0.12);
+  --sh-3: 0 12px 40px rgb(28 28 26 / 0.22);
+
+  /* Misure */
+  --h-control: 2rem;    /* 32 px */
+  --w-side: 21.25rem;   /* 340 px, come prima (la barra richiudibile arriva in M11-4) */
+
+  /* Movimento: breve, e nullo per chi lo ha chiesto a Windows */
+  --t-fast: 120ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root { --t-fast: 0ms; }
+}

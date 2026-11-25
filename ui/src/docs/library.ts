@@ -196,7 +196,7 @@ export function showLibraryTab(body: HTMLElement, deps: LibraryTabDeps): void {
         c.title = "Un altro file ha lo stesso documento: chiedi all'autore quale tenere";
         info.append(c);
       }
-      const adapt = el("button", "", "Adatta");
+      const adapt = el("button", "primary", "Adatta");
       adapt.type = "button";
       adapt.title = "Fai una tua copia da modificare";
       adapt.addEventListener("click", () => {

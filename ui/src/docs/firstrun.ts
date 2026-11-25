@@ -21,7 +21,7 @@ function askName(save: (name: string) => Promise<string>): Promise<string> {
     input.maxLength = 60;
     input.placeholder = "Nome e cognome";
     input.setAttribute("aria-label", "Il tuo nome");
-    const ok = el("button", "", "Continua");
+    const ok = el("button", "primary", "Continua");
     ok.type = "button";
     ok.disabled = true;
     const err = el("p", "docs-note warn");

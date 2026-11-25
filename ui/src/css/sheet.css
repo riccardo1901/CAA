@@ -210,6 +210,10 @@
 }
 
 @media print {
+  /* DIFETTO DI M10, CONSERVATO APPOSTA (M11-1, in attesa di decisione): in stampa la radice della pagina aveva il grigio
+     della scrivania (#e8e8ec), che esce come una striscia chiara sopra il primo titolo o paragrafo (il suo margine).
+     Con la tavolozza nuova sparirebbe; la regola «la stampa non cambia» lo tiene finché non si decide di correggerlo. */
+  :root { background: #e8e8ec; }
   /* Gli sfondi (i simboli sono immagini di sfondo) escono anche con «Grafica di sfondo» spenta nel dialogo di stampa. */
   html, body, body * , .w::before, .w::after { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   html, body { height: auto; overflow: visible; background: #fff; }

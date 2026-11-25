@@ -95,14 +95,23 @@ const misure = (page: Page) =>
         .filter(vis);
       const proprio = (e: HTMLElement) => [...e.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join("");
       const nome = (e: HTMLElement) => (e.getAttribute("aria-label") || (e.tagName === "LABEL" ? proprio(e) : e.textContent) || e.tagName).trim().replace(/\s+/g, " ").slice(0, 40);
-      // Testo che va a capo (più righe dentro lo stesso controllo) o che non ci sta.
+      // Testo che va a capo: i pezzi del controllo (righe di testo e controlli contenuti, come la tendina dentro
+      // un'etichetta) si raggruppano per riga; due pezzi sono sulla stessa riga se si sovrappongono in verticale.
       const aCapo: string[] = [];
       for (const e of controlli) {
         const range = document.createRange();
         range.selectNodeContents(e);
-        const righe = new Set([...range.getClientRects()].filter((r) => r.width > 1).map((r) => Math.round(r.top / 4)));
-        const lh = parseFloat(getComputedStyle(e).lineHeight) || parseFloat(getComputedStyle(e).fontSize) * 1.3;
-        if (righe.size > 1 && e.getBoundingClientRect().height > lh * 1.6) aCapo.push(`«${nome(e)}» va a capo`);
+        const pezzi = [...range.getClientRects()].filter((r) => r.width > 1 && r.height > 1).sort((a, b) => a.top - b.top);
+        const righe: Array<{ top: number; bottom: number }> = [];
+        for (const r of pezzi) {
+          const centro = (r.top + r.bottom) / 2;
+          const riga = righe.find((g) => centro >= g.top && centro <= g.bottom);
+          if (riga) {
+            riga.top = Math.min(riga.top, r.top);
+            riga.bottom = Math.max(riga.bottom, r.bottom);
+          } else righe.push({ top: r.top, bottom: r.bottom });
+        }
+        if (righe.length > 1) aCapo.push(`«${nome(e)}» va a capo`);
         if (e.tagName === "BUTTON" && e.scrollWidth > e.clientWidth + 1) aCapo.push(`«${nome(e)}» tagliato`);
       }
       // Fuori dallo schermo o coperti da un altro elemento (si guarda chi c'è al centro del controllo).

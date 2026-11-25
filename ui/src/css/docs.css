@@ -1,0 +1,99 @@
+/* Finestra Documenti e Biblioteca (M11-1): stesso contenuto di prima, nuovo aspetto. Righe, schede ed etichette
+   ordinate con la tavolozza; la riorganizzazione (menu «⋯», sotto-pagina Pubblica) arriva in M11-6. */
+.docs-panel {
+  width: 40rem;
+  max-width: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--c-surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-3);
+  overflow: hidden;
+}
+
+/* Schede in alto. */
+.docs-tabs {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  padding: var(--s-3) var(--s-4) 0;
+  border-bottom: 1px solid var(--c-line);
+  background: var(--c-panel);
+}
+.docs-tabs .grow { flex: 1; }
+.docs-tab {
+  padding: var(--s-2) var(--s-4);
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: var(--r-sm) var(--r-sm) 0 0;
+  background: transparent;
+  color: var(--c-text-2);
+}
+.docs-tab:hover { background: var(--c-accent-soft); border-color: transparent; }
+.docs-tab.on {
+  margin-bottom: -1px;
+  border-color: var(--c-line);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-weight: 700;
+}
+.docs-close { margin-bottom: var(--s-2); }
+
+.docs-body { padding: var(--s-3) var(--s-4) var(--s-4); overflow: auto; }
+.docs-list { list-style: none; margin: 0; padding: 0; }
+.docs-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2);
+  border-bottom: 1px solid var(--c-line);
+}
+.docs-row.current { background: var(--c-accent-soft); border-radius: var(--r-sm); }
+.docs-info { flex: 1; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-3); min-width: 0; }
+.docs-info strong { overflow: hidden; text-overflow: ellipsis; }
+.docs-when { color: var(--c-text-3); font-size: var(--fs-sm); }
+/* Etichette: colore per tipo, mai solo colore (c'è sempre la parola). */
+.docs-tag {
+  padding: 0 var(--s-2);
+  border-radius: var(--r-pill);
+  background: var(--p-100);
+  color: var(--p-800);
+  font-size: var(--fs-xs);
+  line-height: 1.6;
+}
+.docs-tag.conflict { background: var(--warn-bg); color: var(--warn-fg); }
+.docs-tag.pub { background: var(--ok-bg); color: var(--ok-fg); }
+.docs-note { color: var(--c-text-2); margin: var(--s-2) 0; }
+.docs-note.warn { color: var(--warn-fg); }
+.docs-note.ok { color: var(--ok-fg); }
+.docs-folder { color: var(--c-text-3); font-size: var(--fs-sm); margin: var(--s-3) 0 0; }
+
+/* Biblioteca. */
+.lib-top { display: flex; align-items: center; gap: var(--s-2); margin-bottom: var(--s-2); }
+.lib-top .grow { flex: 1; }
+.lib-state.on { color: var(--ok-fg); font-weight: 600; }
+.lib-state.off { color: var(--warn-fg); font-weight: 600; }
+.lib-filters { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-bottom: var(--s-2); }
+.lib-search { flex: 1 1 16rem; }
+.lib-path { width: 100%; margin: var(--s-2) 0; }
+.lib-actions { display: flex; gap: var(--s-2); }
+
+/* Pubblica. */
+.pub-form { display: flex; flex-direction: column; gap: var(--s-3); }
+.pub-form label { display: flex; flex-direction: column; gap: var(--s-1); font-size: var(--fs-sm); color: var(--c-text-2); }
+.pub-form .lib-actions { margin-top: var(--s-1); }
+
+/* Correzioni anonime. */
+.lib-corrections { margin-top: var(--s-4); border-top: 1px solid var(--c-line); padding-top: var(--s-3); }
+.lib-corrections h3 { font-size: var(--fs-md); margin: 0 0 var(--s-2); }
+.lib-corr-preview {
+  max-height: 11rem;
+  overflow: auto;
+  padding: var(--s-2);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-sm);
+  background: var(--c-bar);
+  font-size: var(--fs-xs);
+  white-space: pre-wrap;
+}

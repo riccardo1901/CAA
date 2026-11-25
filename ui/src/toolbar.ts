@@ -277,7 +277,7 @@ export function createBars(
   };
   const printMeta = () => ({ title: titleInputRef?.value ?? "", author });
   let titleInputRef: HTMLInputElement | null = null;
-  const printBtn = el("button", "", "Stampa…");
+  const printBtn = el("button", "primary", "Stampa…");
   printBtn.type = "button";
   printBtn.title = "Ctrl+P";
   const openPrint = (): void => {

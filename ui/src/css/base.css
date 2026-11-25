@@ -1,0 +1,100 @@
+/* Base dell'interfaccia (M11-1): testo, pulsanti, campi, selezioni, caselle, anello di fuoco, etichette.
+   Le regole sui controlli sono dentro :where(...), che non pesa niente: un componente con una sua classe
+   (celle dei simboli, schede, indicatori) le sovrascrive sempre senza bisogno di altro.
+   Nessuna regola qui tocca il foglio: il foglio ha i suoi valori in sheet.css. */
+* { box-sizing: border-box; }
+/* Un elemento nascosto resta nascosto, qualunque «display» gli diano le regole qui sotto (pulsanti, campi). */
+[hidden] { display: none !important; }
+html { background: var(--c-desk); }
+:root {
+  font-family: var(--f-ui);
+  color: var(--c-text);
+}
+body {
+  margin: 0;
+  font-size: var(--fs-md);
+  line-height: var(--lh);
+}
+
+/* ---- Pulsanti ---- */
+:where(button, select, input, textarea) { font: inherit; color: inherit; }
+:where(button) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  min-height: var(--h-control);
+  padding: 0 var(--s-3);
+  border: 1px solid var(--c-control-line);
+  border-radius: var(--r-sm);
+  background: var(--c-surface);
+  color: var(--c-text);
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background-color var(--t-fast), border-color var(--t-fast), color var(--t-fast);
+}
+:where(button:hover:not(:disabled)) { background: var(--c-accent-soft); border-color: var(--c-accent); }
+:where(button:active:not(:disabled)) { background: var(--c-selected); }
+:where(button:disabled) {
+  background: var(--c-bar);
+  border-color: var(--c-line);
+  color: var(--c-text-off);
+  cursor: default;
+}
+/* Scelta accesa (per esempio la dimensione dei simboli in uso). */
+:where(button.on) { background: var(--c-selected); border-color: var(--c-accent-hover); color: var(--c-accent-hover); font-weight: 600; }
+
+/* L'azione principale di un'area: una sola per area. */
+.primary {
+  background: var(--c-accent);
+  border-color: var(--c-accent);
+  color: var(--n-0);
+  font-weight: 600;
+}
+.primary:hover:not(:disabled) { background: var(--c-accent-hover); border-color: var(--c-accent-hover); color: var(--n-0); }
+.primary:active:not(:disabled) { background: var(--c-accent-press); border-color: var(--c-accent-press); }
+.primary:disabled { background: var(--c-bar); border-color: var(--c-line); color: var(--c-text-off); font-weight: 400; }
+
+/* ---- Campi e selezioni ---- */
+:where(select, input[type="text"], input[type="search"], input[type="number"], input:not([type]), textarea) {
+  min-height: var(--h-control);
+  padding: 0 var(--s-2);
+  border: 1px solid var(--c-control-line);
+  border-radius: var(--r-sm);
+  background: var(--c-surface);
+  color: var(--c-text);
+}
+:where(textarea) { padding: var(--s-1) var(--s-2); }
+:where(select) { cursor: pointer; }
+:where(input::placeholder) { color: var(--c-text-3); opacity: 1; }
+:where(input[type="checkbox"], input[type="radio"], input[type="range"]) { accent-color: var(--c-accent); }
+:where(input[type="checkbox"], input[type="radio"]) { width: 1rem; height: 1rem; margin: 0 0.3em 0 0; vertical-align: -0.15em; cursor: pointer; }
+
+/* ---- Fuoco da tastiera: un anello unico, uguale su tutti i controlli, solo con la tastiera ---- */
+:where(button, select, input, textarea, a, [tabindex], [role="button"]):focus-visible {
+  outline: 2px solid var(--c-focus);
+  outline-offset: 2px;
+}
+
+/* ---- Pannello di prova del prototipo (M3; nell'app c'è il motore e non si vede) ---- */
+.layout { display: flex; height: 100vh; }
+.sheet-wrap { flex: 1; overflow: auto; padding: var(--s-4); }
+.panel {
+  width: 22.5rem;
+  flex: none;
+  overflow: auto;
+  padding: var(--s-3) var(--s-4);
+  background: var(--c-panel);
+  border-left: 1px solid var(--c-line);
+  font-size: var(--fs-sm);
+}
+.panel h1 { font-family: var(--f-title); font-size: var(--fs-lg); margin: 0 0 var(--s-2); }
+.panel h2 { font-size: var(--fs-xs); margin: var(--s-4) 0 var(--s-2); text-transform: uppercase; letter-spacing: 0.04em; color: var(--c-text-2); }
+.panel button { margin: 0 var(--s-2) var(--s-2) 0; }
+.panel button.on { background: var(--c-accent); border-color: var(--c-accent); color: var(--n-0); }
+.panel .note { color: var(--c-text-2); margin: var(--s-1) 0; }
+.panel table { width: 100%; border-collapse: collapse; }
+.panel th, .panel td { border-top: 1px solid var(--c-line); padding: var(--s-2) var(--s-1); vertical-align: top; text-align: left; }
+.panel .steps { color: var(--c-text-2); font-size: var(--fs-sm); margin-top: 2px; }
+.panel pre.auto { white-space: pre-wrap; font-size: var(--fs-sm); margin: var(--s-2) 0 0; }
+.panel textarea.res { width: 100%; font-size: var(--fs-xs); }
