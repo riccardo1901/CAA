@@ -4,7 +4,7 @@ use caa_engine::engine::{Display, GroupKind, GroupRole, Modifiers, PictoReason, 
 use caa_engine::mwe::MweIndex;
 
 mod common;
-use common::engine_mwe;
+use common::{engine, engine_mwe};
 
 fn run(text: &str) -> Vec<Token> {
     engine_mwe("", "").symbolize_text(text)
@@ -104,4 +104,156 @@ fn le_tre_dell_ora_non_assorbe_un_numero_davanti_a_un_nome() {
     let t = run("sono le tre");
     assert_eq!(find(&t, "le").picto.map(|p| p.id), Some(135));
     assert_eq!(find(&t, "tre").display, Display::Hidden);
+}
+
+// ---- M8c-2: unisci e dividi a mano ----
+
+use caa_engine::engine::{DocPrefs, ForcedPick, Request, SenseLocks, UserMemory};
+
+fn with_forced(
+    e: &caa_engine::engine::Engine<Vec<u8>>,
+    text: &str,
+    forced: &[ForcedPick],
+) -> Vec<Token> {
+    e.symbolize(&Request {
+        text,
+        prefs: &DocPrefs::default(),
+        forced,
+        sense_locks: &SenseLocks::default(),
+        memory: &UserMemory::default(),
+    })
+}
+
+fn forced(s: u32, e: u32, picto: u32) -> ForcedPick {
+    ForcedPick {
+        span_utf16: (s, e),
+        picto,
+    }
+}
+
+#[test]
+fn dividere_una_multiparola_la_scioglie() {
+    let e = engine_mwe("", "");
+    let text = "Hanno fatto colazione";
+    let auto = with_forced(&e, text, &[]);
+    assert_eq!(find(&auto, "fatto").picto.map(|p| p.id), Some(132));
+    // Dividi su tutta l'espressione, o solo su una parte: nessun gruppo, ogni parola ha il suo simbolo.
+    for span in [(0, 21), (6, 21), (12, 21)] {
+        let t = with_forced(&e, text, &[forced(span.0, span.1, ForcedPick::SPLIT)]);
+        // ("Hanno fatto" resta un tempo composto: la divisione riguarda solo le espressioni.)
+        assert!(
+            t.iter()
+                .all(|t| t.group.is_none_or(|g| g.kind != GroupKind::Multiword)),
+            "{span:?}"
+        );
+        assert_ne!(find(&t, "fatto").picto.map(|p| p.id), Some(132), "{span:?}");
+        assert_ne!(find(&t, "colazione").display, Display::Hidden, "{span:?}");
+    }
+    // Una divisione altrove non tocca l'espressione.
+    let t = with_forced(
+        &e,
+        "Hanno fatto colazione. Il pane",
+        &[forced(26, 30, ForcedPick::SPLIT)],
+    );
+    assert_eq!(find(&t, "fatto").picto.map(|p| p.id), Some(132));
+    // Su una parola sola non e' un pittogramma: il valore speciale non finisce mai in un token.
+    let t = with_forced(&e, "pane", &[forced(0, 4, ForcedPick::SPLIT)]);
+    assert!(t[0].picto.is_some_and(|p| p.id < 1_000_000));
+}
+
+#[test]
+fn unire_parole_in_un_simbolo_solo() {
+    let e = engine("", ""); // senza espressioni: il gruppo e' tutto del docente
+    let text = "ferro da stiro";
+    // Automatico: il simbolo della frase intera; la prima parola e' la testa, le altre sono nascoste.
+    let t = with_forced(&e, text, &[forced(0, 14, ForcedPick::MERGE)]);
+    assert_eq!(t[0].picto.map(|p| p.id), Some(131));
+    assert_eq!(t[0].display, Display::Full);
+    assert_eq!(
+        (t[1].display, t[2].display),
+        (Display::Hidden, Display::Hidden)
+    );
+    let g: Vec<_> = t.iter().map(|t| t.group.unwrap()).collect();
+    let first = g[0].id;
+    assert!(g
+        .iter()
+        .all(|x| x.id == first && x.kind == GroupKind::Multiword));
+    assert_eq!((g[0].role, g[1].role), (GroupRole::Head, GroupRole::Member));
+    // Con un pittogramma scelto dal docente.
+    let t = with_forced(&e, text, &[forced(0, 14, 104)]);
+    assert_eq!(t[0].picto.map(|p| p.id), Some(104));
+    assert_eq!(t[0].reason.picto, PictoReason::Teacher);
+    // Una frase senza pittogramma: la testa resta senza simbolo e le altre nascoste.
+    let t = with_forced(&e, "pane scuola", &[forced(0, 11, ForcedPick::MERGE)]);
+    assert_eq!(
+        (t[0].picto, t[0].display, t[1].display),
+        (None, Display::Full, Display::Hidden)
+    );
+    // Una scelta singola sulla testa dopo l'unione vince (e non scopre i membri).
+    let t = with_forced(
+        &e,
+        "pane scuola",
+        &[forced(0, 11, ForcedPick::MERGE), forced(0, 4, 116)],
+    );
+    assert_eq!(
+        (t[0].picto.map(|p| p.id), t[1].display),
+        (Some(116), Display::Hidden)
+    );
+}
+
+#[test]
+fn unioni_che_non_si_possono_fare_non_fanno_niente() {
+    let e = engine_mwe("", "");
+    let plain = with_forced(&e, "pane, scuola", &[]);
+    for (text, span) in [
+        ("pane scuola", (1, 11)),  // non allineata alle parole
+        ("pane scuola", (0, 4)),   // una parola sola
+        ("pane, scuola", (0, 12)), // dentro c'e' la punteggiatura
+        ("pane scuola", (0, 40)),  // oltre la fine
+        ("pane scuola", (5, 5)),   // vuota
+    ] {
+        let t = with_forced(&e, text, &[forced(span.0, span.1, ForcedPick::MERGE)]);
+        let base = with_forced(&e, text, &[]);
+        assert_eq!(
+            t.iter()
+                .map(|t| (t.display, t.picto, t.group))
+                .collect::<Vec<_>>(),
+            base.iter()
+                .map(|t| (t.display, t.picto, t.group))
+                .collect::<Vec<_>>(),
+            "{text:?} {span:?}"
+        );
+    }
+    assert!(plain.iter().all(|t| t.group.is_none()));
+    // Un gruppo che esce dall'intervallo non si spezza: "fatto colazione" senza "Hanno" non si unisce.
+    let t = with_forced(
+        &e,
+        "Hanno fatto colazione",
+        &[forced(6, 21, ForcedPick::MERGE)],
+    );
+    assert_eq!(find(&t, "fatto").picto.map(|p| p.id), Some(132));
+    assert_eq!(find(&t, "Hanno").display, Display::Hidden);
+}
+
+#[test]
+fn le_alternative_di_un_gruppo_partono_dalla_frase() {
+    let e = engine("", "");
+    let req = |forced: &[ForcedPick]| {
+        let f = forced.to_vec();
+        (f, ())
+    };
+    let (f, _) = req(&[forced(0, 14, 104)]);
+    let alts = e.alternatives(
+        &Request {
+            text: "ferro da stiro",
+            prefs: &DocPrefs::default(),
+            forced: &f,
+            sense_locks: &SenseLocks::default(),
+            memory: &UserMemory::default(),
+        },
+        (0, 5),
+    );
+    // Il simbolo della frase (131) e' la prima alternativa; il simbolo scelto (104) non c'e'.
+    assert_eq!(alts.first().map(|c| c.picto.id), Some(131), "{alts:?}");
+    assert!(alts.iter().all(|c| c.picto.id != 104));
 }

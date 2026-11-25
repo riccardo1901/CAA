@@ -4,8 +4,8 @@
 use std::path::{Path, PathBuf};
 
 use caa_engine::engine::{
-    Candidate, Display, ForcedPick, FunctionPolicy, FunctionRule, GroupRole, PictoReason,
-    PolicyTable, ReadingReason, SenseLocks, Token,
+    Candidate, Display, ForcedPick, FunctionPolicy, FunctionRule, GroupKind, GroupRole,
+    PictoReason, PolicyTable, ReadingReason, SenseLocks, Token,
 };
 use caa_engine::tokenize::TokenKind;
 use caa_engine::types::Cat;
@@ -202,6 +202,8 @@ pub struct TokenDto {
     /// Identificativo del gruppo (0 = nessuno) e se è la testa.
     pub group: u32,
     pub head: bool,
+    /// Tipo di gruppo: `compound`, `progressive`, `pronominal`, `multiword` (vuoto se non c'è).
+    pub gkind: &'static str,
     pub confidence: f32,
     /// Parola da controllare (confidenza bassa o sconosciuta).
     pub doubtful: bool,
@@ -296,6 +298,7 @@ pub fn to_dto(tokens: &[Token], has_image: &dyn Fn(u32) -> bool) -> Vec<TokenDto
             let word = matches!(t.kind, TokenKind::Word | TokenKind::Unknown);
             let hidden = t.display == Display::Hidden;
             let teacher = t.reason.picto == PictoReason::Teacher;
+            let group_head = t.group.is_some_and(|g| g.role == GroupRole::Head);
             TokenDto {
                 s: t.span_utf16.0,
                 e: t.span_utf16.1,
@@ -305,7 +308,13 @@ pub fn to_dto(tokens: &[Token], has_image: &dyn Fn(u32) -> bool) -> Vec<TokenDto
                 image,
                 mods: t.modifiers.0,
                 group: t.group.map_or(0, |g| g.id),
-                head: t.group.is_some_and(|g| g.role == GroupRole::Head),
+                head: group_head,
+                gkind: t.group.map_or("", |g| match g.kind {
+                    GroupKind::Compound => "compound",
+                    GroupKind::Progressive => "progressive",
+                    GroupKind::Pronominal => "pronominal",
+                    GroupKind::Multiword => "multiword",
+                }),
                 confidence: t.confidence,
                 doubtful: word && !hidden && t.confidence < DOUBT_THRESHOLD,
                 // Una parola piena visibile senza simbolo (o con simbolo non disponibile).
@@ -313,7 +322,7 @@ pub fn to_dto(tokens: &[Token], has_image: &dyn Fn(u32) -> bool) -> Vec<TokenDto
                 placeholder: word
                     && !hidden
                     && !(teacher && picto.is_none())
-                    && (content || t.kind == TokenKind::Unknown)
+                    && (content || t.kind == TokenKind::Unknown || group_head)
                     && (picto.is_none() || !image),
                 lemma: t
                     .analysis
@@ -544,7 +553,18 @@ mod tests {
         });
         head.modifiers = Modifiers(Modifiers::PAST | Modifiers::PLURAL);
         let d = &to_dto(&[head], &|_| true)[0];
-        assert_eq!((d.group, d.head, d.mods), (4, true, 3));
+        assert_eq!((d.group, d.head, d.mods, d.gkind), (4, true, 3, "compound"));
+        // La testa di un gruppo senza simbolo (unione del docente) mostra il segnaposto, anche se è una
+        // parola funzionale; senza gruppo no.
+        let mut bare = token(TokenKind::Word, Some(Cat::Art), None, Display::Full, 1.0);
+        assert!(!to_dto(std::slice::from_ref(&bare), &|_| true)[0].placeholder);
+        bare.group = Some(GroupRef {
+            id: 1,
+            kind: GroupKind::Multiword,
+            role: GroupRole::Head,
+        });
+        let b = &to_dto(&[bare], &|_| true)[0];
+        assert!(b.placeholder && b.gkind == "multiword");
     }
 
     #[test]

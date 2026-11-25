@@ -126,10 +126,19 @@ pub struct DocPrefs {
 /// Scelta esplicita del docente su un intervallo di testo (la usa la fase 8, M8).
 #[derive(Debug, Clone)]
 pub struct ForcedPick {
-    /// Intervallo di UN token (come lo restituisce il motore).
+    /// Intervallo di UN token (come lo restituisce il motore); per `MERGE` e `SPLIT` un intervallo
+    /// di più parole, che comincia e finisce su confini di parola.
     pub span_utf16: (u32, u32),
-    /// Pittogramma scelto; 0 = nessun simbolo.
+    /// Pittogramma scelto; 0 = nessun simbolo; oppure `MERGE` o `SPLIT`.
     pub picto: u32,
+}
+
+impl ForcedPick {
+    /// "Unisci": le parole dell'intervallo diventano un solo simbolo, quello della frase intera
+    /// (se ARASAAC lo ha). La prima parola porta il simbolo, le altre si nascondono.
+    pub const MERGE: u32 = u32::MAX - 1;
+    /// "Dividi": le espressioni di più parole che toccano l'intervallo non si formano.
+    pub const SPLIT: u32 = u32::MAX;
 }
 
 /// Lemma → pittogramma già scelto nel documento (blocco di senso, SPEC.md fase 8, livello 2): se il
@@ -503,7 +512,10 @@ fn apply_choices(tokens: &mut [Token], locks: &SenseLocks, forced: &[ForcedPick]
         ) {
             continue;
         }
-        if let Some(f) = forced.iter().find(|f| f.span_utf16 == t.span_utf16) {
+        if let Some(f) = forced
+            .iter()
+            .find(|f| f.span_utf16 == t.span_utf16 && f.picto < ForcedPick::MERGE)
+        {
             t.confidence = 1.0;
             t.reason.picto = PictoReason::Teacher;
             // Un membro di un gruppo (ausiliare di "ho mangiato", parte di una multiparola) resta
@@ -906,7 +918,8 @@ impl<D: AsRef<[u8]>> Engine<D> {
             .map(|((p, slot), surface)| self.finish(p, surface, slot))
             .collect();
         self.apply_groups(&mut tokens);
-        self.apply_multiword(&mut tokens);
+        self.apply_multiword(&mut tokens, req.forced);
+        self.apply_manual_merges(&mut tokens, req.forced);
         apply_policy(&mut tokens, req.prefs);
         apply_choices(&mut tokens, req.sense_locks, req.forced);
         tokens
@@ -920,7 +933,47 @@ impl<D: AsRef<[u8]>> Engine<D> {
         let Some(t) = tokens.iter().find(|t| t.span_utf16 == span_utf16) else {
             return Vec::new();
         };
-        self.alternatives_of(t)
+        let mut out = self.alternatives_of(t);
+        // Per la testa di un gruppo di parole prima i simboli della frase intera.
+        if let Some(g) = t.group.filter(|g| g.role == GroupRole::Head) {
+            let members: Vec<&Token> = tokens
+                .iter()
+                .filter(|o| o.group.is_some_and(|x| x.id == g.id))
+                .collect();
+            let surfaces = members
+                .iter()
+                .map(|o| normalize_key(&o.surface))
+                .collect::<Vec<_>>()
+                .join(" ");
+            let lemmas = members
+                .iter()
+                .map(|o| {
+                    o.analysis
+                        .as_ref()
+                        .map_or_else(|| normalize_key(&o.surface), |a| normalize_key(&a.lemma))
+                })
+                .collect::<Vec<_>>()
+                .join(" ");
+            let mut seen: std::collections::HashSet<u32> =
+                t.picto.map(|p| p.id).into_iter().collect();
+            let mut phrase: Vec<Candidate> = Vec::new();
+            for key in [surfaces, lemmas] {
+                for e in self.picto.lookup(&key) {
+                    if !self.curated.is_blocked(&[key.as_str()], e.id) && seen.insert(e.id) {
+                        phrase.push(Candidate {
+                            picto: PictoRef { id: e.id },
+                            keyword: key.clone(),
+                            reason: format!("simbolo di «{key}»"),
+                        });
+                    }
+                }
+            }
+            out.retain(|c| seen.insert(c.picto.id));
+            phrase.extend(out);
+            phrase.truncate(8);
+            out = phrase;
+        }
+        out
     }
 
     /// Ricerca libera di un pittogramma ("Cerca…" nel menu): per parola chiave esatta, poi per
@@ -1021,8 +1074,14 @@ impl<D: AsRef<[u8]>> Engine<D> {
     /// chiave ARASAAC. Un'unità sicura (confidenza almeno 0,6) conta solo con il lemma scelto dal
     /// contesto; una incerta con tutti i suoi lemmi possibili (è l'ipotesi con bonus della
     /// specifica, nella versione semplice: il contesto la fa perdere solo se è sicuro).
-    fn apply_multiword(&self, tokens: &mut [Token]) {
+    fn apply_multiword(&self, tokens: &mut [Token], forced: &[ForcedPick]) {
         let Some(mwe) = &self.mwe else { return };
+        // Le espressioni che toccano un intervallo "dividi" del docente non si formano.
+        let splits: Vec<(u32, u32)> = forced
+            .iter()
+            .filter(|f| f.picto == ForcedPick::SPLIT)
+            .map(|f| f.span_utf16)
+            .collect();
         struct Unit {
             tokens: Vec<usize>,
             head: usize,
@@ -1176,6 +1235,12 @@ impl<D: AsRef<[u8]>> Engine<D> {
                     .flatten()
                     .flat_map(|u| u.tokens.iter().copied())
                     .collect();
+                if span.iter().any(|&i| {
+                    let (a, b) = tokens[i].span_utf16;
+                    splits.iter().any(|&(x, y)| a < y && x < b)
+                }) {
+                    continue;
+                }
                 let head = units[s].as_ref().map_or(0, |u| u.head);
                 // Segni: il tempo del verbo dell'espressione e il plurale di un nome che il
                 // pittogramma (singolare) non mostra.
@@ -1237,6 +1302,106 @@ impl<D: AsRef<[u8]>> Engine<D> {
             }
         }
         self.picto_for_key(&key)
+    }
+
+    /// "Unisci" del docente (`ForcedPick::MERGE`, o un pittogramma su più parole): le parole
+    /// dell'intervallo diventano un gruppo, la prima porta il simbolo e le altre si nascondono. Non
+    /// fa niente se l'intervallo non comincia e finisce su parole, ha meno di due parole, contiene
+    /// punteggiatura o taglia un gruppo che continua fuori.
+    fn apply_manual_merges(&self, tokens: &mut [Token], forced: &[ForcedPick]) {
+        for f in forced.iter().filter(|f| f.picto != ForcedPick::SPLIT) {
+            let (s, e) = f.span_utf16;
+            let Some(first) = tokens.iter().position(|t| t.span_utf16.0 == s) else {
+                continue;
+            };
+            let Some(last) = tokens.iter().position(|t| t.span_utf16.1 == e) else {
+                continue;
+            };
+            if last <= first {
+                continue;
+            }
+            let words = |t: &Token| {
+                matches!(
+                    t.kind,
+                    TokenKind::Word | TokenKind::Number | TokenKind::Unknown
+                )
+            };
+            if !tokens[first..=last].iter().all(words) {
+                continue;
+            }
+            // Un gruppo che esce dall'intervallo non si spezza.
+            let cuts_a_group = tokens[first..=last].iter().any(|t| {
+                t.group.is_some_and(|g| {
+                    tokens.iter().enumerate().any(|(j, o)| {
+                        (j < first || j > last) && o.group.is_some_and(|x| x.id == g.id)
+                    })
+                })
+            });
+            if cuts_a_group {
+                continue;
+            }
+            let surfaces: Vec<String> = tokens[first..=last]
+                .iter()
+                .map(|t| normalize_key(&t.surface))
+                .collect();
+            let lemmas: Vec<String> = tokens[first..=last]
+                .iter()
+                .map(|t| {
+                    t.analysis
+                        .as_ref()
+                        .map_or_else(|| normalize_key(&t.surface), |a| normalize_key(&a.lemma))
+                })
+                .collect();
+            let phrase = if f.picto == ForcedPick::MERGE {
+                [surfaces.join(" "), lemmas.join(" ")]
+                    .iter()
+                    .find_map(|k| self.picto_for_key(k))
+            } else {
+                Some(f.picto).filter(|&p| p > 0)
+            };
+            let mut flags = 0u8;
+            let mut confidence: f32 = 1.0;
+            for t in &tokens[first..=last] {
+                flags |= t.modifiers.0 & (Modifiers::PAST | Modifiers::FUTURE);
+                confidence = confidence.min(t.confidence);
+            }
+            let group_id = tokens
+                .iter()
+                .filter_map(|t| t.group.map(|g| g.id))
+                .max()
+                .unwrap_or(0)
+                + 1;
+            for t in &mut tokens[first..=last] {
+                t.display = Display::Hidden;
+                t.modifiers = Modifiers::default();
+                t.group = Some(GroupRef {
+                    id: group_id,
+                    kind: GroupKind::Multiword,
+                    role: GroupRole::Member,
+                });
+            }
+            let head = &mut tokens[first];
+            head.display = Display::Full;
+            head.picto = phrase.map(|id| PictoRef { id });
+            head.reason.picto = if f.picto == ForcedPick::MERGE {
+                if phrase.is_some() {
+                    PictoReason::Multiword
+                } else {
+                    PictoReason::NoSymbol
+                }
+            } else {
+                PictoReason::Teacher
+            };
+            head.modifiers = Modifiers(flags);
+            head.confidence = if f.picto == ForcedPick::MERGE {
+                confidence
+            } else {
+                1.0
+            };
+            if let Some(g) = &mut head.group {
+                g.role = GroupRole::Head;
+            }
+        }
     }
 
     /// Il pittogramma di una parola chiave ARASAAC esatta (senza i bloccati).
