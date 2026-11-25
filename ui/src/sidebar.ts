@@ -9,7 +9,7 @@ import type { CandidateDto, CustomSymbol, EngineClient } from "./engine/client";
 import { nextDoubtful, onEngineUpdate, tokenAt, type TokenAt } from "./editor/engineSymbols";
 import { focusWordRange, hooks, revealPos, setFocusWord } from "./editor/menuHooks";
 import { groupAction, mergeSelection } from "./editor/groups";
-import { applyChoice, type Choice } from "./editor/picks";
+import { applyChoice, removeLock, type Choice } from "./editor/picks";
 
 const GRID = 8;
 
@@ -69,7 +69,7 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
   // La casella «usa per tutto il testo» resta come l'ha messa il docente anche quando la barra si ridisegna.
   let lockAll = true;
 
-  const signature = (t: TokenAt): string => `${t.token.picto}|${t.token.display}|${t.pick}|${t.token.why}|${t.token.lemma}`;
+  const signature = (t: TokenAt): string => `${t.token.picto}|${t.token.display}|${t.pick}|${t.token.why}|${t.token.lemma}|${t.lock?.picto ?? ""}`;
 
   function showEmpty(): void {
     generation++;
@@ -187,6 +187,12 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
       });
     });
     button("Simbolo personale…", "Importa un'immagine (PNG o JPG) come simbolo di questa parola", () => picker.click());
+    if (t.lock) {
+      button("Togli il blocco", `Le parole «${t.token.lemma}» tornano al simbolo automatico`, () => {
+        removeLock(view, t.token.lemma, t.token.cat);
+        view.focus();
+      });
+    }
     const act = groupAction(view, t);
     if (act) {
       button(act.label, act.label === "Dividi" ? "Una parola, un simbolo (Ctrl+Maiusc+D)" : "Torna a un simbolo solo (Ctrl+Maiusc+D)", () => {

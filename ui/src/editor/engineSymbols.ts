@@ -428,6 +428,8 @@ export interface TokenAt {
   pick: number | null;
   /** Estensione (offset nel paragrafo) del gruppo di cui la parola è la testa, se ne ha uno. */
   groupSpan: [number, number] | null;
+  /** Il blocco di senso del documento che vale per questa parola, se c'è. */
+  lock: LockReq | null;
 }
 
 function tokenInfo(view: EditorView, st: State, paraPos: number, node: PMNode, token: TokenDto, tokens: TokenDto[]): TokenAt {
@@ -448,6 +450,7 @@ function tokenInfo(view: EditorView, st: State, paraPos: number, node: PMNode, t
     locks: st.locks,
     pick: p ? p.picto : null,
     groupSpan,
+    lock: st.locks.find((l) => l.cat === token.cat && l.lemma.toLowerCase() === token.lemma.toLowerCase()) ?? null,
   };
 }
 

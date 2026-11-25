@@ -28,7 +28,6 @@ export interface PickInfo {
   e: number;
   word: string;
   picto: number;
-  lock: boolean;
   lemma: string;
   cat: string;
 }
@@ -60,10 +59,10 @@ export function paraInfo(node: PMNode): ParaInfo {
   });
   const picks: PickInfo[] = [];
   for (const r of raw) {
-    const a = r.mark.attrs as { word: string; picto: number; lock: number; lemma: string; cat: string };
+    const a = r.mark.attrs as { word: string; picto: number; lemma: string; cat: string };
     // La scelta vale solo se la parola è ancora quella per cui è stata fatta.
     if (text.slice(r.s, r.e).toLowerCase() !== a.word) continue;
-    picks.push({ s: r.s, e: r.e, word: a.word, picto: a.picto, lock: a.lock === 1, lemma: a.lemma, cat: a.cat });
+    picks.push({ s: r.s, e: r.e, word: a.word, picto: a.picto, lemma: a.lemma, cat: a.cat });
   }
   const forced = picks.map((p): ForcedReq => ({ s: p.s, e: p.e, picto: Math.max(0, p.picto) }));
   // Unioni e divisioni: valgono solo se il testo coperto è ancora quello per cui sono state fatte.
@@ -95,18 +94,43 @@ export interface Locks {
   sig: string;
 }
 
-/** I blocchi di senso di tutto il documento (l'ultimo nel testo vince per lo stesso lemma e categoria). */
+/** Un blocco di senso come sta nei dati del documento: porta anche l'`uuid` di un simbolo personale. */
+export interface LockEntry extends LockReq {
+  uuid: string;
+}
+
+/** Il limite di blocchi in un documento (un file di altra origine non deve poter mandarne milioni). */
+const MAX_LOCKS = 5000;
+
+/** Ripulisce i blocchi letti dal documento (un file è dato non fidato): tiene solo quelli ben formati. */
+export function sanitizeLocks(value: unknown): LockEntry[] {
+  if (!Array.isArray(value)) return [];
+  const out: LockEntry[] = [];
+  for (const raw of value.slice(0, MAX_LOCKS)) {
+    const l = raw as Partial<LockEntry> | null;
+    if (!l || typeof l.lemma !== "string" || typeof l.cat !== "string" || typeof l.picto !== "number") continue;
+    if (l.lemma === "" || l.lemma.length > 100 || l.cat === "" || l.cat.length > 20) continue;
+    // I valori speciali di «unisci» e «dividi» non sono pittogrammi.
+    if (!Number.isInteger(l.picto) || l.picto <= 0 || l.picto >= FORCED_MERGE) continue;
+    out.push({ lemma: l.lemma, cat: l.cat, picto: l.picto, uuid: typeof l.uuid === "string" && l.uuid.length <= 64 ? l.uuid : "" });
+  }
+  return out;
+}
+
+const sameLemma = (a: { lemma: string; cat: string }, b: { lemma: string; cat: string }): boolean =>
+  a.cat === b.cat && a.lemma.toLowerCase() === b.lemma.toLowerCase();
+
+/** I blocchi di senso di tutto il documento (stanno nei dati del documento, non su una parola). */
 export function collectLocks(doc: PMNode): Locks {
-  const map = new Map<string, LockReq>();
-  doc.descendants((node) => {
-    if (!node.isTextblock) return true;
-    for (const p of paraInfo(node).picks) {
-      if (p.lock && p.picto > 0 && p.lemma && p.cat) map.set(`${p.cat}\u0000${p.lemma.toLowerCase()}`, { lemma: p.lemma, cat: p.cat, picto: p.picto });
-    }
-    return false;
-  });
-  const list = [...map.values()].sort((a, b) => (a.cat + a.lemma).localeCompare(b.cat + b.lemma));
+  const entries = sanitizeLocks(doc.attrs.locks);
+  const list = entries.map(({ lemma, cat, picto }): LockReq => ({ lemma, cat, picto })).sort((a, b) => (a.cat + a.lemma).localeCompare(b.cat + b.lemma));
   return { list, sig: list.map((l) => `${l.cat}:${l.lemma}:${l.picto}`).join("|") };
+}
+
+/** Toglie il blocco di senso di un lemma: le sue parole tornano al simbolo automatico. */
+export function removeLock(view: EditorView, lemma: string, cat: string): void {
+  const kept = sanitizeLocks(view.state.doc.attrs.locks).filter((l) => !sameLemma(l, { lemma, cat }));
+  view.dispatch(view.state.tr.setDocAttribute("locks", kept));
 }
 
 export type Choice =
@@ -139,25 +163,25 @@ export function applyChoice(view: EditorView, w: WordRef, choice: Choice, all: b
   if (to > w.paraPos + para.nodeSize - 1) return;
   const type = schema.marks.pick;
   const tr = view.state.tr.removeMark(from, to, type);
-  if (choice.kind !== "auto") {
+  const lock = all && choice.kind === "picto" && w.lemma !== "" && w.cat !== "";
+  if (lock && choice.kind === "picto") {
+    // «Tutto il testo» vale per tutte le parole uguali (stesso lemma e categoria): le loro scelte precedenti si
+    // sciolgono (altrimenti vincerebbero sul blocco) e il blocco sta nei dati del documento.
+    tr.doc.descendants((node, pos) => {
+      if (!node.isTextblock) return true;
+      for (const p of paraInfo(node).picks) {
+        if (sameLemma(p, w)) tr.removeMark(pos + 1 + p.s, pos + 1 + p.e, type);
+      }
+      return false;
+    });
+    const locks = sanitizeLocks(doc.attrs.locks).filter((l) => !sameLemma(l, w));
+    locks.push({ lemma: w.lemma, cat: w.cat, picto: choice.id, uuid: choice.uuid ?? "" });
+    tr.setDocAttribute("locks", locks);
+  } else if (choice.kind !== "auto") {
     const picto = choice.kind === "picto" ? choice.id : choice.kind === "text" ? PICTO_TEXT_ONLY : PICTO_NONE;
-    const lock = all && choice.kind === "picto" && w.lemma !== "" && w.cat !== "";
     const word = para.textContent.slice(w.s, w.e).toLowerCase();
-    if (lock) {
-      // «Tutto il testo» vale per tutte le parole uguali (stesso lemma e categoria): le loro scelte
-      // precedenti, singole o di un blocco più vecchio, si sciolgono; altrimenti vincerebbero sul blocco.
-      tr.doc.descendants((node, pos) => {
-        if (!node.isTextblock) return true;
-        for (const p of paraInfo(node).picks) {
-          if (p.cat === w.cat && p.lemma.toLowerCase() === w.lemma.toLowerCase() && !(pos === w.paraPos && p.s === w.s)) {
-            tr.removeMark(pos + 1 + p.s, pos + 1 + p.e, type);
-          }
-        }
-        return false;
-      });
-    }
     const uuid = choice.kind === "picto" ? (choice.uuid ?? "") : "";
-    tr.addMark(from, to, type.create({ word, picto, lock: lock ? 1 : 0, lemma: w.lemma, cat: w.cat, uuid }));
+    tr.addMark(from, to, type.create({ word, picto, lemma: w.lemma, cat: w.cat, uuid }));
   }
   view.dispatch(tr.scrollIntoView());
 }

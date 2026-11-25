@@ -315,6 +315,9 @@ async function clickSymbol(page: Page, word: string, nth = 0): Promise<void> {
   await page.locator(".w", { hasText: new RegExp(`^${word}$`) }).nth(nth).click({ position: { x: 20, y: 8 } });
 }
 
+const docLocks = (page: Page) => page.evaluate(() => (window as any).caaProto.view.state.doc.attrs.locks as Array<{ lemma: string; cat: string; picto: number; uuid: string }>);
+const noLock = (page: Page) => page.locator(".pm-all input").uncheck();
+
 const docPicks = (page: Page) =>
   page.evaluate(() => {
     const out: Array<Record<string, unknown>> = [];
@@ -362,6 +365,7 @@ test("una scelta cambia il simbolo, è un solo passo di annulla e si può ripete
   await open(page, "Marco mangia pane");
   const before = await imgOf(page, "pane");
   await clickSymbol(page, "pane");
+  await noLock(page);
   const sideBefore = await page.locator(".pm-now img").getAttribute("src");
   await page.locator(".pm-cell").nth(1).click();
   await expect.poll(() => imgOf(page, "pane")).not.toBe(before);
@@ -373,7 +377,7 @@ test("una scelta cambia il simbolo, è un solo passo di annulla e si può ripete
   expect(chosen).toContain(encodeURIComponent("hsl(" + (1002 % 360)));
   const picks = await docPicks(page);
   expect(picks).toHaveLength(1);
-  expect(picks[0]).toMatchObject({ text: "pane", word: "pane", picto: 1002, lock: 1, lemma: "pane", cat: "NOUN" });
+  expect(picks[0]).toMatchObject({ text: "pane", word: "pane", picto: 1002, lemma: "pane", cat: "NOUN" });
   // Annulla: torna il simbolo di prima; ripeti: torna la scelta.
   await page.locator(".ProseMirror").click();
   await page.keyboard.press("Control+z");
@@ -387,7 +391,52 @@ test("una scelta cambia il simbolo, è un solo passo di annulla e si può ripete
     return c[c.length - 1];
   });
   expect(last.paras[0].forced).toEqual([{ s: 13, e: 17, picto: 1002 }]);
+  expect(last.locks).toEqual([]);
+});
+
+test("«usa per tutto il testo» è un dato del documento: annulla, ripeti, «Togli il blocco»", async ({ page }) => {
+  await open(page, "Marco mangia pane");
+  const before = await imgOf(page, "pane");
+  await clickSymbol(page, "pane");
+  await page.locator(".pm-cell").nth(1).click();
+  await expect.poll(() => imgOf(page, "pane")).not.toBe(before);
+  const chosen = await imgOf(page, "pane");
+  // Nessun segno sulla parola: il blocco sta nei dati del documento.
+  expect(await docPicks(page)).toHaveLength(0);
+  expect(await docLocks(page)).toEqual([{ lemma: "pane", cat: "NOUN", picto: 1002, uuid: "" }]);
+  const last = await page.evaluate(() => { const c = (window as any).__mock.calls; return c[c.length - 1]; });
   expect(last.locks).toEqual([{ lemma: "pane", cat: "NOUN", picto: 1002 }]);
+  // Annulla e ripeti includono il blocco (un solo passo).
+  await page.locator(".ProseMirror").click();
+  await page.keyboard.press("Control+z");
+  await expect.poll(() => imgOf(page, "pane")).toBe(before);
+  expect(await docLocks(page)).toEqual([]);
+  await page.keyboard.press("Control+y");
+  await expect.poll(() => imgOf(page, "pane")).toBe(chosen);
+  // Il documento che passa dal salvataggio (JSON) e torna porta ancora il blocco.
+  const roundtrip = await page.evaluate(() => {
+    const p = (window as any).caaProto;
+    const doc = p.view.state.schema.nodeFromJSON(JSON.parse(JSON.stringify(p.view.state.doc.toJSON())));
+    return doc.attrs.locks;
+  });
+  expect(roundtrip).toEqual([{ lemma: "pane", cat: "NOUN", picto: 1002, uuid: "" }]);
+  // Cancellare la parola su cui si è scelto non scioglie il blocco: vale per le altre «pane».
+  await page.keyboard.press("End");
+  await page.keyboard.type(" e pane");
+  await page.waitForFunction(() => (window as any).caaProto.engineStats().pending === 0);
+  await page.evaluate(() => (window as any).caaProto.setCaret(14, 18));
+  await page.keyboard.press("Backspace");
+  await page.waitForFunction(() => (window as any).caaProto.engineStats().pending === 0);
+  expect(await docLocks(page)).toHaveLength(1);
+  await expect.poll(() => imgOf(page, "pane")).toBe(chosen);
+  // «Togli il blocco» riporta le parole al simbolo automatico, e si può annullare.
+  await clickSymbol(page, "pane");
+  await expect(page.getByRole("button", { name: "Automatico" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Togli il blocco" }).click();
+  await expect.poll(async () => (await docLocks(page)).length).toBe(0);
+  await expect.poll(() => imgOf(page, "pane")).toBe(before);
+  await page.keyboard.press("Control+z");
+  await expect.poll(async () => (await docLocks(page)).length).toBe(1);
 });
 
 test("«usa per tutto il testo»: tutte le parole uguali, o solo quella", async ({ page }) => {
@@ -404,15 +453,16 @@ test("«usa per tutto il testo»: tutte le parole uguali, o solo quella", async 
   await page.locator(".pm-all input").uncheck();
   await page.locator(".pm-cell").nth(0).click();
   await expect.poll(async () => new Set(await page.locator(".w", { hasText: /^pane$/ }).evaluateAll((els) => els.map((e) => e.getAttribute("style")))).size).toBe(2);
-  expect(await docPicks(page)).toHaveLength(2);
+  expect(await docPicks(page)).toHaveLength(1);
+  expect(await docLocks(page)).toHaveLength(1);
   // Una scelta con blocco («tutto il testo») sostituisce anche le scelte singole delle parole uguali:
-  // resta una sola scelta e tutte le occorrenze hanno lo stesso simbolo.
+  // resta il solo blocco e tutte le occorrenze hanno lo stesso simbolo.
   await clickSymbol(page, "pane", 2);
   await expect(page.locator(".pm-all input")).not.toBeChecked(); // la spunta tolta prima resta tolta
   await page.locator(".pm-all input").check();
   await page.locator(".pm-cell").nth(4).click();
-  await expect.poll(async () => (await docPicks(page)).length).toBe(1);
-  expect((await docPicks(page))[0]).toMatchObject({ lock: 1, picto: 1005 });
+  await expect.poll(async () => (await docPicks(page)).length).toBe(0);
+  expect(await docLocks(page)).toEqual([{ lemma: "pane", cat: "NOUN", picto: 1005, uuid: "" }]);
   await expect.poll(async () => new Set(await page.locator(".w", { hasText: /^pane$/ }).evaluateAll((els) => els.map((e) => e.getAttribute("style")))).size).toBe(1);
 });
 
@@ -424,6 +474,7 @@ test("tastiera: Alt+↓ riempie la barra, 1–8 sceglie, Esc torna al testo", as
   await expect(page.locator(".pm-cell")).toHaveCount(8);
   // Il fuoco è nella barra: i numeri scelgono (nel testo si scriverebbero).
   expect(await page.evaluate(() => document.activeElement?.classList.contains("side"))).toBe(true);
+  await noLock(page);
   await page.keyboard.press("3");
   await expect.poll(async () => (await docPicks(page))[0]).toMatchObject({ picto: 1003, word: "pane" });
   expect(await page.evaluate(() => (window as any).caaProto.text(0, (window as any).caaProto.docSize()))).toBe("Marco mangia pane");
@@ -466,6 +517,7 @@ test("ricerca: la barra è in alto, i risultati sotto, Invio sceglie il primo", 
   await open(page, "Marco mangia pane");
   await clickSymbol(page, "pane");
   await expect(page.locator(".pm-cell")).toHaveCount(8);
+  await noLock(page);
   await page.locator(".pm-search").click();
   await expect(page.locator(".pm-search")).toBeFocused();
   // Le cifre si scrivono nella ricerca: non scelgono le alternative.
@@ -548,7 +600,7 @@ test("annulla e ripeti una scelta nel testo di esempio, con attese realistiche",
   await open(page, "Marco mangia pane");
   await page.getByRole("button", { name: "Testo di esempio" }).click();
   await page.waitForFunction(() => (window as any).caaProto.engineStats().pending === 0);
-  const marks = () => page.evaluate(() => { let n = 0; (window as any).caaProto.view.state.doc.descendants((x: any) => { for (const m of x.marks ?? []) if (m.type.name === "pick") n++; }); return n; });
+  const marks = () => page.evaluate(() => { const d = (window as any).caaProto.view.state.doc; let n = d.attrs.locks.length; d.descendants((x: any) => { for (const m of x.marks ?? []) if (m.type.name === "pick") n++; }); return n; });
   await page.locator(".w[style*='--img']").nth(4).click({ position: { x: 20, y: 8 } });
   await page.locator(".pm-cell").nth(1).click();
   await page.waitForTimeout(400);
@@ -665,6 +717,7 @@ test("scrivendo prima della parola mostrata, la scelta va sulla parola giusta", 
   await page.evaluate(() => (window as any).caaProto.setCaret(1));
   await page.keyboard.type("Il ");
   await page.waitForFunction(() => (window as any).caaProto.engineStats().pending === 0);
+  await noLock(page);
   await page.locator(".pm-cell").nth(1).click();
   await expect.poll(async () => (await docPicks(page)).length).toBe(1);
   const picks = await docPicks(page);
@@ -680,6 +733,7 @@ test("le alternative che arrivano mentre si cerca non si perdono", async ({ page
   await page.waitForTimeout(700); // le alternative arrivano mentre la ricerca è ancora scritta
   await page.locator(".pm-search").fill("");
   await expect(page.locator(".pm-cell")).toHaveCount(8);
+  await noLock(page);
   await page.locator(".side").focus();
   await page.keyboard.press("2");
   await expect.poll(async () => (await docPicks(page))[0]).toMatchObject({ picto: 1002 });
@@ -694,6 +748,7 @@ test("una ricerca appena scritta non rovina la parola scelta subito dopo", async
   await expect(page.locator(".pm-cell")).toHaveCount(8);
   await page.waitForTimeout(400);
   await expect(page.locator(".pm-cell")).toHaveCount(8);
+  await noLock(page);
   await page.locator(".side").focus();
   await page.keyboard.press("1");
   await expect.poll(async () => (await docPicks(page))[0]).toMatchObject({ text: "mangia", picto: 1001 });
@@ -848,7 +903,8 @@ test("un'espressione riconosciuta dal motore si divide e si riunisce", async ({ 
   await clickSymbol(page, "scuola");
   await expect(page.locator(".pm-titles strong")).toHaveText("scuola media");
   await page.locator(".pm-cell").nth(1).click();
-  await expect.poll(async () => (await docPicks(page))[0]).toMatchObject({ lock: 0, word: "scuola" });
+  await expect.poll(async () => (await docPicks(page))[0]).toMatchObject({ word: "scuola" });
+  expect(await docLocks(page)).toEqual([]);
 });
 
 test("scrivendo dentro un'unione, l'unione non vale più", async ({ page }) => {
@@ -892,13 +948,14 @@ test("simbolo personale: scelgo l'immagine, la ritaglio e diventa il simbolo del
   expect(imports).toHaveLength(1);
   expect(imports[0]).toMatchObject({ type: "image/webp", label: "pane" });
   expect(imports[0].size).toBeGreaterThan(20);
-  await expect.poll(async () => (await docPicks(page))[0]).toMatchObject({ picto: 2147483648, uuid: "uuid-0", word: "pane", lock: 1 });
+  // (con blocco: il simbolo e il suo uuid stanno nei dati del documento, non su una parola)
+  await expect.poll(async () => (await docLocks(page))[0]).toMatchObject({ picto: 2147483648, uuid: "uuid-0", lemma: "pane" });
   await expect.poll(() => imgOf(page, "pane")).toContain(encodeURIComponent("hsl(" + (2147483648 % 360)));
   // La barra mostra «I miei simboli» e, annullando, torna il simbolo di prima.
   await expect(page.locator(".pm-custom .pm-mini")).toHaveCount(1);
   await page.locator(".ProseMirror").click();
   await page.keyboard.press("Control+z");
-  await expect.poll(async () => (await docPicks(page)).length).toBe(0);
+  await expect.poll(async () => (await docLocks(page)).length).toBe(0);
 });
 
 test("simbolo personale: annullando non si salva niente", async ({ page }) => {
@@ -971,15 +1028,20 @@ test("un simbolo personale scelto dalla griglia porta il suo uuid", async ({ pag
   expect((await docPicks(page)).find((p) => p.word === "mangia")).toMatchObject({ uuid: "uuid-0" });
 });
 
-test("Unisci avvisa se scioglie un «per tutto il testo»", async ({ page }) => {
+test("Unisci non scioglie un «per tutto il testo»: il blocco sta nel documento", async ({ page }) => {
   await open(page, "pesca e pesca noce");
+  const automatic = await imgOf(page, "pesca");
   await clickSymbol(page, "pesca", 1);
   await page.locator(".pm-cell").nth(1).click(); // con blocco: «per tutto il testo»
-  await expect.poll(async () => (await docPicks(page)).filter((p) => p.lock === 1).length).toBe(1);
-  await selectText(page, 1 + 8, 1 + 18);
+  await expect.poll(async () => (await docLocks(page)).length).toBe(1);
+  await expect.poll(() => imgOf(page, "pesca")).not.toBe(automatic);
+  const first = await imgOf(page, "pesca");
+  await selectText(page, 1 + 8, 1 + 18); // «pesca noce» diventa un gruppo
   await page.keyboard.press("Control+Shift+u");
-  await expect(page.locator(".statusbar")).toContainText("pesca");
-  await expect(page.locator(".statusbar")).toContainText("tutto il testo");
+  await expect.poll(() => page.evaluate(() => JSON.stringify((window as any).caaProto.docJSON()).includes('"merge"'))).toBe(true);
+  expect(await docLocks(page)).toHaveLength(1);
+  // La prima «pesca», fuori dal gruppo, ha ancora il simbolo del blocco.
+  await expect.poll(() => imgOf(page, "pesca")).toBe(first);
 });
 
 test("Dividi e Riunisci tolgono le scelte fatte sul gruppo", async ({ page }) => {

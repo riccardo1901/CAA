@@ -3,7 +3,6 @@
 // "Dividi" su un'unione fatta a mano toglie il mark, "Riunisci" toglie una divisione.
 import type { EditorView } from "prosemirror-view";
 import type { TokenAt } from "./engineSymbols";
-import { hooks } from "./menuHooks";
 import { paraInfo } from "./picks";
 import { schema } from "./schema";
 import { wordRanges } from "./words";
@@ -58,11 +57,7 @@ export function mergeSelection(view: EditorView): string | null {
   if (info.groups.some((g) => g.mode === "split" && g.s < sel.to && sel.from < g.e)) {
     return "Queste parole fanno parte di un'espressione divisa: premi prima «Riunisci», poi unisci.";
   }
-  // Le scelte sulle singole parole cadono; se una era un «per tutto il testo», si dice.
-  const locks = info.picks.filter((p) => p.lock && p.s < sel.to && sel.from < p.e).map((p) => p.lemma || p.word);
-  if (locks.length > 0) {
-    hooks.notice?.(`Unito. Attenzione: la scelta «per tutto il testo» di «${[...new Set(locks)].join("», «")}» è stata sciolta.`);
-  }
+  // Le scelte sulle singole parole cadono; i blocchi «per tutto il testo» stanno nel documento e restano.
   const tr = view.state.tr.removeMark(a, b, schema.marks.pick).removeMark(a, b, schema.marks.group);
   tr.addMark(a, b, schema.marks.group.create({ text, mode: "merge" }));
   view.dispatch(tr.scrollIntoView());

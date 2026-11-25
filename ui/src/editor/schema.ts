@@ -4,7 +4,10 @@ import { Schema } from "prosemirror-model";
 
 export const schema = new Schema({
   nodes: {
-    doc: { content: "block+" },
+    // `locks`: i blocchi di senso del documento ("usa per tutto il testo": il lemma, con la categoria, prende
+    // sempre quel simbolo). Stanno nei dati del documento (SPEC.md: `sense_locks`), non su una parola:
+    // cancellare la parola su cui si è scelto non li scioglie. Vedi `picks.ts`.
+    doc: { content: "block+", attrs: { locks: { default: [] } } },
     paragraph: {
       group: "block",
       content: "inline*",
@@ -31,12 +34,10 @@ export const schema = new Schema({
     // Scelta esplicita del docente su UNA parola (SPEC.md, "Modello del documento"): segue il testo e
     // rientra in annulla/ripeti perché è un mark. `picto`: id ARASAAC, 0 = nessun simbolo, -1 = solo
     // testo. `word` (minuscola) dice a quale parola si riferisce: se la parola cambia la scelta non vale più.
-    // `lock` = "usa per tutto il testo": il lemma (con la categoria) prende sempre quel simbolo.
     pick: {
       attrs: {
         word: { default: "" },
         picto: { default: 0 },
-        lock: { default: 0 },
         lemma: { default: "" },
         cat: { default: "" },
         // Simbolo personale (M8c-3): l'identificativo che viaggia nel documento (l'id numerico vale solo su questo computer).
@@ -50,7 +51,6 @@ export const schema = new Schema({
           class: "pk",
           "data-word": mark.attrs.word as string,
           "data-picto": String(mark.attrs.picto),
-          "data-lock": String(mark.attrs.lock),
           "data-lemma": mark.attrs.lemma as string,
           "data-cat": mark.attrs.cat as string,
           "data-uuid": mark.attrs.uuid as string,
@@ -66,7 +66,6 @@ export const schema = new Schema({
               word: e.dataset.word ?? "",
               // I valori speciali di «unisci» e «dividi» (da 2^32-2) non sono pittogrammi: un HTML incollato non li porta nel motore.
               picto: Math.min(Number(e.dataset.picto ?? 0) || 0, 4294967293),
-              lock: e.dataset.lock === "1" ? 1 : 0,
               lemma: e.dataset.lemma ?? "",
               cat: e.dataset.cat ?? "",
               uuid: e.dataset.uuid ?? "",
