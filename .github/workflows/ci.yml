@@ -43,6 +43,9 @@ jobs:
       - run: npm install
       - name: Browser per le prove
         run: npx playwright install --with-deps chromium
+      # pdftotext, pdftoppm, pdfinfo: le prove di stampa (M10) e del foglio congelato (M11-0) leggono i PDF.
+      - name: Strumenti per leggere i PDF
+        run: sudo apt-get install -y poppler-utils
       # Le prove di velocità (@perf) dipendono dalla macchina: si eseguono a mano.
       - run: npx playwright test --grep-invert @perf
 
