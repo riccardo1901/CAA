@@ -5,6 +5,7 @@ members = [
     "crates/caa-lexicon-build",
     "crates/caa-eval",
     "crates/caa-store",
+    "crates/caa-doc",
     "src-tauri",
 ]
 # `cargo test` e `cargo build` senza argomenti escludono l'app Tauri,
@@ -14,6 +15,7 @@ default-members = [
     "crates/caa-lexicon-build",
     "crates/caa-eval",
     "crates/caa-store",
+    "crates/caa-doc",
 ]
 
 [workspace.package]
