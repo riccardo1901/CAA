@@ -158,6 +158,25 @@ const STATI: Array<[string, (page: Page) => Promise<void>]> = [
     await page.getByRole("button", { name: "Altro", exact: true }).click();
     await page.locator("#menu-altro").waitFor();
   }],
+  // M11-7: la scheda «Memoria» con qualche scelta ricordata (una della politica) e i miei simboli.
+  ["18-memoria", async (page) => {
+    await page.addInitScript(() => {
+      (window as any).__memInit = [{ lemma: "pane", cat: "NOUN", form: "", picto: 1003 }, { lemma: "il", cat: "ART", form: "", picto: 1004 }, { lemma: "", cat: "", form: "Pepe", picto: 1005 }];
+      (window as any).__customInit = [{ id: 2147483648, uuid: "u-mela", label: "mela" }, { id: 2147483649, uuid: "u-pane", label: "pane" }];
+    });
+    await apriCompleto(page);
+    // Sugli schermi stretti il pannello è chiuso: la linguetta compare aprendolo.
+    const linguetta = page.getByRole("tab", { name: "Memoria" });
+    if (!(await linguetta.isVisible())) await page.getByRole("button", { name: "Apri il pannello dei simboli" }).click();
+    await linguetta.click();
+    await page.locator(".side-memory li").first().waitFor();
+  }],
+  // M11-7: la scheda «Simbolo» di un articolo: «ricorda per sempre» spento con la nota (K4).
+  ["19-simbolo-articolo", async (page) => {
+    await apriCompleto(page);
+    await clicSimbolo(page, "il");
+    await page.locator(".pm-cell").first().waitFor();
+  }],
 ];
 
 for (const s of SCHERMI_CONFRONTO) {

@@ -25,6 +25,7 @@ import { icona } from "./ui/icons";
 import { installaSuggerimenti } from "./ui/tooltip";
 import { conferma } from "./ui/confirm";
 import { creaPannelloLaterale } from "./side/panel";
+import { attachMemoryTab } from "./side/memory";
 
 let view: EditorView;
 let size = 68;
@@ -67,6 +68,7 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
   sideEl = createSidebar();
   const pannello = creaPannelloLaterale(sideEl, layoutEl, layoutEl.querySelector<HTMLElement>(".sheet-wrap")!);
   layoutEl.appendChild(pannello.root);
+  attachMemoryTab(pannello); // M11-7: la scheda «Memoria» (Cosa ricordo, I miei simboli)
   hooks.apriBarra = () => {
     // Una parola da mostrare: la scheda «Simbolo».
     pannello.mostraScheda("simbolo");

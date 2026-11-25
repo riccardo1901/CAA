@@ -29,6 +29,9 @@ export const MOCK = `
       if (lw === 'andati') t.mods = 3;
       if (!punct) { t.lemma = lw; t.cat = 'NOUN'; t.teacher = false; t.why = 'nome, prova'; }
       else { t.lemma = ''; t.cat = ''; t.teacher = false; t.why = ''; }
+      // M11-7 (K4): alcune parole funzionali hanno la categoria vera, come nel motore (Cat::name()).
+      const FUNZ = { il: 'ART', la: 'ART', di: 'ADP', nel: 'ARTADP', e: 'CONJ', lo: 'CLITIC', che: 'PRON' };
+      if (!punct && FUNZ[lw]) t.cat = FUNZ[lw];
       const lock = locks.find((l) => l.lemma === t.lemma && l.cat === t.cat);
       if (lock) { t.picto = lock.picto; t.image = true; t.display = 'full'; t.placeholder = false; }
       const f = forced.find((x) => x.s === s && x.e === e && x.picto < 4294967294);

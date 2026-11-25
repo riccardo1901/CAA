@@ -1,5 +1,5 @@
-/* Barra laterale dei simboli (M11-1): stessa disposizione di prima, nuovo aspetto. Le schede Simbolo, Pagina e
-   Memoria arrivano in M11-4 e M11-7. La parola scelta sul foglio (.cur) è del foglio: sta in sheet.css. */
+/* Pannello laterale e schede «Simbolo» e «Memoria» (M11-1, M11-4, M11-7): sezioni con un titolo, tasti scritti come
+   tasti, simboli della scuola come etichette (K14). La parola scelta sul foglio (.cur) è del foglio: sta in sheet.css. */
 /* Il pannello laterale richiudibile (M11-4): accanto al foglio quando c'è posto, una striscia stretta quando è chiuso,
    sopra la scrivania (con l'ombra) quando lo schermo è stretto e lo si apre. */
 .side-panel {
@@ -59,17 +59,54 @@
   outline: none;
 }
 .side:focus-within { box-shadow: inset 3px 0 0 var(--c-accent); }
-.side-empty h2 { font-family: var(--f-title); font-size: var(--fs-lg); margin: 0 0 var(--s-2); }
-.side-empty p { color: var(--c-text-2); margin: var(--s-2) 0; }
-.pm-keys { color: var(--c-text-3); font-size: var(--fs-sm); margin: var(--s-3) 0 0; }
+
+/* Tasti scritti come tasti (PIANO-M11.md 3.7, 3.10): [Esc], [F8], [1]–[8]. */
+.side-pane kbd.key, .side kbd.key {
+  display: inline-block;
+  min-width: 1.5em;
+  padding: 0 0.35em;
+  border: 1px solid var(--c-control-line);
+  border-bottom-width: 2px;
+  border-radius: var(--r-sm);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+}
+
+/* Stato vuoto (2.7, 3.5 punto 3 e 3.6): icona, una frase, le scorciatoie, un'azione. */
+.side-empty { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-2); }
+.side-empty .empty-ico { color: var(--c-accent-hover); }
+.side-empty .empty-ico .ico { width: 2rem; height: 2rem; }
+.side-empty h2 { font-family: var(--f-title); font-size: var(--fs-lg); line-height: 1.3; margin: 0; }
+.side-empty p { color: var(--c-text-2); margin: 0; }
+.empty-keys { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2); color: var(--c-text-2); }
+.empty-action { margin-top: var(--s-2); }
+
+/* Le sezioni della scheda Simbolo (M11-7): un titolo piccolo e una riga sottile fra una sezione e l'altra. */
+.pm-sec { margin-top: var(--s-3); padding-top: var(--s-3); border-top: 1px solid var(--c-line); }
+.pm-sec[hidden] { display: none; }
+.pm-sec-title {
+  margin: 0 0 var(--s-2);
+  color: var(--c-text-2);
+  font-family: var(--f-title);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+/* La riga delle scorciatoie: leggibile (13 px), con i tasti. */
+.pm-keys { color: var(--c-text-2); font-size: var(--fs-sm); line-height: 1.9; margin: var(--s-4) 0 0; }
 
 /* Parola scelta: simbolo attuale, parola, perché. */
-.pm-head { display: flex; gap: var(--s-3); align-items: center; margin-bottom: var(--s-2); }
+.pm-head { display: flex; gap: var(--s-3); align-items: center; margin: var(--s-3) 0 0; }
 .pm-now img { width: 3rem; height: 3rem; object-fit: contain; display: block; }
 .pm-titles { display: flex; flex-direction: column; min-width: 0; }
-.pm-titles strong { font-size: var(--fs-lg); line-height: 1.25; }
+.pm-titles strong { font-size: var(--fs-lg); line-height: 1.25; overflow-wrap: anywhere; }
 .pm-why { color: var(--c-text-2); font-size: var(--fs-sm); }
-.pm-status { color: var(--c-text-2); min-height: 1.2em; margin-bottom: var(--s-1); }
+.pm-status { color: var(--c-text-2); }
+.pm-status:not(:empty) { margin-bottom: var(--s-2); }
 
 /* Le alternative: griglia di celle grandi con il numero (1–8). */
 .pm-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-2); }
@@ -99,16 +136,19 @@
 .pm-kw { font-size: var(--fs-xs); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pm-num { position: absolute; top: 2px; left: var(--s-1); font-size: var(--fs-xs); font-weight: 700; color: var(--c-accent-hover); }
 
-/* Scelte fisse, ricerca, opzioni. */
-.pm-fixed { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-2); }
-.pm-search { width: 100%; margin-top: var(--s-2); }
+/* Scelte rapide, ricerca, opzioni. */
+.pm-fixed { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.pm-search { width: 100%; }
 .pm-search[hidden] { display: none; }
-.pm-all, .pm-always { display: block; margin-top: var(--s-2); color: var(--c-text); }
+.pm-all, .pm-always { display: block; color: var(--c-text); }
+.pm-all + .pm-always { margin-top: var(--s-2); }
+/* «ricorda per sempre» spento per le parole della politica (K4): il testo resta leggibile, la nota spiega. */
+.pm-always.off { color: var(--c-text-3); cursor: help; }
+.pm-note { margin: var(--s-1) 0 0 1.6em; color: var(--c-text-2); font-size: var(--fs-sm); }
 
-/* I miei simboli e quelli della scuola. */
-.pm-custom { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); margin-top: var(--s-2); }
+/* I miei simboli. */
+.pm-custom { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
 .pm-custom:empty { display: none; }
-.pm-custom-title { width: 100%; color: var(--c-text-2); font-size: var(--fs-sm); }
 .pm-mini {
   min-height: 0;
   padding: 2px;
@@ -131,13 +171,55 @@
   line-height: 1;
   font-size: var(--fs-xs);
 }
-.pm-school { margin-top: var(--s-2); display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: center; }
-.pm-school-msg { font-size: var(--fs-sm); color: var(--c-text-2); }
 
-/* Cosa ricordo. */
-.side-memory { margin-top: var(--s-4); border-top: 1px solid var(--c-line); padding-top: var(--s-3); }
-.side-memory h3 { font-size: var(--fs-md); margin: 0 0 var(--s-2); }
-.side-memory-list { list-style: none; margin: 0 0 var(--s-2); padding: 0; display: grid; gap: var(--s-1); }
-.side-memory-list li { display: flex; align-items: center; gap: var(--s-2); }
-.side-memory-list img { width: 1.75rem; height: 1.75rem; object-fit: contain; }
-.side-memory-list span { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+/* Simboli della scuola (K14): ogni simbolo è un'etichetta intera su una riga sua; la × è un pulsante a parte. */
+.pm-school { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-2); }
+.pm-school-msg { margin: 0; font-size: var(--fs-sm); color: var(--c-text-2); }
+.pm-school-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-1); width: 100%; }
+.pm-chip.pm-mini-cell { display: flex; align-items: stretch; gap: var(--s-1); }
+.pm-chip-main.pm-mini {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 0 var(--s-2);
+  min-height: var(--h-control);
+  padding: var(--s-1) var(--s-3);
+  border-radius: var(--r-pill);
+  text-align: left;
+  white-space: normal;
+}
+.pm-chip-name { font-weight: 600; overflow-wrap: anywhere; }
+.pm-chip-author { color: var(--c-text-2); font-size: var(--fs-sm); overflow-wrap: anywhere; }
+.pm-chip-x {
+  flex: none;
+  width: var(--h-control);
+  min-height: var(--h-control);
+  padding: 0;
+  border-radius: 50%;
+  font-size: var(--fs-lg);
+  line-height: 1;
+}
+
+/* Scheda «Memoria» (M11-7): Cosa ricordo e I miei simboli, righe con l'azione a destra. */
+.side-memoria > * + * { margin-top: var(--s-4); }
+.side-memoria .pm-sec { margin-top: var(--s-4); }
+.side-memory .pm-sec-title, .mem-empty .pm-sec-title { margin-bottom: var(--s-1); }
+.mem-intro { margin: 0 0 var(--s-2); color: var(--c-text-2); font-size: var(--fs-sm); }
+.mem-list { list-style: none; margin: 0 0 var(--s-3); padding: 0; display: grid; gap: var(--s-2); }
+.mem-row { display: flex; align-items: center; gap: var(--s-2); }
+.mem-row img { flex: none; width: 2.25rem; height: 2.25rem; object-fit: contain; }
+.mem-word { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-2); overflow-wrap: anywhere; }
+.mem-row > button { flex: none; }
+/* Etichetta «la politica può nasconderla» (K4): testo, non solo colore. */
+.mem-chip {
+  padding: 0 var(--s-2);
+  border: 1px solid var(--warn-line);
+  border-radius: var(--r-pill);
+  background: var(--warn-bg);
+  color: var(--warn-fg);
+  font-size: var(--fs-xs);
+  line-height: 1.6;
+}
