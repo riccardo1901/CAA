@@ -74,6 +74,10 @@ pub struct Manifest {
     /// biblioteca»: se la biblioteca è andata avanti da sola, non si sovrascrive).
     #[serde(default)]
     pub published_rev: Option<u32>,
+    /// Il nome utente di Windows di chi ha pubblicato (in biblioteca): serve a riconoscere l'autore anche se
+    /// due docenti scelgono lo stesso nome da mostrare. Assente nei documenti più vecchi.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub author_user: Option<String>,
     /// `render.json` deve esserci (la scrittura lo mette sempre): se manca, il file è rovinato.
     #[serde(default)]
     pub has_render: bool,
@@ -101,6 +105,7 @@ impl Manifest {
             sense_locks: Value::Null,
             media: Vec::new(),
             published_rev: None,
+            author_user: None,
             has_render: false,
         }
     }

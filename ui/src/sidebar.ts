@@ -243,12 +243,19 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
       picker.value = "";
       if (!file) return;
       const label = shownWord.toLowerCase();
-      void cropImage(file, shownWord).then(async (blob) => {
-        if (!blob) return;
+      void cropImage(file, shownWord, !!client.shared).then(async (cropped) => {
+        if (!cropped) return;
         try {
-          const symbol = await client.importCustom(blob, label);
+          const symbol = await client.importCustom(cropped.blob, label);
           customList = [...customList, symbol];
           choose({ kind: "picto", id: symbol.id, uuid: symbol.uuid });
+          if (cropped.share && client.shared) {
+            // Il simbolo si usa comunque: se il Drive non risponde, si può condividere più tardi.
+            client.shared.share(symbol.uuid).then(
+              () => hooks.notice?.("Simbolo condiviso con la scuola."),
+              (e: unknown) => hooks.notice?.(`Simbolo salvato per te, ma non condiviso: ${String(e)}`),
+            );
+          }
         } catch (e) {
           hooks.notice?.(`Non sono riuscito a salvare il simbolo: ${String(e)}`);
         }
@@ -334,8 +341,85 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
         img.alt = c.label;
         b.append(img);
         b.addEventListener("click", () => choose({ kind: "picto", id: c.id, uuid: c.uuid }));
-        saved.append(b);
+        const cell = el("span", "pm-mini-cell");
+        cell.append(b);
+        const del = client.deleteCustom;
+        if (del) {
+          const x = el("button", "pm-mini-x", "×");
+          x.type = "button";
+          x.title = "Elimina questo simbolo dal computer (i documenti che lo usano lo tengono)";
+          x.setAttribute("aria-label", `Elimina il simbolo ${c.label || "personale"}`);
+          x.addEventListener("click", () => {
+            if (!window.confirm(`Eliminare il simbolo «${c.label || "personale"}» da questo computer? I documenti che lo usano lo conservano.`)) return;
+            del(c.uuid).then(
+              () => {
+                customList = customList.filter((o) => o.uuid !== c.uuid);
+                show(target ?? t, false);
+              },
+              (e: unknown) => hooks.notice?.(`Non sono riuscito a eliminarlo: ${String(e)}`),
+            );
+          });
+          cell.append(x);
+        }
+        saved.append(cell);
       }
+    }
+    // I simboli della scuola: si aprono a richiesta (leggono il Drive).
+    const school = client.shared;
+    if (school) {
+      const box = el("div", "pm-school");
+      const open = el("button", "pm-btn", "Simboli della scuola…");
+      open.type = "button";
+      open.addEventListener("click", () => {
+        open.disabled = true;
+        box.replaceChildren(open, el("span", "pm-school-msg", "Carico…"));
+        school.list().then(
+          (list) => {
+            open.disabled = false;
+            const msg = !list.configured ? "La biblioteca non è collegata." : !list.reachable ? "Drive non raggiungibile." : list.symbols.length === 0 ? "Nessun simbolo condiviso." : "";
+            box.replaceChildren(open);
+            if (msg) box.append(el("span", "pm-school-msg", msg));
+            for (const s of list.symbols) {
+              const cell = el("span", "pm-mini-cell");
+              const b = el("button", "pm-mini");
+              b.type = "button";
+              b.title = `${s.label || "simbolo"} — ${s.author}`;
+              b.textContent = s.label || "simbolo";
+              b.addEventListener("click", () => {
+                school.take(s.uuid).then(
+                  (sym) => {
+                    customList = customList.some((o) => o.uuid === sym.uuid) ? customList : [...customList, sym];
+                    choose({ kind: "picto", id: sym.id, uuid: sym.uuid });
+                  },
+                  (e: unknown) => hooks.notice?.(`Non riesco a prendere il simbolo: ${String(e)}`),
+                );
+              });
+              cell.append(b);
+              if (s.can_retire) {
+                const x = el("button", "pm-mini-x", "×");
+                x.type = "button";
+                x.title = "Ritira dalla scuola (va in archivio, non si cancella)";
+                x.setAttribute("aria-label", `Ritira dalla scuola il simbolo ${s.label || "simbolo"}`);
+                x.addEventListener("click", () => {
+                  if (!window.confirm(`Ritirare «${s.label || "simbolo"}» dalla scuola? Lo vedranno sparire tutti i docenti.`)) return;
+                  school.retire(s.uuid).then(
+                    () => open.click(),
+                    (e: unknown) => hooks.notice?.(`Non sono riuscito a ritirarlo: ${String(e)}`),
+                  );
+                });
+                cell.append(x);
+              }
+              box.append(cell);
+            }
+          },
+          (e: unknown) => {
+            open.disabled = false;
+            box.replaceChildren(open, el("span", "pm-school-msg", `Non riesco a leggere i simboli della scuola: ${String(e)}`));
+          },
+        );
+      });
+      box.append(open);
+      saved.append(box);
     }
     root.replaceChildren(search, head, status, grid, saved, fixed, picker, allLabel, alwaysLabel, keys);
     if (focusSide) root.focus();

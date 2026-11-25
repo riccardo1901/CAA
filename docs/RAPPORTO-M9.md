@@ -82,5 +82,15 @@ Ogni difetto confermato ha la prova scritta prima (sul codice vecchio falliva).
 - **Editor**: casella «ricorda per sempre» (spenta di default; solo per scelte di un pittogramma), elenco «Cosa ricordo» nella barra vuota con Dimentica e Dimentica tutto; i paragrafi si rifanno quando la memoria cambia.
 - **Scelta aperta**: un documento già fatto, riaperto con la stessa versione del lessico, si ri-simbolizza con la memoria di adesso e può cambiare simbolo. È coerente con «usa sempre»; da confermare con la prova a mano.
 
+# M9c-2 — simboli della scuola e identità dell'autore
+
+**Stato**: codice e prove automatiche fatti; prova a mano su Windows da fare (`docs/PROVE-M9c2.md`).
+
+- **`caa-lib::shared`**: `simboli\<uuid>.webp` + `.json` (etichetta, autore, nome utente di Windows, data). Il `.json` si scrive per ultimo (senza, il simbolo è «in sincronizzazione» e non si mostra); mai sopra un file esistente; stesso uuid due volte = resta il primo; rovinati, incompleti, troppo grandi, non-WebP e uuid strani scartati. Ritira in `archivio\` (due file, nome mai sovrascritto): autore (nome utente) o amministratore.
+- **Identità dell'autore** (decisione 4 del piano): il manifest ricorda `author_user` (nome utente di Windows, campo facoltativo: schema invariato). Pubblica lo scrive; Aggiorna e Ritira confrontano quello, per i file vecchi il nome da mostrare. Chiude il difetto degli omonimi segnalato dalla revisione di M9b (prova con due «Maria Rossi»).
+- **App**: simboli della scuola presi con una copia nella raccolta locale (stesso `uuid`: viaggiano nei documenti e funzionano senza Drive); condivisione con elenco, ritiro con permessi calcolati lato Rust (`can_retire`); cancellazione di un simbolo locale (indice prima, file poi; gli id non si riusano). Letture del Drive con tempo massimo.
+- **Editor**: «Condividi con tutta la scuola» nel ritaglio (solo con la biblioteca; un errore non toglie il simbolo), «Simboli della scuola…» nella barra, × per eliminare/ritirare con conferma.
+- Non fatto (per scelta): cache offline dell'elenco della scuola (senza Drive l'elenco è vuoto, ma quelli già presi restano nella raccolta locale).
+
 ## Metriche del motore
 Invariate (la memoria è vuota nelle misure): dorati 48/48; strutture 20/20; corpus sviluppo 6,9 (134/1945); prova 13,4 (86/643).

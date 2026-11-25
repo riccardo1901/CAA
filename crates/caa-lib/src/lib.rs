@@ -16,6 +16,7 @@ pub mod detect;
 pub mod index;
 pub mod publish;
 pub mod reach;
+pub mod shared;
 
 use caa_doc::{Document, Origin};
 

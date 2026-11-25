@@ -15,9 +15,16 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: 
   return e;
 }
 
-/** Mostra la finestra di ritaglio. Restituisce l'immagine WebP quadrata, o `null` se si annulla. */
-export function cropImage(file: File, word: string): Promise<Blob | null> {
-  return new Promise((resolve) => {
+/** Il risultato del ritaglio: l'immagine WebP quadrata e se il docente vuole condividerla con la scuola. */
+export interface Cropped {
+  blob: Blob;
+  share: boolean;
+}
+
+/** Mostra la finestra di ritaglio. Restituisce l'immagine (e la scelta di condividerla), o `null` se si annulla.
+ *  `canShare`: c'è la biblioteca della scuola, quindi compare «Condividi con tutta la scuola». */
+export function cropImage(file: File, word: string, canShare = false): Promise<Cropped | null> {
+  return new Promise<Cropped | null>((resolve) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
     img.onerror = () => {
@@ -45,6 +52,11 @@ export function cropImage(file: File, word: string): Promise<Blob | null> {
         "crop-privacy",
         "Non usare foto di studenti senza l'autorizzazione della scuola. L'immagine resta su questo computer.",
       );
+      const shareBox = el("input");
+      shareBox.type = "checkbox";
+      const shareLabel = el("label", "crop-share");
+      shareLabel.append(shareBox, " Condividi con tutta la scuola (lo vedranno e potranno usarlo tutti i docenti)");
+      shareLabel.hidden = !canShare;
       const ok = el("button", "pm-btn", "Usa questo simbolo");
       ok.type = "button";
       const cancel = el("button", "pm-btn", "Annulla");
@@ -57,6 +69,7 @@ export function cropImage(file: File, word: string): Promise<Blob | null> {
         canvas,
         zoom,
         privacy,
+        shareLabel,
         buttons,
       );
       overlay.append(dialog);
@@ -111,7 +124,7 @@ export function cropImage(file: File, word: string): Promise<Blob | null> {
       canvas.addEventListener("pointerup", end);
       canvas.addEventListener("pointercancel", end);
 
-      const close = (blob: Blob | null) => {
+      const close = (blob: Cropped | null) => {
         document.removeEventListener("keydown", onKey, true);
         overlay.remove();
         URL.revokeObjectURL(url);
@@ -141,7 +154,7 @@ export function cropImage(file: File, word: string): Promise<Blob | null> {
               close(null);
               return;
             }
-            close(blob);
+            close({ blob, share: canShare && shareBox.checked });
           },
           "image/webp",
           0.9,

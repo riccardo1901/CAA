@@ -34,6 +34,20 @@ pub fn same_user(a: &str, b: &str) -> bool {
     !a.is_empty() && a == b
 }
 
+/// Chi è l'autore: se il file ricorda il nome utente di Windows di chi l'ha scritto, conta quello (due docenti
+/// con lo stesso nome da mostrare non si scambiano i documenti); altrimenti, nei file più vecchi, il nome da mostrare.
+pub fn is_author(
+    author: &str,
+    author_user: Option<&str>,
+    display_name: &str,
+    os_user: Option<&str>,
+) -> bool {
+    match (author_user.filter(|u| !u.trim().is_empty()), os_user) {
+        (Some(recorded), Some(os)) => same_user(recorded, os),
+        _ => same_user(author, display_name),
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub enum LibError {
     /// Il documento di biblioteca con questo id c'è già (si usa «Aggiorna»).
@@ -256,11 +270,37 @@ pub fn update(
     })
 }
 
+/// Come `update`, con anche il nome utente di Windows (per riconoscere l'autore senza ambiguità).
+pub fn update_as(
+    root: &Path,
+    doc: &Document,
+    known_rev: u32,
+    user: &str,
+    os_user: &str,
+    now: u64,
+) -> Result<Updated, LibError> {
+    update_full(root, doc, known_rev, user, Some(os_user), now, &|p, d| {
+        caa_doc::write(p, d)
+    })
+}
+
 pub fn update_using(
     root: &Path,
     doc: &Document,
     known_rev: u32,
     user: &str,
+    now: u64,
+    write: Writer,
+) -> Result<Updated, LibError> {
+    update_full(root, doc, known_rev, user, None, now, write)
+}
+
+fn update_full(
+    root: &Path,
+    doc: &Document,
+    known_rev: u32,
+    user: &str,
+    os_user: Option<&str>,
     now: u64,
     write: Writer,
 ) -> Result<Updated, LibError> {
@@ -279,7 +319,12 @@ pub fn update_using(
         }
         Err(e) => return Err(e.into()),
     };
-    if !same_user(&existing.author, user) {
+    if !is_author(
+        &existing.author,
+        existing.author_user.as_deref(),
+        user,
+        os_user,
+    ) {
         return Err(LibError::NotAuthor {
             author: existing.author,
         });
@@ -294,6 +339,7 @@ pub fn update_using(
         // La biblioteca è andata avanti da sola: niente sovrascrittura, un documento nuovo.
         let mut fresh = doc.clone();
         fresh.manifest.id = caa_doc::new_id();
+        fresh.manifest.author_user = os_user.map(str::to_string);
         let id = fresh.manifest.id.clone();
         publish_using(root, &fresh, user, write)?;
         return Ok(Updated::SavedAsNew { id });
@@ -302,6 +348,7 @@ pub fn update_using(
     let m = &mut lib_doc.manifest;
     m.rev = existing.rev + 1;
     m.author = existing.author; // l'autore resta quello del documento di biblioteca
+    m.author_user = existing.author_user;
     m.created = existing.created;
     m.modified = caa_doc::now_iso();
     m.published_rev = None;
@@ -334,9 +381,14 @@ pub fn retire(
     // Gli amministratori sono nomi utente di Windows (non il nome da mostrare, che ognuno sceglie);
     // l'autore si riconosce dal nome da mostrare.
     let is_admin = admins.iter().any(|a| same_user(a, os_user));
-    let is_author = m
-        .as_ref()
-        .is_some_and(|m| same_user(&m.author, display_name));
+    let is_author = m.as_ref().is_some_and(|m| {
+        is_author(
+            &m.author,
+            m.author_user.as_deref(),
+            display_name,
+            Some(os_user),
+        )
+    });
     if !is_author && !is_admin {
         return Err(LibError::NotAuthor {
             author: m.map(|m| m.author).unwrap_or_default(),
@@ -373,12 +425,12 @@ fn now_secs() -> u64 {
 
 /// La revisione che `author` ha già in biblioteca per il documento `id` (per ritrovare il ricordo della
 /// pubblicazione se il documento personale l'ha perso): `None` se non c'è o l'autore è un altro.
-pub fn existing_rev(root: &Path, id: &str, author: &str) -> Option<u32> {
+pub fn existing_rev(root: &Path, id: &str, author: &str, os_user: Option<&str>) -> Option<u32> {
     if !valid_id(id) {
         return None;
     }
     let m = caa_doc::read_manifest(&lib_dir(root).join(library_file(id))).ok()?;
-    (m.id == id && same_user(&m.author, author)).then_some(m.rev)
+    (m.id == id && is_author(&m.author, m.author_user.as_deref(), author, os_user)).then_some(m.rev)
 }
 
 /// Se la biblioteca ha una revisione più nuova dell'originale da cui è nata una copia.

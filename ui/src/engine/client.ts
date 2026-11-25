@@ -249,6 +249,29 @@ export interface MemoryClient {
   clear(): Promise<void>;
 }
 
+/** Un simbolo condiviso dalla scuola. */
+export interface SharedSymbol {
+  uuid: string;
+  label: string;
+  author: string;
+  /** L'utente può ritirarlo (è suo, o è amministratore). */
+  can_retire: boolean;
+}
+
+export interface SharedList {
+  configured: boolean;
+  reachable: boolean;
+  symbols: SharedSymbol[];
+}
+
+export interface SharedClient {
+  share(uuid: string): Promise<SharedSymbol>;
+  list(): Promise<SharedList>;
+  /** Copia il simbolo nella raccolta di questo computer e lo restituisce (con l'id locale). */
+  take(uuid: string): Promise<CustomSymbol>;
+  retire(uuid: string): Promise<void>;
+}
+
 /** Quello che serve all'editor per parlare con il motore. */
 export interface EngineClient {
   symbolize(paras: ParaReq[], policy: Policy, locks: LockReq[]): Promise<TokenDto[][]>;
@@ -260,6 +283,10 @@ export interface EngineClient {
   docs?: DocClient;
   /** La biblioteca nel Drive condiviso e il nome da mostrare; assenti nelle prove senza archivio. */
   library?: LibraryClient;
+  /** I simboli della scuola nel Drive (M9c-2); assenti nelle prove senza biblioteca. */
+  shared?: SharedClient;
+  /** Toglie un simbolo personale dalla raccolta di questo computer. */
+  deleteCustom?(uuid: string): Promise<void>;
   /** La memoria del docente (M9c-1); assente nelle prove senza archivio. */
   memory?: MemoryClient;
   settings?: { getName(): Promise<string>; setName(name: string): Promise<string> };
@@ -303,6 +330,13 @@ export function tauriClient(): EngineClient {
       setName: (name) => invoke<string>("settings_set_name", { name }),
     },
     listCustom: () => invoke<CustomSymbol[]>("list_custom_symbols"),
+    deleteCustom: (uuid) => invoke<void>("custom_symbol_delete", { uuid }),
+    shared: {
+      share: (uuid) => invoke<SharedSymbol>("shared_symbol_share", { uuid }),
+      list: () => invoke<SharedList>("shared_symbols"),
+      take: (uuid) => invoke<CustomSymbol>("shared_symbol_import", { uuid }),
+      retire: (uuid) => invoke<void>("shared_symbol_retire", { uuid }),
+    },
     memory: {
       list: () => invoke<MemoryEntry[]>("memory_list"),
       add: (entry) => invoke<void>("memory_add", { entry }),

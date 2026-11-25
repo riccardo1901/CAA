@@ -62,7 +62,7 @@ const MOCK = `
     }
     return out;
   }
-  window.__mock = { memory: (window.__memInit || []).slice(), memoryFail: false, calls, delay: 4, fail: 0, alts: [], searches: [], altDelay: 3, custom: [], imports: [], docsStore: new Map(), saves: [], saveFail: 0, saveDelay: 0, conflictNext: false, broken: 0, readOnly: {}, mediaMap: [], lib: Object.assign({ configured: false, path: null, reachable: true, name: 'Maria', candidates: [], entries: [], cached: [], incomplete: 0, setCalls: [], scans: 0, adapts: [], adaptFail: false, nameFail: false, user: 'maria', admins: [], publishes: [], updates: [], retires: [], opens: [], publishFail: '', updateMode: '', retireFail: '', version: null }, window.__libInit || {}) };
+  window.__mock = { shared: Object.assign({ reachable: true, configured: true, symbols: [], shares: [], takes: [], retires: [], shareFail: '' }, window.__sharedInit || {}), deletes: [], memory: (window.__memInit || []).slice(), memoryFail: false, calls, delay: 4, fail: 0, alts: [], searches: [], altDelay: 3, custom: (window.__customInit || []).slice(), imports: [], docsStore: new Map(), saves: [], saveFail: 0, saveDelay: 0, conflictNext: false, broken: 0, readOnly: {}, mediaMap: [], lib: Object.assign({ configured: false, path: null, reachable: true, name: 'Maria', candidates: [], entries: [], cached: [], incomplete: 0, setCalls: [], scans: 0, adapts: [], adaptFail: false, nameFail: false, user: 'maria', admins: [], publishes: [], updates: [], retires: [], opens: [], publishFail: '', updateMode: '', retireFail: '', version: null }, window.__libInit || {}) };
   return {
     symbolize: (paras, policy, locks) => { calls.push({ texts: paras.map((p) => p.text), paras, locks, policy }); return new Promise((r, rej) => setTimeout(() => { if (window.__mock.fail > 0) { window.__mock.fail--; rej(new Error('motore guasto')); } else r(paras.map((p) => tokens(p.text, policy, p.forced, locks))); }, window.__mock.delay)); },
     alternatives: (para, policy, locks, s, e) => { window.__mock.alts.push({ para, s, e }); return new Promise((r) => setTimeout(() => r([1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => ({ picto: 1000 + i, keyword: 'alt' + i, reason: 'altro senso', image: i !== 3 }))), window.__mock.altDelay)); },
@@ -147,6 +147,13 @@ const MOCK = `
       setName: async (n) => { if (window.__mock.lib.nameFail) throw new Error('non riesco a salvare il nome'); window.__mock.lib.name = n.trim().replace(/\\s+/g, ' '); return window.__mock.lib.name; },
     } : undefined,
     listCustom: async () => window.__mock.custom.slice(),
+    deleteCustom: async (uuid) => { window.__mock.deletes.push(uuid); window.__mock.custom = window.__mock.custom.filter((c) => c.uuid !== uuid); },
+    shared: window.__withShared ? {
+      share: async (uuid) => { const m = window.__mock.shared; if (m.shareFail) throw new Error(m.shareFail); m.shares.push(uuid); return { uuid, label: '', author: 'Maria', can_retire: true }; },
+      list: async () => { const m = window.__mock.shared; return { configured: m.configured, reachable: m.reachable, symbols: m.reachable ? m.symbols : [] }; },
+      take: async (uuid) => { const m = window.__mock.shared; m.takes.push(uuid); const s = m.symbols.find((x) => x.uuid === uuid); const sym = { id: 2147490000 + m.takes.length, uuid, label: s.label }; window.__mock.custom.push(sym); return sym; },
+      retire: async (uuid) => { const m = window.__mock.shared; m.retires.push(uuid); m.symbols = m.symbols.filter((x) => x.uuid !== uuid); },
+    } : undefined,
     memory: {
       list: async () => window.__mock.memory.slice(),
       add: async (e) => { if (window.__mock.memoryFail) throw new Error('disco pieno'); window.__mock.memory = window.__mock.memory.filter((m) => !(m.lemma === e.lemma && m.form === e.form)).concat([e]); },
@@ -174,6 +181,7 @@ async function open(page: Page, text?: string, docs = false, library: Record<str
       const p = (window as any).caaProto;
       (window as any).__withDocs = withDocs;
       (window as any).__withLibrary = lib !== false;
+      (window as any).__withShared = (window as any).__withSharedFlag === true;
       (window as any).__libInit = lib || {};
       (window as any).__caaLibPollMs = 300;
       (window as any).__caaAutosaveMs = 150;
@@ -2089,4 +2097,79 @@ test("«Cosa ricordo»: elenco nella barra vuota, Dimentica e Dimentica tutto", 
   await page.locator(".side-memory").getByRole("button", { name: "Dimentica tutto" }).click();
   await expect.poll(() => memoryOf(page)).toEqual([]);
   await expect(page.locator(".side-memory")).toHaveCount(0);
+});
+
+// ---- M9c-2: simboli della scuola e cancellazione dei simboli personali ----
+
+const withShared = (page: Page, shared: Record<string, unknown> = {}, custom: unknown[] = []) =>
+  page.addInitScript(([sh, cu]) => {
+    (window as any).__withSharedFlag = true;
+    (window as any).__sharedInit = sh;
+    (window as any).__customInit = cu;
+  }, [shared, custom] as const);
+
+test("simbolo personale: si elimina dal computer (con conferma)", async ({ page }) => {
+  await withShared(page, {}, [{ id: 2147483648, uuid: "u-mela", label: "mela" }, { id: 2147483649, uuid: "u-pane", label: "pane" }]);
+  await open(page, "Marco mangia pane");
+  await clickSymbol(page, "pane");
+  await expect(page.locator(".pm-custom .pm-mini-cell")).toHaveCount(2);
+  page.removeAllListeners("dialog");
+  page.once("dialog", (d) => void d.dismiss()); // «Annulla» alla conferma: non succede niente
+  await page.getByRole("button", { name: "Elimina il simbolo mela" }).click();
+  expect(await page.evaluate(() => (window as any).__mock.deletes)).toEqual([]);
+  page.once("dialog", (d) => void d.accept());
+  await page.getByRole("button", { name: "Elimina il simbolo mela" }).click();
+  await expect.poll(() => page.evaluate(() => (window as any).__mock.deletes)).toEqual(["u-mela"]);
+  await expect(page.locator(".pm-custom .pm-mini-cell")).toHaveCount(1);
+});
+
+test("simboli della scuola: elenco, prendi e usa, ritira solo se è tuo o sei amministratore", async ({ page }) => {
+  await withShared(page, { symbols: [
+    { uuid: "s1", label: "autobus", author: "Luca", can_retire: false },
+    { uuid: "s2", label: "palestra", author: "Maria", can_retire: true },
+  ] });
+  await open(page, "Marco mangia pane");
+  await clickSymbol(page, "pane");
+  await page.getByRole("button", { name: "Simboli della scuola…" }).click();
+  await expect(page.locator(".pm-school .pm-mini-cell")).toHaveCount(2);
+  await expect(page.getByRole("button", { name: /Ritira dalla scuola il simbolo autobus/ })).toHaveCount(0);
+  // Prendi «autobus»: finisce nei miei simboli e diventa la scelta per la parola.
+  await page.locator(".pm-school .pm-mini", { hasText: "autobus" }).click();
+  await expect.poll(async () => (await docLocks(page)).length).toBe(1);
+  expect(await page.evaluate(() => (window as any).__mock.shared.takes)).toEqual(["s1"]);
+  // Ritira il suo.
+  await clickSymbol(page, "mangia");
+  await page.getByRole("button", { name: "Simboli della scuola…" }).click();
+  await page.getByRole("button", { name: "Ritira dalla scuola il simbolo palestra" }).click();
+  await expect.poll(() => page.evaluate(() => (window as any).__mock.shared.retires)).toEqual(["s2"]);
+});
+
+test("simboli della scuola: senza Drive lo dice", async ({ page }) => {
+  await withShared(page, { reachable: false });
+  await open(page, "Marco mangia pane");
+  await clickSymbol(page, "pane");
+  await page.getByRole("button", { name: "Simboli della scuola…" }).click();
+  await expect(page.locator(".pm-school")).toContainText("Drive non raggiungibile");
+});
+
+test("simbolo personale: «Condividi con tutta la scuola» solo con la biblioteca, e un errore non perde il simbolo", async ({ page }) => {
+  await withShared(page, { shareFail: "il Drive non risponde" });
+  await open(page, "Marco mangia pane");
+  await clickSymbol(page, "pane");
+  await page.locator(".side input[type=file]").setInputFiles(photo);
+  const dialog = page.locator(".crop-dialog");
+  await expect(dialog).toContainText("Condividi con tutta la scuola");
+  await dialog.getByRole("checkbox").check();
+  await dialog.getByRole("button", { name: "Usa questo simbolo" }).click();
+  await expect.poll(async () => (await docLocks(page)).length).toBe(1); // il simbolo si usa comunque
+  await expect(page.locator(".statusbar")).toContainText("non condiviso");
+});
+
+test("simbolo personale: senza biblioteca non compare «Condividi con tutta la scuola»", async ({ page }) => {
+  await open(page, "Marco mangia pane");
+  await clickSymbol(page, "pane");
+  await page.locator(".side input[type=file]").setInputFiles(photo);
+  await expect(page.locator(".crop-dialog")).toBeVisible();
+  await expect(page.locator(".crop-share")).toBeHidden();
+  await expect(page.getByRole("button", { name: "Simboli della scuola…" })).toHaveCount(0);
 });

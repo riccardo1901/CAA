@@ -203,6 +203,28 @@ impl CustomStore {
         self.add(Some(uuid), bytes, label)
     }
 
+    /// Toglie un simbolo dalla raccolta di questo computer (non dai documenti che lo hanno già dentro, né dal
+    /// Drive). Il contatore degli id non torna indietro: un id già usato non punta mai a un'immagine nuova.
+    pub fn delete(&self, uuid: &str) -> Result<(), String> {
+        let mut state = self.lock();
+        self.refresh(&mut state);
+        let Some(pos) = state.symbols.iter().position(|s| s.uuid == uuid) else {
+            return Err("simbolo non trovato".into());
+        };
+        let mut next = IndexFile {
+            next: state.next,
+            symbols: state.symbols.clone(),
+        };
+        next.symbols.remove(pos);
+        // Prima l'indice (senza il simbolo), poi il file: a metà resta un'immagine senza voce, mai il contrario.
+        let json = serde_json::to_vec_pretty(&next).map_err(|e| e.to_string())?;
+        write_atomic(&self.dir.join("index.json"), &json)
+            .map_err(|e| format!("salvataggio non riuscito: {e}"))?;
+        *state = next;
+        let _ = std::fs::remove_file(self.dir.join(format!("{uuid}.webp")));
+        Ok(())
+    }
+
     /// L'immagine di un simbolo personale, dal suo `uuid` (per metterla in un documento).
     pub fn bytes_of_uuid(&self, uuid: &str) -> Option<Vec<u8>> {
         let mut state = self.lock();
@@ -310,6 +332,26 @@ mod tests {
             .filter(|e| e.path().extension().is_some_and(|x| x == "tmp"))
             .collect();
         assert!(leftovers.is_empty());
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn cancellare_un_simbolo_non_rida_il_suo_id_a_un_altro() {
+        let dir = tmp("cancella");
+        let store = CustomStore::open(dir.clone());
+        let mut webp = b"RIFF\0\0\0\0WEBP".to_vec();
+        webp.resize(40, 1);
+        let a = store.save(&webp, "a").unwrap();
+        let b = store.save(&webp, "b").unwrap();
+        store.delete(&a.uuid).unwrap();
+        assert_eq!(store.list().len(), 1);
+        assert!(store.path_of(a.id).is_none());
+        assert!(!dir.join(format!("{}.webp", a.uuid)).exists());
+        assert!(store.path_of(b.id).is_some());
+        assert!(store.delete(&a.uuid).is_err());
+        // Il prossimo simbolo ha un id nuovo, anche dopo aver riaperto la raccolta.
+        let c = CustomStore::open(dir.clone()).save(&webp, "c").unwrap();
+        assert!(c.id > b.id);
         std::fs::remove_dir_all(&dir).unwrap();
     }
 

@@ -550,8 +550,45 @@ fn rev_pubblicata_di_un_documento_gia_in_biblioteca() {
     let d = doc("Storia", "Maria");
     publish(&root, &d, "Maria").unwrap();
     update(&root, &d, 1, "Maria", NOW).unwrap();
-    assert_eq!(existing_rev(&root, &d.manifest.id, "maria"), Some(2));
-    assert_eq!(existing_rev(&root, &d.manifest.id, "Luca"), None);
-    assert_eq!(existing_rev(&root, "altro", "Maria"), None);
+    assert_eq!(existing_rev(&root, &d.manifest.id, "maria", None), Some(2));
+    assert_eq!(existing_rev(&root, &d.manifest.id, "Luca", None), None);
+    assert_eq!(existing_rev(&root, "altro", "Maria", None), None);
+    std::fs::remove_dir_all(&root).unwrap();
+}
+
+#[test]
+fn due_docenti_con_lo_stesso_nome_da_mostrare_non_si_scambiano_i_documenti() {
+    let root = tmp("omonimi");
+    let mut d = doc("Storia", "Maria Rossi");
+    d.manifest.author_user = Some("mrossi".into()); // chi pubblica scrive il suo nome utente di Windows
+    publish(&root, &d, "Maria Rossi").unwrap();
+    let file = library_file(&d.manifest.id);
+    // Un'altra Maria Rossi (nome utente diverso) non è l'autrice: né aggiorna né ritira.
+    assert!(matches!(
+        update_as(&root, &d, 1, "Maria Rossi", "mrossi2", NOW),
+        Err(LibError::NotAuthor { .. })
+    ));
+    assert!(matches!(
+        retire(&root, &file, "Maria Rossi", "mrossi2", &[]),
+        Err(LibError::NotAuthor { .. })
+    ));
+    assert_eq!(
+        existing_rev(&root, &d.manifest.id, "Maria Rossi", Some("mrossi2")),
+        None
+    );
+    // L'autrice vera sì, anche se cambia il nome da mostrare.
+    assert_eq!(
+        update_as(&root, &d, 1, "M. Rossi", "MRossi", NOW).unwrap(),
+        Updated::Revision { rev: 2 }
+    );
+    assert_eq!(
+        read(&root, &d.manifest.id)
+            .doc
+            .manifest
+            .author_user
+            .as_deref(),
+        Some("mrossi")
+    );
+    assert!(retire(&root, &file, "Altro nome", "mrossi", &[]).is_ok());
     std::fs::remove_dir_all(&root).unwrap();
 }

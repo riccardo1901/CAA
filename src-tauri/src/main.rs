@@ -264,6 +264,45 @@ fn memory_clear(state: State<'_, Arc<Backend>>) -> Result<(), String> {
     state.memory.clear()
 }
 
+/// Simboli personali: cancellazione dalla raccolta di questo computer.
+#[tauri::command]
+fn custom_symbol_delete(state: State<'_, Arc<Backend>>, uuid: String) -> Result<(), String> {
+    state.custom.delete(&uuid)
+}
+
+/// Simboli della scuola (`simboli\` nel Drive): condividi, elenco, prendi, ritira.
+#[tauri::command(async)]
+fn shared_symbol_share(
+    state: State<'_, Arc<Backend>>,
+    uuid: String,
+) -> Result<library::SharedDto, String> {
+    state
+        .library
+        .share_symbol(&uuid, &state.custom, &author_name(&state), &os_user())
+}
+
+#[tauri::command(async)]
+fn shared_symbols(state: State<'_, Arc<Backend>>) -> library::SharedList {
+    state
+        .library
+        .shared_symbols(&author_name(&state), &os_user())
+}
+
+#[tauri::command(async)]
+fn shared_symbol_import(
+    state: State<'_, Arc<Backend>>,
+    uuid: String,
+) -> Result<CustomSymbol, String> {
+    state.library.import_shared(&uuid, &state.custom)
+}
+
+#[tauri::command(async)]
+fn shared_symbol_retire(state: State<'_, Arc<Backend>>, uuid: String) -> Result<(), String> {
+    state
+        .library
+        .retire_shared(&uuid, &author_name(&state), &os_user())
+}
+
 /// "Cerca…" nel menu: pittogrammi per parola chiave (esatta o per inizio di parola).
 #[tauri::command(async)]
 fn search_pictos(
@@ -427,14 +466,14 @@ fn library_publish(
 ) -> Result<PublishOutcome, String> {
     state
         .library
-        .publish(&file, &meta, &state.docs, &author_name(&state))
+        .publish(&file, &meta, &state.docs, &author_name(&state), &os_user())
 }
 
 #[tauri::command(async)]
 fn library_update(state: State<'_, Arc<Backend>>, file: String) -> Result<PublishOutcome, String> {
     state
         .library
-        .update(&file, &state.docs, &author_name(&state))
+        .update(&file, &state.docs, &author_name(&state), &os_user())
 }
 
 #[tauri::command(async)]
@@ -515,6 +554,11 @@ fn main() {
             memory_add,
             memory_forget,
             memory_clear,
+            custom_symbol_delete,
+            shared_symbol_share,
+            shared_symbols,
+            shared_symbol_import,
+            shared_symbol_retire,
             save_custom_symbol,
             list_custom_symbols,
             doc_list,

@@ -32,6 +32,22 @@ pub struct LibraryState {
 }
 
 #[derive(Debug, Serialize, PartialEq)]
+pub struct SharedDto {
+    pub uuid: String,
+    pub label: String,
+    pub author: String,
+    /// L'utente può ritirarlo (è suo, o è amministratore).
+    pub can_retire: bool,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SharedList {
+    pub configured: bool,
+    pub reachable: bool,
+    pub symbols: Vec<SharedDto>,
+}
+
+#[derive(Debug, Serialize, PartialEq)]
 pub struct FolderDto {
     pub path: String,
     pub drive: String,
@@ -259,16 +275,19 @@ impl LibraryState {
         meta: &PublishMeta,
         docs: &DocStore,
         author: &str,
+        os: &str,
     ) -> Result<PublishOutcome, String> {
         let root = self.writable_root()?;
         let mut doc = docs.read(file)?.doc;
         apply_meta(&mut doc.manifest, meta);
+        // Chi pubblica si riconosce dal nome utente di Windows (il nome da mostrare lo sceglie ognuno).
+        doc.manifest.author_user = Some(os.to_string());
         let rev = match caa_lib::publish::publish(&root, &doc, author) {
             Ok(lib) => lib.manifest.rev,
             // Già in biblioteca, e dello stesso autore: il documento personale aveva perso il ricordo
             // (o la pubblicazione era riuscita ma il ricordo non si era scritto). Lo si ritrova.
             Err(caa_lib::publish::LibError::AlreadyPublished) => {
-                caa_lib::publish::existing_rev(&root, &doc.manifest.id, author)
+                caa_lib::publish::existing_rev(&root, &doc.manifest.id, author, Some(os))
                     .ok_or_else(|| caa_lib::publish::LibError::AlreadyPublished.to_string())?
             }
             Err(e) => return Err(e.to_string()),
@@ -290,6 +309,7 @@ impl LibraryState {
         file: &str,
         docs: &DocStore,
         user: &str,
+        os: &str,
     ) -> Result<PublishOutcome, String> {
         let root = self.writable_root()?;
         let doc = docs.read(file)?.doc;
@@ -297,7 +317,7 @@ impl LibraryState {
             .manifest
             .published_rev
             .ok_or("questo documento non è stato pubblicato")?;
-        match caa_lib::publish::update(&root, &doc, known, user, now_secs()) {
+        match caa_lib::publish::update_as(&root, &doc, known, user, os, now_secs()) {
             Ok(caa_lib::publish::Updated::Revision { rev }) => {
                 let entry = docs.update_manifest(file, |m| m.published_rev = Some(rev))?;
                 Ok(PublishOutcome {
@@ -333,6 +353,100 @@ impl LibraryState {
         let admins = &self.config.admins;
         caa_lib::publish::retire(&root, file, display_name, os_user, admins)
             .map(|_| ())
+            .map_err(|e| e.to_string())
+    }
+
+    /// Condivide con la scuola un simbolo personale (solo se il Drive risponde: si scrive nel Drive).
+    pub fn share_symbol(
+        &self,
+        uuid: &str,
+        custom: &CustomStore,
+        author: &str,
+        os: &str,
+    ) -> Result<SharedDto, String> {
+        let root = self.writable_root()?;
+        let bytes = custom.bytes_of_uuid(uuid).ok_or("simbolo non trovato")?;
+        let label = custom
+            .list()
+            .into_iter()
+            .find(|s| s.uuid == uuid)
+            .map(|s| s.label)
+            .unwrap_or_default();
+        let s = caa_lib::shared::share(&root, uuid, &bytes, &label, author, os, now_secs())
+            .map_err(|e| e.to_string())?;
+        Ok(SharedDto {
+            can_retire: true,
+            uuid: s.uuid,
+            label: s.label,
+            author: s.author,
+        })
+    }
+
+    /// I simboli della scuola. Senza Drive l'elenco è vuoto e `reachable` è falso.
+    pub fn shared_symbols(&self, display_name: &str, os: &str) -> SharedList {
+        let Some(root) = self.root() else {
+            return SharedList {
+                configured: false,
+                reachable: false,
+                symbols: vec![],
+            };
+        };
+        let admins = self.config.admins.clone();
+        let (name, user) = (display_name.to_string(), os.to_string());
+        let found = with_timeout(READ_LIMIT, move || {
+            std::fs::read_dir(root.join("simboli")).ok()?;
+            let all = caa_lib::shared::list(&root);
+            Some(
+                all.into_iter()
+                    .map(|s| SharedDto {
+                        can_retire: caa_lib::shared::can_retire(
+                            &root, &s.uuid, &name, &user, &admins,
+                        ),
+                        uuid: s.uuid,
+                        label: s.label,
+                        author: s.author,
+                    })
+                    .collect::<Vec<_>>(),
+            )
+        })
+        .flatten();
+        match found {
+            Some(symbols) => SharedList {
+                configured: true,
+                reachable: true,
+                symbols,
+            },
+            None => SharedList {
+                configured: true,
+                reachable: false,
+                symbols: vec![],
+            },
+        }
+    }
+
+    /// Prende un simbolo della scuola: lo copia nella raccolta di questo computer (con lo stesso `uuid`) e da lì
+    /// funziona senza Drive e viaggia nei documenti come gli altri simboli personali.
+    pub fn import_shared(
+        &self,
+        uuid: &str,
+        custom: &CustomStore,
+    ) -> Result<crate::custom::CustomSymbol, String> {
+        let root = self.root().ok_or("la biblioteca non è collegata")?;
+        let id = uuid.to_string();
+        let (bytes, label) = with_timeout(READ_LIMIT, move || {
+            caa_lib::shared::read_image(&root, &id)
+        })
+        .flatten()
+        .ok_or(
+            "il simbolo non è disponibile (Drive non raggiungibile o ancora in sincronizzazione)",
+        )?;
+        custom.import_uuid(uuid, &bytes, &label)
+    }
+
+    /// Ritira un simbolo della scuola (l'autore o un amministratore): va in `archivio\`.
+    pub fn retire_shared(&self, uuid: &str, display_name: &str, os: &str) -> Result<(), String> {
+        let root = self.writable_root()?;
+        caa_lib::shared::retire(&root, uuid, display_name, os, &self.config.admins)
             .map_err(|e| e.to_string())
     }
 
@@ -595,7 +709,13 @@ mod tests {
         assert_eq!(mine.published_rev, None);
         // Pubblica: in biblioteca con id, autore e metadati; il documento personale ricorda la revisione.
         let out = st
-            .publish(&mine.file, &meta("La storia di Pepe"), &docs, "Maria Rossi")
+            .publish(
+                &mine.file,
+                &meta("La storia di Pepe"),
+                &docs,
+                "Maria Rossi",
+                "mrossi",
+            )
             .unwrap();
         assert_eq!((out.kind, out.rev), ("published", 1));
         assert_eq!(out.entry.published_rev, Some(1));
@@ -634,18 +754,20 @@ mod tests {
         docs.update_manifest(&mine.file, |m| m.published_rev = None)
             .unwrap();
         assert!(st
-            .publish(&mine.file, &meta("x"), &docs, "Luca Bianchi")
+            .publish(&mine.file, &meta("x"), &docs, "Luca Bianchi", "lbianchi")
             .unwrap_err()
             .contains("già in biblioteca"));
         let again = st
-            .publish(&mine.file, &meta("x"), &docs, "Maria Rossi")
+            .publish(&mine.file, &meta("x"), &docs, "Maria Rossi", "mrossi")
             .unwrap();
         assert_eq!(
             (again.kind, again.rev, again.entry.published_rev),
             ("published", 1, Some(1))
         );
         // Aggiorna: revisione 2 in biblioteca e nel ricordo del documento personale.
-        let up = st.update(&mine.file, &docs, "Maria Rossi").unwrap();
+        let up = st
+            .update(&mine.file, &docs, "Maria Rossi", "mrossi")
+            .unwrap();
         assert_eq!(
             (up.kind, up.rev, up.entry.published_rev),
             ("updated", 2, Some(2))
@@ -660,13 +782,13 @@ mod tests {
         );
         // Un altro utente non aggiorna il documento di Maria.
         assert!(st
-            .update(&mine.file, &docs, "Luca Bianchi")
+            .update(&mine.file, &docs, "Luca Bianchi", "lbianchi")
             .unwrap_err()
             .contains("solo l'autore"));
         // Un documento mai pubblicato.
         let other = personal(&docs, "Altro", "Maria Rossi");
         assert!(st
-            .update(&other.file, &docs, "Maria Rossi")
+            .update(&other.file, &docs, "Maria Rossi", "mrossi")
             .unwrap_err()
             .contains("non è stato pubblicato"));
         for d in [&sd, &lib, &dd] {
@@ -678,7 +800,7 @@ mod tests {
     fn il_salvataggio_automatico_non_perde_il_ricordo_della_pubblicazione() {
         let (sd, lib, dd, st, docs) = setup("autosave");
         let mine = personal(&docs, "Storia", "Maria");
-        st.publish(&mine.file, &meta("Storia"), &docs, "Maria")
+        st.publish(&mine.file, &meta("Storia"), &docs, "Maria", "maria")
             .unwrap();
         // Il salvataggio automatico (che riparte da un manifest nuovo) tiene id, revisione pubblicata e metadati.
         let custom = CustomStore::open(sd.join("custom"));
@@ -717,7 +839,7 @@ mod tests {
     ) {
         let (sd, lib, dd, st, docs) = setup("avanti");
         let mine = personal(&docs, "Storia", "Maria");
-        st.publish(&mine.file, &meta("Storia"), &docs, "Maria")
+        st.publish(&mine.file, &meta("Storia"), &docs, "Maria", "maria")
             .unwrap();
         // Un altro PC aggiorna il documento di biblioteca (revisione 2).
         let other_pc = DocStore::new(tmp("avanti-altro"));
@@ -726,7 +848,7 @@ mod tests {
         let loaded = caa_doc::read(&lib_file).unwrap();
         caa_lib::publish::update(&lib, &loaded.doc, 1, "Maria", 1_800_000_000).unwrap();
         // Questo PC è ancora alla revisione 1: il documento si salva come nuovo, con un id nuovo.
-        let out = st.update(&mine.file, &docs, "Maria").unwrap();
+        let out = st.update(&mine.file, &docs, "Maria", "maria").unwrap();
         assert_eq!((out.kind, out.rev), ("saved_as_new", 1));
         assert_ne!(out.entry.id, mine.id);
         assert_eq!(out.entry.published_rev, Some(1));
@@ -741,7 +863,7 @@ mod tests {
             .is_file());
         // E da adesso aggiorna il documento nuovo.
         assert_eq!(
-            st.update(&mine.file, &docs, "Maria").unwrap().kind,
+            st.update(&mine.file, &docs, "Maria", "maria").unwrap().kind,
             "updated"
         );
         let _ = std::fs::remove_dir_all(other_pc.dir());
@@ -754,7 +876,7 @@ mod tests {
     fn aggiornare_un_documento_ritirato_lo_rende_di_nuovo_pubblicabile() {
         let (sd, lib, dd, st, docs) = setup("ritirato");
         let mine = personal(&docs, "Storia", "Maria");
-        st.publish(&mine.file, &meta("Storia"), &docs, "Maria")
+        st.publish(&mine.file, &meta("Storia"), &docs, "Maria", "maria")
             .unwrap();
         st.retire(&format!("{}.caa", mine.id), "Maria", "maria")
             .unwrap();
@@ -762,7 +884,7 @@ mod tests {
             .join("archivio")
             .join(format!("{}.caa", mine.id))
             .is_file());
-        let err = st.update(&mine.file, &docs, "Maria").unwrap_err();
+        let err = st.update(&mine.file, &docs, "Maria", "maria").unwrap_err();
         assert!(err.contains("non è più in biblioteca"), "{err}");
         assert_eq!(
             docs.read(&mine.file).unwrap().doc.manifest.published_rev,
@@ -770,7 +892,7 @@ mod tests {
         );
         // Si può pubblicare di nuovo.
         assert_eq!(
-            st.publish(&mine.file, &meta("Storia"), &docs, "Maria")
+            st.publish(&mine.file, &meta("Storia"), &docs, "Maria", "maria")
                 .unwrap()
                 .kind,
             "published"
@@ -784,7 +906,7 @@ mod tests {
     fn ritira_per_autore_o_amministratore() {
         let (sd, lib, dd, st, docs) = setup("ritira");
         let mine = personal(&docs, "Storia", "Maria Rossi");
-        st.publish(&mine.file, &meta("Storia"), &docs, "Maria Rossi")
+        st.publish(&mine.file, &meta("Storia"), &docs, "Maria Rossi", "mrossi")
             .unwrap();
         let file = format!("{}.caa", mine.id);
         // Un altro docente no.
@@ -811,9 +933,9 @@ mod tests {
         let mine = personal(&docs, "Storia", "Maria");
         std::fs::remove_dir_all(&lib).unwrap();
         for e in [
-            st.publish(&mine.file, &meta("Storia"), &docs, "Maria")
+            st.publish(&mine.file, &meta("Storia"), &docs, "Maria", "maria")
                 .unwrap_err(),
-            st.update(&mine.file, &docs, "Maria").unwrap_err(),
+            st.update(&mine.file, &docs, "Maria", "maria").unwrap_err(),
             st.retire("x.caa", "Maria", "maria").unwrap_err(),
         ] {
             assert!(e.contains("non risponde"), "{e}");
@@ -835,7 +957,7 @@ mod tests {
     fn l_originale_si_apre_in_sola_lettura_e_la_versione_nuova_si_annuncia() {
         let (sd, lib, dd, st, docs) = setup("orig");
         let mine = personal(&docs, "Storia", "Maria");
-        st.publish(&mine.file, &meta("Storia"), &docs, "Maria")
+        st.publish(&mine.file, &meta("Storia"), &docs, "Maria", "maria")
             .unwrap();
         let file = format!("{}.caa", mine.id);
         let custom = CustomStore::open(sd.join("custom"));
@@ -863,5 +985,54 @@ mod tests {
         for d in [&sd, &lib, &dd] {
             let _ = std::fs::remove_dir_all(d);
         }
+    }
+
+    #[test]
+    fn simboli_della_scuola_condividi_prendi_e_ritira() {
+        let (sd, lib, dd, st, _docs) = setup("simboli");
+        let custom = CustomStore::open(dd.join("custom"));
+        let mut webp = b"RIFF\0\0\0\0WEBP".to_vec();
+        webp.resize(64, 1);
+        let mine = custom.save(&webp, "la mela").unwrap();
+        // Condividi (Maria) e guarda l'elenco da un altro utente.
+        let shared = st
+            .share_symbol(&mine.uuid, &custom, "Maria Rossi", "mrossi")
+            .unwrap();
+        assert_eq!(shared.label, "la mela");
+        let seen = st.shared_symbols("Maria Rossi", "altra");
+        assert!(seen.reachable && seen.configured);
+        assert_eq!(seen.symbols.len(), 1);
+        assert!(!seen.symbols[0].can_retire, "un omonimo non può ritirarlo");
+        assert!(st.shared_symbols("M.", "mrossi").symbols[0].can_retire);
+        // Un altro computer lo prende: finisce nella sua raccolta con lo stesso uuid, due volte non raddoppia.
+        let other = CustomStore::open(dd.join("custom-altro"));
+        let got = st.import_shared(&mine.uuid, &other).unwrap();
+        assert_eq!(
+            (got.uuid.as_str(), got.label.as_str()),
+            (mine.uuid.as_str(), "la mela")
+        );
+        st.import_shared(&mine.uuid, &other).unwrap();
+        assert_eq!(other.list().len(), 1);
+        assert!(st.import_shared("non-c-e", &other).is_err());
+        // Ritira: non l'omonimo.
+        assert!(st
+            .retire_shared(&mine.uuid, "Maria Rossi", "altra")
+            .is_err());
+        st.retire_shared(&mine.uuid, "M.", "mrossi").unwrap();
+        assert!(st.shared_symbols("M.", "mrossi").symbols.is_empty());
+        for d in [sd, lib, dd] {
+            let _ = std::fs::remove_dir_all(d);
+        }
+    }
+
+    #[test]
+    fn senza_biblioteca_i_simboli_della_scuola_sono_vuoti_e_non_si_condivide() {
+        let sd = tmp("simboli-vuoti");
+        let st = LibraryState::new(sd.clone(), SharedConfig::default(), vec![]);
+        let custom = CustomStore::open(sd.join("custom"));
+        let l = st.shared_symbols("M", "m");
+        assert!(!l.configured && l.symbols.is_empty());
+        assert!(st.share_symbol("x", &custom, "M", "m").is_err());
+        let _ = std::fs::remove_dir_all(sd);
     }
 }
