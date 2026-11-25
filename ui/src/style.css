@@ -425,3 +425,18 @@ body { margin: 0; }
 .first-box input { width: 100%; box-sizing: border-box; margin: 8px 0; padding: 8px; font: inherit; }
 .first-box button { padding: 6px 16px; border: 1px solid #2a5db0; border-radius: 4px; background: #2a5db0; color: #fff; font: inherit; cursor: pointer; }
 .first-box button:disabled { opacity: 0.5; cursor: default; }
+
+/* ---- Originale aggiornato, pubblicazione, versione (M9b-2) ---- */
+.origbar { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 8px 14px; background: #e8f0ff; border-bottom: 1px solid #7a9bd8; font-size: 14px; }
+.origbar[hidden] { display: none; }
+.origbar button { padding: 4px 10px; border: 1px solid #2a5db0; border-radius: 4px; background: #fff; font: inherit; cursor: pointer; }
+.orig-text { flex: 1 1 320px; }
+.update-note { color: #7a3d00; font-size: 13px; padding: 2px 10px; background: #fff4d6; border: 1px solid #e0b030; border-radius: 12px; }
+.update-note[hidden] { display: none; }
+.docs-tag.pub { background: #dff3e6; color: #1f6b3a; }
+.docs-note.ok { color: #1f6b3a; }
+.pub-form { display: flex; flex-direction: column; gap: 8px; }
+.pub-form label { display: flex; flex-direction: column; gap: 3px; font-size: 13px; color: #444; }
+.pub-form input { padding: 6px 8px; font: inherit; }
+.pub-form .lib-actions { margin-top: 4px; }
+.docs-row button:disabled { opacity: 0.5; cursor: default; }

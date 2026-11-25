@@ -62,7 +62,7 @@ const MOCK = `
     }
     return out;
   }
-  window.__mock = { calls, delay: 4, fail: 0, alts: [], searches: [], altDelay: 3, custom: [], imports: [], docsStore: new Map(), saves: [], saveFail: 0, saveDelay: 0, conflictNext: false, broken: 0, readOnly: {}, mediaMap: [], lib: Object.assign({ configured: false, path: null, reachable: true, name: 'Maria', candidates: [], entries: [], cached: [], incomplete: 0, setCalls: [], scans: 0, adapts: [], adaptFail: false, nameFail: false }, window.__libInit || {}) };
+  window.__mock = { calls, delay: 4, fail: 0, alts: [], searches: [], altDelay: 3, custom: [], imports: [], docsStore: new Map(), saves: [], saveFail: 0, saveDelay: 0, conflictNext: false, broken: 0, readOnly: {}, mediaMap: [], lib: Object.assign({ configured: false, path: null, reachable: true, name: 'Maria', candidates: [], entries: [], cached: [], incomplete: 0, setCalls: [], scans: 0, adapts: [], adaptFail: false, nameFail: false, user: 'maria', admins: [], publishes: [], updates: [], retires: [], opens: [], publishFail: '', updateMode: '', retireFail: '', version: null }, window.__libInit || {}) };
   return {
     symbolize: (paras, policy, locks) => { calls.push({ texts: paras.map((p) => p.text), paras, locks, policy }); return new Promise((r, rej) => setTimeout(() => { if (window.__mock.fail > 0) { window.__mock.fail--; rej(new Error('motore guasto')); } else r(paras.map((p) => tokens(p.text, policy, p.forced, locks))); }, window.__mock.delay)); },
     alternatives: (para, policy, locks, s, e) => { window.__mock.alts.push({ para, s, e }); return new Promise((r) => setTimeout(() => r([1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => ({ picto: 1000 + i, keyword: 'alt' + i, reason: 'altro senso', image: i !== 3 }))), window.__mock.altDelay)); },
@@ -78,7 +78,7 @@ const MOCK = `
         if (!file) { let n = 1; do { file = (p.title || 'Senza titolo') + (n > 1 ? ' (' + n + ')' : '') + '.caa'; n++; } while (store.has(file)); }
         const prev = store.get(file);
         const conflict = !!window.__mock.conflictNext; window.__mock.conflictNext = false;
-        const entry = { conflict, file, id: prev ? prev.entry.id : 'id-' + store.size, title: p.title, modified: new Date(Date.now() + store.size * 1000).toISOString(), rev: (prev ? prev.entry.rev : 0) + 1, author: 'Maria', origin: p.origin || null };
+        const entry = { conflict, published_rev: prev ? prev.entry.published_rev : undefined, file, id: prev ? prev.entry.id : 'id-' + store.size, title: p.title, modified: new Date(Date.now() + store.size * 1000).toISOString(), rev: (prev ? prev.entry.rev : 0) + 1, author: 'Maria', origin: p.origin || null };
         store.set(file, { entry, payload: JSON.parse(JSON.stringify(p)) });
         return entry;
       },
@@ -90,20 +90,48 @@ const MOCK = `
       remove: async (file) => { window.__mock.docsStore.delete(file); },
     } : undefined,
     library: window.__withLibrary ? {
-      status: async () => { const l = window.__mock.lib; return { configured: l.configured, path: l.path, reachable: l.reachable, display_name: l.name, admins: [] }; },
+      status: async () => { const l = window.__mock.lib; return { configured: l.configured, path: l.path, reachable: l.reachable, display_name: l.name, user: l.user, admins: l.admins }; },
       find: async () => window.__mock.lib.candidates,
       setFolder: async (path, create) => {
         const l = window.__mock.lib;
         l.setCalls.push({ path, create });
         if (path.includes('sbagliato') && !create) throw new Error('questa cartella non contiene una «biblioteca»: scegli quella giusta, oppure creala qui');
         l.configured = true; l.path = path;
-        return { configured: true, path, reachable: l.reachable, display_name: l.name, admins: [] };
+        return { configured: true, path, reachable: l.reachable, display_name: l.name, user: l.user, admins: l.admins };
       },
       scan: async () => {
         const l = window.__mock.lib; l.scans++;
         if (!l.configured) return { configured: false, entries: [], incomplete: 0, offline: false };
         return { configured: true, entries: l.reachable ? l.entries : l.cached, incomplete: l.reachable ? l.incomplete : 0, offline: !l.reachable };
       },
+      publish: async (file, meta) => {
+        const l = window.__mock.lib; l.publishes.push({ file, meta, savedBefore: window.__mock.saves.length });
+        if (l.publishFail) throw new Error(l.publishFail);
+        const v = window.__mock.docsStore.get(file);
+        v.entry = { ...v.entry, title: meta.title, published_rev: 1 };
+        l.entries.unshift({ file: v.entry.id + '.caa', id: v.entry.id, title: meta.title, author: l.name, subject: meta.subject, level: meta.level, tags: meta.tags, created: new Date().toISOString(), modified: new Date().toISOString(), rev: 1, size: 100, conflict: false });
+        return { kind: 'published', rev: 1, entry: v.entry };
+      },
+      update: async (file) => {
+        const l = window.__mock.lib; l.updates.push({ file, savedBefore: window.__mock.saves.length });
+        if (l.updateMode === 'fail') throw new Error('Luca lo sta aggiornando adesso: riprova tra poco');
+        const v = window.__mock.docsStore.get(file);
+        if (l.updateMode === 'new') { v.entry = { ...v.entry, id: 'new-id', published_rev: 1 }; return { kind: 'saved_as_new', rev: 1, entry: v.entry }; }
+        const rev = (v.entry.published_rev || 1) + 1;
+        v.entry = { ...v.entry, published_rev: rev };
+        return { kind: 'updated', rev, entry: v.entry };
+      },
+      retire: async (file) => {
+        const l = window.__mock.lib; l.retires.push(file);
+        if (l.retireFail) throw new Error(l.retireFail);
+        l.entries = l.entries.filter((e) => e.file !== file);
+      },
+      open: async (file) => {
+        const l = window.__mock.lib; l.opens.push(file);
+        const e = l.entries.concat(l.cached).find((x) => x.file === file);
+        return { entry: { file, id: e.id, title: e.title, modified: e.modified, rev: e.rev, author: e.author, origin: null, published_rev: null }, document: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Originale di ' + e.title }] }] }, render: [], prefs: {}, sense_locks: [], lexicon: 'lex-new', created: e.created, read_only: true, media: [] };
+      },
+      version: async () => window.__mock.lib.version,
       adapt: async (file) => {
         const l = window.__mock.lib; l.adapts.push(file);
         if (l.adaptFail) throw new Error('il documento non è disponibile');
@@ -1788,4 +1816,210 @@ test("Adatta: una copia personale che si apre subito; se non riesce, lo dice", a
   await btn.click();
   await expect(page.locator(".docs-panel")).toContainText("Non riesco a fare la copia di «La città di Marco»");
   await expect(btn).toBeEnabled();
+});
+
+// ---- M9b-2: Pubblica, Aggiorna, Ritira, originale aggiornato, versione ----
+
+const mine = (page: Page, title: string) => page.locator(".docs-panel .docs-row", { hasText: title });
+
+test("Pubblica: il documento si salva, si compila il modulo e finisce in biblioteca", async ({ page }) => {
+  await open(page, "", true, { configured: true, path: "G:/CAA", entries: LIB_ENTRIES });
+  await page.locator(".ProseMirror").click();
+  await page.keyboard.type("La mia storia sociale");
+  await page.getByRole("button", { name: "Documenti" }).click(); // subito, senza aspettare il salvataggio automatico
+  const row = mine(page, "La mia storia sociale");
+  await expect(row.getByRole("button", { name: "Pubblica" })).toBeEnabled();
+  await row.getByRole("button", { name: "Pubblica" }).click();
+  const form = page.locator(".pub-form");
+  await expect(form).toContainText("Pubblica «La mia storia sociale» nella biblioteca");
+  await expect(form.getByLabel("Titolo")).toHaveValue("La mia storia sociale");
+  // I suggerimenti vengono dai documenti già in biblioteca (senza doppioni).
+  expect(await form.locator("datalist option").evaluateAll((o) => o.map((x) => (x as HTMLOptionElement).value))).toEqual(["Italiano", "Matematica", "Primaria", "Secondaria"]);
+  await form.getByLabel("Titolo").fill("Il bus: storia sociale");
+  await form.getByLabel("Materia").fill("Italiano");
+  await form.getByLabel("Livello").fill("Primaria");
+  await form.getByLabel("Etichette").fill("storia sociale, bus ,");
+  await form.getByRole("button", { name: "Pubblica" }).click();
+  await expect(page.locator(".docs-panel")).toContainText("Pubblicato in biblioteca (revisione 1)");
+  const sent = await page.evaluate(() => (window as any).__mock.lib.publishes);
+  expect(sent).toHaveLength(1);
+  expect(sent[0].meta).toEqual({ title: "Il bus: storia sociale", subject: "Italiano", level: "Primaria", tags: ["storia sociale", "bus"] });
+  // Il documento era già salvato quando si è pubblicato (il testo che si vede è quello pubblicato).
+  const saves = await mockSaves(page);
+  expect(saves.length).toBeGreaterThan(0);
+  expect(JSON.stringify(saves.at(-1).document)).toContain("La mia storia sociale");
+  expect(sent[0].savedBefore).toBe(saves.length);
+  // Ora il documento risulta in biblioteca e offre «Aggiorna in biblioteca» al posto di «Pubblica».
+  const after = mine(page, "Il bus");
+  await expect(after.locator(".docs-tag.pub")).toContainText("in biblioteca (rev. 1)");
+  await expect(after.getByRole("button", { name: "Aggiorna in biblioteca" })).toBeVisible();
+  await expect(after.getByRole("button", { name: "Pubblica", exact: true })).toHaveCount(0);
+  // E compare nella scheda Biblioteca.
+  await page.locator(".docs-panel").getByRole("button", { name: "Biblioteca" }).click();
+  await expect(page.locator(".docs-panel .lib-row", { hasText: "Il bus: storia sociale" })).toBeVisible();
+});
+
+test("Pubblica: un errore resta nel modulo; senza biblioteca collegata o senza Drive i pulsanti non ci sono o sono spenti", async ({ page }) => {
+  await open(page, "", true, { configured: true, path: "G:/CAA", entries: [], publishFail: "questo documento è già in biblioteca: usa «Aggiorna in biblioteca»" });
+  await page.locator(".ProseMirror").click();
+  await page.keyboard.type("Prova");
+  await expect.poll(async () => (await mockSaves(page)).length).toBeGreaterThan(0);
+  await page.getByRole("button", { name: "Documenti" }).click();
+  await mine(page, "Prova").getByRole("button", { name: "Pubblica" }).click();
+  await page.locator(".pub-form").getByRole("button", { name: "Pubblica" }).click();
+  await expect(page.locator(".pub-form")).toContainText("già in biblioteca");
+  await expect(page.locator(".pub-form").getByRole("button", { name: "Pubblica" })).toBeEnabled();
+  await page.locator(".pub-form").getByRole("button", { name: "Annulla" }).click();
+  await expect(mine(page, "Prova")).toBeVisible();
+  // Senza Drive il pulsante è spento (non si scrive).
+  await page.evaluate(() => { (window as any).__mock.lib.reachable = false; });
+  await page.locator(".docs-panel").getByRole("button", { name: "Chiudi" }).click();
+  await page.getByRole("button", { name: "Documenti" }).click();
+  await expect(mine(page, "Prova").getByRole("button", { name: "Pubblica" })).toBeDisabled();
+});
+
+test("senza biblioteca collegata non ci sono Pubblica né Aggiorna", async ({ page }) => {
+  await open(page, "", true, { configured: false });
+  await page.locator(".ProseMirror").click();
+  await page.keyboard.type("Prova");
+  await expect.poll(async () => (await mockSaves(page)).length).toBeGreaterThan(0);
+  await page.getByRole("button", { name: "Documenti" }).click();
+  await expect(mine(page, "Prova")).toBeVisible();
+  await expect(mine(page, "Prova").getByRole("button", { name: /Pubblica|Aggiorna/ })).toHaveCount(0);
+});
+
+test("Aggiorna in biblioteca: revisione avanti, salvato come nuovo se la biblioteca è andata avanti, errori", async ({ page }) => {
+  await open(page, "", true, { configured: true, path: "G:/CAA", entries: [] });
+  await page.locator(".ProseMirror").click();
+  await page.keyboard.type("Storia da aggiornare");
+  await expect.poll(async () => (await mockSaves(page)).length).toBeGreaterThan(0);
+  await page.getByRole("button", { name: "Documenti" }).click();
+  await mine(page, "Storia da aggiornare").getByRole("button", { name: "Pubblica" }).click();
+  await page.locator(".pub-form").getByRole("button", { name: "Pubblica" }).click();
+  await expect(page.locator(".docs-panel")).toContainText("Pubblicato in biblioteca");
+  const upd = () => mine(page, "Storia da aggiornare").getByRole("button", { name: "Aggiorna in biblioteca" });
+  // Aggiorna: revisione 2.
+  await upd().click();
+  await expect(page.locator(".docs-panel")).toContainText("Aggiornato in biblioteca: revisione 2");
+  await expect(mine(page, "Storia da aggiornare").locator(".docs-tag.pub")).toContainText("rev. 2");
+  // Il blocco di un altro: errore chiaro, nessun cambiamento.
+  await page.evaluate(() => { (window as any).__mock.lib.updateMode = "fail"; });
+  await upd().click();
+  await expect(page.locator(".docs-panel")).toContainText("Luca lo sta aggiornando adesso");
+  await expect(mine(page, "Storia da aggiornare").locator(".docs-tag.pub")).toContainText("rev. 2");
+  // La biblioteca era andata avanti: il documento si salva come nuovo e il documento aperto ne prende l'identità.
+  await page.evaluate(() => { (window as any).__mock.lib.updateMode = "new"; });
+  await upd().click();
+  await expect(page.locator(".docs-panel")).toContainText("ho salvato questo documento come nuovo in biblioteca");
+  await page.locator(".docs-panel").getByRole("button", { name: "Chiudi" }).click();
+  await page.locator(".ProseMirror").click();
+  await page.keyboard.press("End");
+  await page.keyboard.type("!");
+  await expect.poll(async () => (await mockSaves(page)).at(-1)?.id).toBe("new-id");
+  // Il documento aperto era quello: si salva prima di aggiornare.
+  const updates = await page.evaluate(() => (window as any).__mock.lib.updates);
+  expect(updates.length).toBe(3);
+});
+
+test("Ritira: solo l'autore o un amministratore, con conferma", async ({ page }) => {
+  await open(page, "", true, {
+    configured: true,
+    path: "G:/CAA",
+    name: "Maria Rossi",
+    user: "mrossi",
+    admins: [],
+    entries: [
+      { ...LIB_ENTRIES[0], author: "Maria Rossi" },
+      { ...LIB_ENTRIES[1], author: "Luca Bianchi" },
+      { ...LIB_ENTRIES[2], author: "Anna Verdi" },
+    ],
+  });
+  await tabLibrary(page);
+  const panel = page.locator(".docs-panel");
+  // Solo il suo: un solo pulsante «Ritira».
+  await expect(panel.getByRole("button", { name: "Ritira" })).toHaveCount(1);
+  await expect(panel.locator(".lib-row", { hasText: "La città di Marco" }).getByRole("button", { name: "Ritira" })).toBeVisible();
+  // Un errore: messaggio, il documento resta.
+  await page.evaluate(() => { (window as any).__mock.lib.retireFail = "il documento non è più in biblioteca"; });
+  await panel.getByRole("button", { name: "Ritira" }).click();
+  await expect(panel).toContainText("Non riesco a ritirare «La città di Marco»");
+  await expect(panel.locator(".lib-row")).toHaveCount(3);
+  // Riuscito: esce dall'elenco.
+  await page.evaluate(() => { (window as any).__mock.lib.retireFail = ""; });
+  await panel.getByRole("button", { name: "Ritira" }).click();
+  await expect(panel.locator(".lib-row")).toHaveCount(2);
+  expect(await page.evaluate(() => (window as any).__mock.lib.retires)).toEqual(["citta.caa", "citta.caa"]);
+});
+
+test("Ritira: gli amministratori lo vedono su tutti i documenti", async ({ page }) => {
+  await open(page, "", true, { configured: true, path: "G:/CAA", name: "Segretaria Anna", user: "Segreteria", admins: ["segreteria"], entries: LIB_ENTRIES });
+  await tabLibrary(page);
+  await expect(page.locator(".docs-panel").getByRole("button", { name: "Ritira" })).toHaveCount(3);
+});
+
+test("«Originale aggiornato»: avviso sulla copia, Ignora, apri l'originale e torna alla copia", async ({ page }) => {
+  await open(page, "", true, { configured: true, path: "G:/CAA", entries: [{ ...LIB_ENTRIES[1], rev: 3 }] });
+  // Una copia adattata alla revisione 1 dell'originale (che adesso è alla 3).
+  await page.evaluate(() => {
+    const p = (window as any).caaProto;
+    const d = p.view.state.schema.nodes.doc.create(null, [p.view.state.schema.nodes.paragraph.create(null, p.view.state.schema.text("La mia copia delle frazioni"))]);
+    (window as any).__mock.docsStore.set("Copia.caa", { entry: { file: "Copia.caa", id: "copy-1", title: "Le frazioni", modified: new Date().toISOString(), rev: 1, author: "Maria", origin: { id: "id-2", rev: 1 } }, payload: { document: d.toJSON(), prefs: {}, render: [], sense_locks: [], lexicon: "lex-new" } });
+  });
+  await openStored(page, "Le frazioni");
+  const bar = page.locator(".origbar");
+  await expect(bar).toContainText("L'originale «Le frazioni» è stato aggiornato in biblioteca (revisione 3)");
+  // «Apri l'originale»: sola lettura, con la barra per tornare.
+  await bar.getByRole("button", { name: "Apri l'originale" }).click();
+  await expect(bar).toContainText("Stai guardando l'originale «Le frazioni»");
+  expect(await page.evaluate(() => (window as any).caaProto.view.state.doc.textContent)).toBe("Originale di Le frazioni");
+  await expect(page.locator(".ProseMirror")).toHaveAttribute("contenteditable", "false");
+  const savesBefore = (await mockSaves(page)).length;
+  await page.locator(".ProseMirror").click();
+  await page.keyboard.type("niente");
+  await page.waitForTimeout(400);
+  expect((await mockSaves(page)).length).toBe(savesBefore);
+  // «Torna alla mia copia»: la copia, modificabile, e l'avviso è ancora lì.
+  await bar.getByRole("button", { name: "Torna alla mia copia" }).click();
+  expect(await page.evaluate(() => (window as any).caaProto.view.state.doc.textContent)).toBe("La mia copia delle frazioni");
+  await expect(page.locator(".ProseMirror")).toHaveAttribute("contenteditable", "true");
+  await expect(bar).toContainText("è stato aggiornato in biblioteca (revisione 3)");
+  // «Ignora» lo toglie, e non torna per quella revisione (nemmeno riaprendo il documento).
+  await bar.getByRole("button", { name: "Ignora" }).click();
+  await expect(bar).toBeHidden();
+  await page.getByRole("button", { name: "Nuovo" }).click();
+  await openStored(page, "Le frazioni");
+  await expect(page.locator(".ProseMirror")).toContainText("La mia copia delle frazioni");
+  await page.waitForTimeout(400);
+  await expect(bar).toBeHidden();
+  // Con una revisione ancora più nuova, l'avviso torna.
+  await page.evaluate(() => { (window as any).__mock.lib.entries[0].rev = 4; });
+  await page.getByRole("button", { name: "Nuovo" }).click();
+  await openStored(page, "Le frazioni");
+  await expect(bar).toContainText("revisione 4");
+});
+
+test("«Originale aggiornato»: niente avviso se la revisione è la stessa o la copia non viene da una biblioteca", async ({ page }) => {
+  await open(page, "", true, { configured: true, path: "G:/CAA", entries: [{ ...LIB_ENTRIES[1], rev: 2 }] });
+  await page.evaluate(() => {
+    const p = (window as any).caaProto;
+    const d = p.view.state.schema.nodes.doc.create(null, [p.view.state.schema.nodes.paragraph.create(null, p.view.state.schema.text("Copia"))]);
+    const mk = (file: string, origin: any) => (window as any).__mock.docsStore.set(file, { entry: { file, id: "i-" + file, title: file.replace(".caa", ""), modified: new Date().toISOString(), rev: 1, author: "Maria", origin }, payload: { document: d.toJSON(), prefs: {}, render: [], sense_locks: [], lexicon: "lex-new" } });
+    mk("Stessa.caa", { id: "id-2", rev: 2 });
+    mk("Personale.caa", null);
+    mk("Ritirata.caa", { id: "id-introvabile", rev: 1 });
+  });
+  for (const t of ["Stessa", "Personale", "Ritirata"]) {
+    await page.getByRole("button", { name: "Nuovo" }).click();
+    await openStored(page, t);
+    await page.waitForTimeout(300);
+    await expect(page.locator(".origbar")).toBeHidden();
+  }
+});
+
+test("versione nuova del programma annunciata nel Drive", async ({ page }) => {
+  await open(page, "", true, { configured: true, path: "G:/CAA", version: { version: "0.2.0", notes: "Nuove funzioni" } });
+  await expect(page.locator(".update-note")).toContainText("È disponibile la versione 0.2.0");
+  await expect(page.locator(".update-note")).toHaveAttribute("title", /Nuove funzioni/);
+  await page.evaluate(() => { (window as any).__mock.lib.version = null; });
+  await expect(page.locator(".update-note")).toBeHidden({ timeout: 5000 });
 });

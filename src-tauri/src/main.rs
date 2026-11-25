@@ -17,7 +17,9 @@ use tauri::{Emitter, Manager, State};
 
 use custom::{app_dir, custom_dir, is_custom, CustomStore, CustomSymbol};
 use docs::{docs_dir, DocEntry, DocStore, Opened, SavePayload};
-use library::{FolderDto, LibScan, LibStatus, LibraryState};
+use library::{
+    os_user, FolderDto, LibScan, LibStatus, LibraryState, PublishMeta, PublishOutcome, VersionInfo,
+};
 
 use bridge::{
     candidates_dto, check_choices, check_request, data_candidates, find_data_dir, image_path,
@@ -385,6 +387,43 @@ fn library_adapt(state: State<'_, Arc<Backend>>, file: String) -> Result<DocEntr
         .adapt(&file, &state.docs, &author_name(&state))
 }
 
+#[tauri::command(async)]
+fn library_publish(
+    state: State<'_, Arc<Backend>>,
+    file: String,
+    meta: PublishMeta,
+) -> Result<PublishOutcome, String> {
+    state
+        .library
+        .publish(&file, &meta, &state.docs, &author_name(&state))
+}
+
+#[tauri::command(async)]
+fn library_update(state: State<'_, Arc<Backend>>, file: String) -> Result<PublishOutcome, String> {
+    state
+        .library
+        .update(&file, &state.docs, &author_name(&state))
+}
+
+#[tauri::command(async)]
+fn library_retire(state: State<'_, Arc<Backend>>, file: String) -> Result<(), String> {
+    state
+        .library
+        .retire(&file, &author_name(&state), &os_user())
+}
+
+/// L'originale di una biblioteca per guardarlo (sola lettura).
+#[tauri::command(async)]
+fn library_open(state: State<'_, Arc<Backend>>, file: String) -> Result<Opened, String> {
+    state.library.open_original(&file, &state.custom)
+}
+
+/// Se il Drive annuncia una versione del programma più recente.
+#[tauri::command(async)]
+fn library_version(state: State<'_, Arc<Backend>>) -> Option<VersionInfo> {
+    state.library.newer_version(env!("CARGO_PKG_VERSION"))
+}
+
 /// Chiude il programma: la pagina lo chiede dopo aver salvato.
 #[tauri::command]
 fn exit_app(app: tauri::AppHandle) {
@@ -454,6 +493,11 @@ fn main() {
             library_set_folder,
             library_scan,
             library_adapt,
+            library_publish,
+            library_update,
+            library_retire,
+            library_open,
+            library_version,
             exit_app
         ])
         .run(tauri::generate_context!())

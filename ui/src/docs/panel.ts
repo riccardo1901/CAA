@@ -1,6 +1,7 @@
 // Il pannello «Documenti» (M9a): due schede, «I miei documenti» (la cartella `Documenti\CAA`) e
 // «Biblioteca» (il Drive condiviso dell'istituto, in arrivo con M9b).
 import type { DocClient, DocEntry, LibraryClient, LibStatus } from "../engine/client";
+import { distinct } from "./library";
 import { showLibraryTab } from "./library";
 import { formatWhen } from "./panel-format";
 import type { Session } from "./session";
@@ -73,10 +74,12 @@ export function createDocsPanel(docs: DocClient, session: Session, confirmDelete
       if (e.target === overlay) close();
     });
 
-    const showMine = async (): Promise<void> => {
+    const showMine = async (message?: { text: string; ok: boolean }): Promise<void> => {
       mine.classList.add("on");
       library.classList.remove("on");
       body.replaceChildren(el("p", "docs-note", "Carico i documenti…"));
+      // Il documento aperto si salva prima: così compare nell'elenco (e si può pubblicare) com'è adesso.
+      await session.flush();
       let list;
       try {
         list = await docs.list();
@@ -84,15 +87,26 @@ export function createDocsPanel(docs: DocClient, session: Session, confirmDelete
         body.replaceChildren(el("p", "docs-note warn", `Non riesco a leggere la cartella dei documenti: ${String(e)}`));
         return;
       }
+      // Lo stato della biblioteca decide se si può pubblicare o aggiornare.
+      let lib: LibStatus | null = null;
+      if (opts.library) {
+        try {
+          lib = await opts.library.status();
+        } catch {
+          lib = null;
+        }
+      }
       if (!overlay) return;
       const current = session.state().file;
-      const rows: HTMLElement[] = [];
-      for (const entry of list.entries) rows.push(row(entry, entry.file === current));
       const parts: HTMLElement[] = [];
-      if (rows.length === 0) parts.push(el("p", "docs-note", "Nessun documento salvato. Scrivi qualcosa: il documento si salva da solo."));
-      else parts.push(el("ul", "docs-list"));
-      const ul = parts[0].tagName === "UL" ? parts[0] : null;
-      rows.forEach((r) => ul?.append(r));
+      if (message) parts.push(el("p", message.ok ? "docs-note ok" : "docs-note warn", message.text));
+      if (list.entries.length === 0) {
+        parts.push(el("p", "docs-note", "Nessun documento salvato. Scrivi qualcosa: il documento si salva da solo."));
+      } else {
+        const ul = el("ul", "docs-list");
+        for (const entry of list.entries) ul.append(row(entry, entry.file === current, lib));
+        parts.push(ul);
+      }
       if (list.broken > 0) {
         parts.push(el("p", "docs-note warn", `${list.broken} ${list.broken === 1 ? "file non si legge" : "file non si leggono"} (forse sono ancora in sincronizzazione o rovinati).`));
       }
@@ -100,11 +114,107 @@ export function createDocsPanel(docs: DocClient, session: Session, confirmDelete
       body.replaceChildren(...parts);
     };
 
-    const row = (entry: DocEntry, isCurrent: boolean): HTMLElement => {
+    /** Il documento aperto si salva prima di pubblicarlo o aggiornarlo, così il file è quello che si vede. */
+    const saveIfCurrent = async (file: string): Promise<boolean> => (file === session.state().file ? session.flush() : true);
+
+    const update = async (entry: DocEntry): Promise<void> => {
+      if (!opts.library) return;
+      if (!(await saveIfCurrent(entry.file))) {
+        void showMine({ text: "Il documento aperto non si è salvato: riprova tra poco.", ok: false });
+        return;
+      }
+      try {
+        const out = await opts.library.update(entry.file);
+        if (entry.file === session.state().file) session.adopt(out.entry);
+        void showMine(
+          out.kind === "saved_as_new"
+            ? { text: "La biblioteca era già andata avanti (qualcun altro, o un tuo altro computer, l'ha aggiornata): ho salvato questo documento come nuovo in biblioteca. Da adesso aggiorni quello. Il precedente non è stato toccato.", ok: true }
+            : { text: `Aggiornato in biblioteca: revisione ${out.rev}.`, ok: true },
+        );
+      } catch (e) {
+        void showMine({ text: `Non riesco ad aggiornare «${entry.title}»: ${String(e)}`, ok: false });
+      }
+    };
+
+    /** Il modulo di pubblicazione: titolo, materia, livello, etichette (con i suggerimenti dei documenti già in biblioteca). */
+    const publishForm = async (entry: DocEntry): Promise<void> => {
+      if (!opts.library) return;
+      let known: { subject: string[]; level: string[] } = { subject: [], level: [] };
+      try {
+        const scan = await opts.library.scan();
+        known = { subject: distinct(scan.entries.map((x) => x.subject)), level: distinct(scan.entries.map((x) => x.level)) };
+      } catch {
+        /* i suggerimenti sono facoltativi */
+      }
+      if (!overlay) return;
+      const form = el("form", "pub-form");
+      const field = (label: string, value: string, list?: string[], aria?: string): HTMLInputElement => {
+        const l = el("label", "", label);
+        const i = el("input");
+        i.type = "text";
+        i.value = value;
+        i.setAttribute("aria-label", aria ?? label);
+        if (list) {
+          const id = `dl-${label}`;
+          const dl = el("datalist");
+          dl.id = id;
+          for (const v of list) dl.append(Object.assign(document.createElement("option"), { value: v }));
+          i.setAttribute("list", id);
+          l.append(dl);
+        }
+        l.append(i);
+        form.append(l);
+        return i;
+      };
+      form.append(el("h2", "", `Pubblica «${entry.title}» nella biblioteca`));
+      form.append(el("p", "docs-note", "Gli altri docenti potranno farne una copia da adattare; solo tu potrai aggiornarlo."));
+      const title = field("Titolo", entry.title);
+      const subject = field("Materia", "", known.subject);
+      const level = field("Livello", "", known.level);
+      const tags = field("Etichette (separate da virgole)", "", undefined, "Etichette");
+      const err = el("p", "docs-note warn");
+      const actions = el("div", "lib-actions");
+      const go = el("button", "", "Pubblica");
+      go.type = "submit";
+      const cancel = el("button", "", "Annulla");
+      cancel.type = "button";
+      cancel.addEventListener("click", () => void showMine());
+      actions.append(go, cancel);
+      form.append(err, actions);
+      form.addEventListener("submit", (ev) => {
+        ev.preventDefault();
+        go.disabled = true;
+        err.textContent = "";
+        void (async () => {
+          if (!(await saveIfCurrent(entry.file))) {
+            go.disabled = false;
+            err.textContent = "Il documento aperto non si è salvato: riprova tra poco.";
+            return;
+          }
+          try {
+            const out = await opts.library!.publish(entry.file, {
+              title: title.value,
+              subject: subject.value,
+              level: level.value,
+              tags: tags.value.split(",").map((t) => t.trim()).filter(Boolean),
+            });
+            void showMine({ text: `Pubblicato in biblioteca (revisione ${out.rev}). Quando lo modifichi, premi «Aggiorna in biblioteca».`, ok: true });
+          } catch (e) {
+            go.disabled = false;
+            err.textContent = String(e);
+          }
+        })();
+      });
+      body.replaceChildren(form);
+      title.focus();
+    };
+
+    const row = (entry: DocEntry, isCurrent: boolean, lib: LibStatus | null): HTMLElement => {
       const li = el("li", isCurrent ? "docs-row current" : "docs-row");
       const info = el("div", "docs-info");
       info.append(el("strong", "", entry.title || entry.file), el("span", "docs-when", formatWhen(entry.modified)));
       if (entry.origin) info.append(el("span", "docs-tag", "copia"));
+      if (entry.published_rev != null) info.append(el("span", "docs-tag pub", `in biblioteca (rev. ${entry.published_rev})`));
       const openBtn = el("button", "", "Apri");
       openBtn.type = "button";
       openBtn.addEventListener("click", () => {
@@ -129,7 +239,17 @@ export function createDocsPanel(docs: DocClient, session: Session, confirmDelete
           (e: unknown) => body.prepend(el("p", "docs-note warn", `Non riesco a eliminare: ${String(e)}`)),
         );
       });
-      li.append(info, openBtn, delBtn);
+      li.append(info, openBtn);
+      // Pubblica o aggiorna in biblioteca: solo con la biblioteca collegata (e raggiungibile per scrivere).
+      if (lib?.configured) {
+        const pub = el("button", "", entry.published_rev != null ? "Aggiorna in biblioteca" : "Pubblica");
+        pub.type = "button";
+        pub.disabled = !lib.reachable;
+        pub.title = lib.reachable ? "" : "Il Drive non risponde: riprova quando è raggiungibile";
+        pub.addEventListener("click", () => void (entry.published_rev != null ? update(entry) : publishForm(entry)));
+        li.append(pub);
+      }
+      li.append(delBtn);
       return li;
     };
 
@@ -143,6 +263,7 @@ export function createDocsPanel(docs: DocClient, session: Session, confirmDelete
       showLibraryTab(body, {
         library: opts.library,
         changed: (s) => opts.libraryChanged?.(s),
+        confirm: (m) => window.confirm(m),
         openCopy: async (file) => {
           await session.openFile(file);
           close();

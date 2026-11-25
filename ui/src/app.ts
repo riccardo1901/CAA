@@ -11,6 +11,7 @@ import { hooks } from "./editor/menuHooks";
 import { createDocsPanel } from "./docs/panel";
 import { firstRun } from "./docs/firstrun";
 import { createLexBar } from "./docs/lexbar";
+import { createOriginalBar } from "./docs/originalbar";
 import { createSession, type Session } from "./docs/session";
 import { createSidebar, installSidebar } from "./sidebar";
 import { createBars } from "./toolbar";
@@ -77,7 +78,8 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
   // La riga dei documenti c'è solo se c'è l'archivio (nell'app); nelle prove senza archivio resta nascosta.
   bars.docbar.hidden = !docs;
   const lexBar = createLexBar((p) => client?.url(p) ?? "");
-  app.append(bars.banner, lexBar.root, bars.docbar, bars.toolbar, layoutEl, bars.statusbar);
+  const originalBar = createOriginalBar();
+  app.append(bars.banner, lexBar.root, originalBar.root, bars.docbar, bars.toolbar, layoutEl, bars.statusbar);
   if (docs) {
     const w = window as unknown as { __caaAutosaveMs?: number; __caaRetryMs?: number; __caaLibPollMs?: number };
     const baseBanner = (): void => {
@@ -103,6 +105,8 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
       titleInput: bars.titleInput,
       saveStatus: bars.saveStatus,
       lexBar,
+      library: client?.library,
+      originalBar,
       delayMs: w.__caaAutosaveMs,
       retryMs: w.__caaRetryMs,
     });
@@ -124,7 +128,26 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
     bars.docsButton.addEventListener("click", () => panel.open());
     bars.libStatus.addEventListener("click", () => panel.open("library"));
     if (lib) {
-      const poll = (): void => void lib.status().then(showLib, () => showLib(null));
+      // Ogni 2 minuti: stato del Drive, «originale aggiornato» per la copia aperta, versione nuova del programma.
+      const poll = (): void => {
+        void lib.status().then(
+          (s) => {
+            showLib(s);
+            if (s.reachable) void session?.recheckOriginal();
+          },
+          () => showLib(null),
+        );
+        void lib.version().then(
+          (v) => {
+            bars.updateNote.hidden = !v;
+            if (v) {
+              bars.updateNote.textContent = `È disponibile la versione ${v.version} del programma`;
+              bars.updateNote.title = v.notes ? `${v.notes} — chiedi al tecnico di aggiornare i computer` : "Chiedi al tecnico di aggiornare i computer";
+            }
+          },
+          () => (bars.updateNote.hidden = true),
+        );
+      };
       poll();
       window.setInterval(poll, w.__caaLibPollMs ?? 120_000);
       if (client?.settings) void firstRun({ settings: client.settings, library: lib, notice: (m) => hooks.notice?.(m), libraryStatus: showLib });

@@ -108,6 +108,8 @@ export interface Bars {
   saveStatus: HTMLElement;
   /** Lo stato della biblioteca nel Drive condiviso (nascosto finché non c'è). */
   libStatus: HTMLButtonElement;
+  /** «È disponibile la versione X»: nascosto finché il Drive non annuncia una versione più recente. */
+  updateNote: HTMLElement;
   toolbar: HTMLElement;
   statusbar: HTMLElement;
   banner: HTMLElement;
@@ -327,7 +329,9 @@ export function createBars(
   const libStatus = el("button", "lib-status");
   libStatus.type = "button";
   libStatus.hidden = true;
-  docbar.append(docsButton, titleInput, el("span", "grow"), libStatus, saveStatus);
+  const updateNote = el("span", "update-note");
+  updateNote.hidden = true;
+  docbar.append(docsButton, titleInput, el("span", "grow"), updateNote, libStatus, saveStatus);
 
   const getPrefs = (): DocPrefs => ({ preset: select.value as Preset, table: { ...table }, size: getSize(), cards: cards.checked });
   const setPrefs = (p: Partial<DocPrefs>): void => {
@@ -345,5 +349,5 @@ export function createBars(
     refresh();
   };
 
-  return { docbar, docsButton, titleInput, saveStatus, libStatus, toolbar, statusbar, banner, refresh, getPrefs, setPrefs, onPrefsChange: (cb) => prefsListeners.push(cb) };
+  return { docbar, docsButton, titleInput, saveStatus, libStatus, updateNote, toolbar, statusbar, banner, refresh, getPrefs, setPrefs, onPrefsChange: (cb) => prefsListeners.push(cb) };
 }

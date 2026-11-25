@@ -83,6 +83,8 @@ export interface DocEntry {
   origin: { id: string; rev: number } | null;
   /** Il file era stato cambiato da un'altra copia del programma: questo documento è stato salvato come nuovo. */
   conflict?: boolean;
+  /** La revisione che il documento ha in biblioteca, se è stato pubblicato. */
+  published_rev?: number | null;
 }
 
 export interface DocList {
@@ -154,6 +156,8 @@ export interface LibStatus {
   /** Il Drive risponde adesso. */
   reachable: boolean;
   display_name: string;
+  /** L'utente del sistema (Windows): serve a sapere se è fra gli amministratori. */
+  user: string;
   /** Nomi utente che possono ritirare i documenti degli altri (dal `config.json` del tecnico). */
   admins: string[];
 }
@@ -167,6 +171,29 @@ export interface LibScan {
   offline: boolean;
 }
 
+/** I dati che il docente scrive quando pubblica. */
+export interface PublishMeta {
+  title: string;
+  subject: string;
+  level: string;
+  tags: string[];
+}
+
+/** Com'è andata una pubblicazione o un aggiornamento. */
+export interface PublishOutcome {
+  /** `saved_as_new`: la biblioteca era andata avanti, il documento è stato salvato come nuovo. */
+  kind: "published" | "updated" | "saved_as_new";
+  rev: number;
+  /** Il documento personale com'è adesso. */
+  entry: DocEntry;
+}
+
+/** Una versione più recente del programma, annunciata nel Drive. */
+export interface VersionInfo {
+  version: string;
+  notes: string;
+}
+
 /** La biblioteca nel Drive condiviso (cartella sincronizzata da Google Drive per computer). */
 export interface LibraryClient {
   status(): Promise<LibStatus>;
@@ -176,6 +203,16 @@ export interface LibraryClient {
   scan(): Promise<LibScan>;
   /** Fa una copia personale (in «I miei documenti») di un documento di biblioteca. */
   adapt(file: string): Promise<DocEntry>;
+  /** Pubblica un documento personale (mai sopra uno esistente). */
+  publish(file: string, meta: PublishMeta): Promise<PublishOutcome>;
+  /** Aggiorna in biblioteca (solo l'autore). */
+  update(file: string): Promise<PublishOutcome>;
+  /** Ritira un documento di biblioteca (l'autore o un amministratore): va in archivio. */
+  retire(file: string): Promise<void>;
+  /** L'originale di biblioteca, da guardare in sola lettura. */
+  open(file: string): Promise<OpenedDoc>;
+  /** Una versione più recente del programma, se il Drive la annuncia. */
+  version(): Promise<VersionInfo | null>;
 }
 
 export interface EngineInfo {
@@ -238,6 +275,11 @@ export function tauriClient(): EngineClient {
       setFolder: (path, create) => invoke<LibStatus>("library_set_folder", { path, create }),
       scan: () => invoke<LibScan>("library_scan"),
       adapt: (file) => invoke<DocEntry>("library_adapt", { file }),
+      publish: (file, meta) => invoke<PublishOutcome>("library_publish", { file, meta }),
+      update: (file) => invoke<PublishOutcome>("library_update", { file }),
+      retire: (file) => invoke<void>("library_retire", { file }),
+      open: (file) => invoke<OpenedDoc>("library_open", { file }),
+      version: () => invoke<VersionInfo | null>("library_version"),
     },
     settings: {
       getName: () => invoke<string>("settings_get"),

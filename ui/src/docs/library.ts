@@ -42,6 +42,13 @@ export interface LibraryTabDeps {
   openCopy(file: string): Promise<void>;
   /** Lo stato della biblioteca è cambiato (cartella scelta): aggiorna l'indicatore in alto. */
   changed(status: LibStatus): void;
+  confirm(message: string): boolean;
+}
+
+/** Due nomi sono lo stesso (senza badare a maiuscole e spazi ai lati). */
+function sameName(a: string, b: string): boolean {
+  const x = a.trim().toLowerCase();
+  return x !== "" && x === b.trim().toLowerCase();
 }
 
 /** Disegna la scheda dentro `body`. */
@@ -202,6 +209,25 @@ export function showLibraryTab(body: HTMLElement, deps: LibraryTabDeps): void {
         );
       });
       li.append(info, adapt);
+      // Ritira: l'autore, o un amministratore (nomi utente di Windows nel config.json del tecnico).
+      const canRetire = sameName(e.author, status.display_name) || status.admins.some((a) => sameName(a, status.user));
+      if (canRetire) {
+        const retire = el("button", "", "Ritira");
+        retire.type = "button";
+        retire.title = "Il documento esce dalla biblioteca (resta nella cartella «archivio»)";
+        retire.addEventListener("click", () => {
+          if (!deps.confirm(`Ritirare «${e.title}» dalla biblioteca? Esce dall'elenco ma resta nella cartella «archivio» del Drive.`)) return;
+          retire.disabled = true;
+          library.retire(e.file).then(
+            () => void list(),
+            (err: unknown) => {
+              retire.disabled = false;
+              msg.textContent = `Non riesco a ritirare «${e.title}»: ${String(err)}`;
+            },
+          );
+        });
+        li.append(retire);
+      }
       return li;
     };
     for (const input of [q, subject, level]) input.addEventListener("input", draw);

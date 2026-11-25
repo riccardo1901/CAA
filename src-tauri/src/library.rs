@@ -10,9 +10,10 @@ use caa_lib::config::{clean_display_name, load_settings, save_settings, Settings
 use caa_lib::detect::{create_library, find_candidates, is_library, Candidate};
 use caa_lib::index::{load_index, save_index, scan, IndexCache, LibEntry};
 use caa_lib::reach::{is_reachable, with_timeout};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-use crate::docs::{DocEntry, DocStore};
+use crate::custom::CustomStore;
+use crate::docs::{opened_from, DocEntry, DocStore, Opened};
 
 /// Tempi massimi: l'interfaccia non deve restare ad aspettare un Drive che non risponde.
 const REACH_LIMIT: Duration = Duration::from_secs(2);
@@ -44,8 +45,54 @@ pub struct LibStatus {
     /// Il Drive risponde adesso.
     pub reachable: bool,
     pub display_name: String,
+    /// L'utente del sistema (Windows): serve a sapere se è fra gli amministratori.
+    pub user: String,
     /// Chi può ritirare i documenti degli altri (dal `config.json` del tecnico).
     pub admins: Vec<String>,
+}
+
+/// L'utente del sistema.
+pub fn os_user() -> String {
+    ["USERNAME", "USER"]
+        .iter()
+        .find_map(|k| std::env::var(k).ok().filter(|v| !v.is_empty()))
+        .unwrap_or_default()
+}
+
+fn now_secs() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_secs())
+}
+
+/// I dati che il docente scrive quando pubblica.
+#[derive(Debug, Deserialize)]
+pub struct PublishMeta {
+    pub title: String,
+    #[serde(default)]
+    pub subject: String,
+    #[serde(default)]
+    pub level: String,
+    #[serde(default)]
+    pub tags: Vec<String>,
+}
+
+/// Com'è andata una pubblicazione o un aggiornamento.
+#[derive(Debug, Serialize)]
+pub struct PublishOutcome {
+    /// `published`, `updated` o `saved_as_new` (la biblioteca era andata avanti: salvato come documento nuovo).
+    pub kind: &'static str,
+    /// La revisione in biblioteca.
+    pub rev: u32,
+    /// Il documento personale com'è adesso (con il ricordo della pubblicazione, e il nuovo id se `saved_as_new`).
+    pub entry: DocEntry,
+}
+
+/// Una versione più recente del programma, annunciata da `aggiornamenti\version.json`.
+#[derive(Debug, Serialize, PartialEq)]
+pub struct VersionInfo {
+    pub version: String,
+    pub notes: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -139,6 +186,7 @@ impl LibraryState {
             path: root.map(|r| r.to_string_lossy().to_string()),
             reachable,
             display_name: self.display_name(),
+            user: os_user(),
             admins: self.config.admins.clone(),
         }
     }
@@ -192,6 +240,148 @@ impl LibraryState {
         let copy = caa_lib::adapted_copy(&loaded.doc, author);
         docs.write_document(&copy)
     }
+}
+
+impl LibraryState {
+    /// La cartella della biblioteca, raggiungibile adesso (per scrivere non basta la cache).
+    fn writable_root(&self) -> Result<PathBuf, String> {
+        let root = self.root().ok_or("la biblioteca non è collegata")?;
+        if !is_reachable(&root.join("biblioteca"), REACH_LIMIT) {
+            return Err("il Drive non risponde: riprova quando è di nuovo raggiungibile".into());
+        }
+        Ok(root)
+    }
+
+    /// Pubblica un documento personale: lo scrive in biblioteca (mai sopra uno esistente) e ricorda la revisione.
+    pub fn publish(
+        &self,
+        file: &str,
+        meta: &PublishMeta,
+        docs: &DocStore,
+        author: &str,
+    ) -> Result<PublishOutcome, String> {
+        let root = self.writable_root()?;
+        let mut doc = docs.read(file)?.doc;
+        apply_meta(&mut doc.manifest, meta);
+        let lib = caa_lib::publish::publish(&root, &doc, author).map_err(|e| e.to_string())?;
+        let entry = docs.update_manifest(file, |m| {
+            apply_meta(m, meta);
+            m.published_rev = Some(lib.manifest.rev);
+        })?;
+        Ok(PublishOutcome {
+            kind: "published",
+            rev: lib.manifest.rev,
+            entry,
+        })
+    }
+
+    /// Aggiorna in biblioteca (solo l'autore). Se la biblioteca è andata avanti, il documento si salva come nuovo.
+    pub fn update(
+        &self,
+        file: &str,
+        docs: &DocStore,
+        user: &str,
+    ) -> Result<PublishOutcome, String> {
+        let root = self.writable_root()?;
+        let doc = docs.read(file)?.doc;
+        let known = doc
+            .manifest
+            .published_rev
+            .ok_or("questo documento non è stato pubblicato")?;
+        match caa_lib::publish::update(&root, &doc, known, user, now_secs()) {
+            Ok(caa_lib::publish::Updated::Revision { rev }) => {
+                let entry = docs.update_manifest(file, |m| m.published_rev = Some(rev))?;
+                Ok(PublishOutcome {
+                    kind: "updated",
+                    rev,
+                    entry,
+                })
+            }
+            Ok(caa_lib::publish::Updated::SavedAsNew { id }) => {
+                // Il documento personale diventa l'autore del documento nuovo.
+                let entry = docs.update_manifest(file, |m| {
+                    m.id = id;
+                    m.published_rev = Some(1);
+                })?;
+                Ok(PublishOutcome {
+                    kind: "saved_as_new",
+                    rev: 1,
+                    entry,
+                })
+            }
+            Err(caa_lib::publish::LibError::NotFound) => {
+                // Ritirato nel frattempo: il documento personale non risulta più pubblicato.
+                let _ = docs.update_manifest(file, |m| m.published_rev = None);
+                Err("il documento non è più in biblioteca (è stato ritirato): puoi pubblicarlo di nuovo".into())
+            }
+            Err(e) => Err(e.to_string()),
+        }
+    }
+
+    /// Ritira un documento (l'autore o un amministratore): va in `archivio\`.
+    pub fn retire(&self, file: &str, display_name: &str, os_user: &str) -> Result<(), String> {
+        let root = self.writable_root()?;
+        let admins = &self.config.admins;
+        match caa_lib::publish::retire(&root, file, display_name, admins) {
+            Err(caa_lib::publish::LibError::NotAuthor { .. }) => {
+                // Forse è un amministratore (i nomi del `config.json` sono nomi utente di Windows).
+                caa_lib::publish::retire(&root, file, os_user, admins)
+                    .map(|_| ())
+                    .map_err(|e| e.to_string())
+            }
+            other => other.map(|_| ()).map_err(|e| e.to_string()),
+        }
+    }
+
+    /// L'originale della biblioteca per guardarlo (sola lettura): dal Drive o, se non risponde, dalla copia locale.
+    pub fn open_original(&self, file: &str, custom: &CustomStore) -> Result<Opened, String> {
+        let root = self.root().unwrap_or_default();
+        let loaded = read_for_adapt(&root, &self.cache_dir.join("documenti"), file, READ_LIMIT)?;
+        Ok(opened_from(file, loaded, custom, true))
+    }
+
+    /// Se `aggiornamenti\version.json` annuncia una versione più recente di `current`.
+    pub fn newer_version(&self, current: &str) -> Option<VersionInfo> {
+        let root = self.root()?;
+        let path = root.join("aggiornamenti").join("version.json");
+        let raw = with_timeout(REACH_LIMIT, move || std::fs::read(&path).ok())??;
+        #[derive(Deserialize)]
+        struct V {
+            version: String,
+            #[serde(default)]
+            notes: String,
+        }
+        let v: V = serde_json::from_slice(&raw).ok()?;
+        caa_lib::publish::newer_version(current, &v.version).then(|| VersionInfo {
+            version: v.version.chars().take(40).collect(),
+            notes: v.notes.chars().take(300).collect(),
+        })
+    }
+}
+
+fn apply_meta(m: &mut caa_doc::Manifest, meta: &PublishMeta) {
+    let clean = |s: &str, max: usize| -> String {
+        s.chars()
+            .filter(|c| !c.is_control())
+            .collect::<String>()
+            .trim()
+            .chars()
+            .take(max)
+            .collect()
+    };
+    let title = clean(&meta.title, 120);
+    if !title.is_empty() {
+        m.title = title;
+    }
+    m.subject = clean(&meta.subject, 60);
+    m.level = clean(&meta.level, 60);
+    m.tags = meta
+        .tags
+        .iter()
+        .map(|t| clean(t, 40))
+        .filter(|t| !t.is_empty())
+        .take(12)
+        .collect();
 }
 
 #[cfg(test)]
@@ -343,5 +533,312 @@ mod tests {
             .adapt("x.caa", &DocStore::new(sd.join("d")), "M")
             .is_err());
         let _ = std::fs::remove_dir_all(&sd);
+    }
+
+    // ---- M9b-2 ----
+
+    /// Un documento personale pubblicabile in `Documenti`.
+    fn personal(docs: &DocStore, title: &str, author: &str) -> DocEntry {
+        let mut m = Manifest::new(title, author, "0.1.0", "lex");
+        m.rev = 12;
+        let doc = Document {
+            manifest: m,
+            document: json!({"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":title}]}]}),
+            render: json!([]),
+            media: Default::default(),
+        };
+        docs.write_document(&doc).unwrap()
+    }
+
+    fn setup(name: &str) -> (PathBuf, PathBuf, PathBuf, LibraryState, DocStore) {
+        let (sd, lib, dd) = (
+            tmp(name),
+            tmp(&format!("{name}-lib")),
+            tmp(&format!("{name}-docs")),
+        );
+        std::fs::create_dir_all(lib.join("biblioteca")).unwrap();
+        let cfg = SharedConfig {
+            admins: vec!["segreteria".into()],
+            ..Default::default()
+        };
+        let st = LibraryState::new(sd.clone(), cfg, vec![]);
+        st.set_folder(lib.to_str().unwrap(), false).unwrap();
+        (sd, lib, dd.clone(), st, DocStore::new(dd))
+    }
+
+    fn meta(title: &str) -> PublishMeta {
+        PublishMeta {
+            title: title.into(),
+            subject: "  Italiano\n".into(),
+            level: "primaria".into(),
+            tags: vec!["storia".into(), " ".into(), "sociale".into()],
+        }
+    }
+
+    #[test]
+    fn pubblica_e_aggiorna_dal_documento_personale() {
+        let (sd, lib, dd, st, docs) = setup("pub");
+        let mine = personal(&docs, "La storia", "Maria Rossi");
+        assert_eq!(mine.published_rev, None);
+        // Pubblica: in biblioteca con id, autore e metadati; il documento personale ricorda la revisione.
+        let out = st
+            .publish(&mine.file, &meta("La storia di Pepe"), &docs, "Maria Rossi")
+            .unwrap();
+        assert_eq!((out.kind, out.rev), ("published", 1));
+        assert_eq!(out.entry.published_rev, Some(1));
+        assert_eq!(
+            (out.entry.rev, out.entry.id.as_str()),
+            (mine.rev, mine.id.as_str())
+        ); // revisione e id personali invariati
+        let in_lib = caa_doc::read(&lib.join("biblioteca").join(format!("{}.caa", mine.id)))
+            .unwrap()
+            .doc
+            .manifest;
+        assert_eq!(
+            (
+                in_lib.title.as_str(),
+                in_lib.subject.as_str(),
+                in_lib.level.as_str(),
+                in_lib.author.as_str(),
+                in_lib.rev
+            ),
+            (
+                "La storia di Pepe",
+                "Italiano",
+                "primaria",
+                "Maria Rossi",
+                1
+            )
+        );
+        assert_eq!(in_lib.tags, vec!["storia", "sociale"]);
+        let local = docs.read(&mine.file).unwrap().doc.manifest;
+        assert_eq!(
+            (local.subject.as_str(), local.published_rev),
+            ("Italiano", Some(1))
+        );
+        // Non si pubblica due volte; senza Drive non si scrive.
+        assert!(st
+            .publish(&mine.file, &meta("x"), &docs, "Maria Rossi")
+            .unwrap_err()
+            .contains("già in biblioteca"));
+        // Aggiorna: revisione 2 in biblioteca e nel ricordo del documento personale.
+        let up = st.update(&mine.file, &docs, "Maria Rossi").unwrap();
+        assert_eq!(
+            (up.kind, up.rev, up.entry.published_rev),
+            ("updated", 2, Some(2))
+        );
+        assert_eq!(
+            caa_doc::read(&lib.join("biblioteca").join(format!("{}.caa", mine.id)))
+                .unwrap()
+                .doc
+                .manifest
+                .rev,
+            2
+        );
+        // Un altro utente non aggiorna il documento di Maria.
+        assert!(st
+            .update(&mine.file, &docs, "Luca Bianchi")
+            .unwrap_err()
+            .contains("solo l'autore"));
+        // Un documento mai pubblicato.
+        let other = personal(&docs, "Altro", "Maria Rossi");
+        assert!(st
+            .update(&other.file, &docs, "Maria Rossi")
+            .unwrap_err()
+            .contains("non è stato pubblicato"));
+        for d in [&sd, &lib, &dd] {
+            let _ = std::fs::remove_dir_all(d);
+        }
+    }
+
+    #[test]
+    fn il_salvataggio_automatico_non_perde_il_ricordo_della_pubblicazione() {
+        let (sd, lib, dd, st, docs) = setup("autosave");
+        let mine = personal(&docs, "Storia", "Maria");
+        st.publish(&mine.file, &meta("Storia"), &docs, "Maria")
+            .unwrap();
+        // Il salvataggio automatico (che riparte da un manifest nuovo) tiene id, revisione pubblicata e metadati.
+        let custom = CustomStore::open(sd.join("custom"));
+        let saved = docs
+            .save(
+                crate::docs::SavePayload {
+                    file: Some(mine.file.clone()),
+                    id: Some(mine.id.clone()),
+                    rev: Some(mine.rev),
+                    title: "Storia modificata".into(),
+                    created: None,
+                    origin: None,
+                    prefs: json!({}),
+                    sense_locks: json!([]),
+                    document: json!({"type":"doc","content":[]}),
+                    render: json!([]),
+                    media: vec![],
+                    lexicon: "lex".into(),
+                },
+                &custom,
+                "Maria",
+                "0.1.0",
+            )
+            .unwrap();
+        assert_eq!(saved.published_rev, Some(1));
+        assert!(!saved.conflict, "i metadati scritti dalla pubblicazione non devono sembrare il cambiamento di un'altra copia");
+        let m = docs.read(&mine.file).unwrap().doc.manifest;
+        assert_eq!(m.subject, "Italiano");
+        for d in [&sd, &lib, &dd] {
+            let _ = std::fs::remove_dir_all(d);
+        }
+    }
+
+    #[test]
+    fn aggiornare_dopo_che_la_biblioteca_e_andata_avanti_salva_come_nuovo_e_il_documento_ne_diventa_l_autore(
+    ) {
+        let (sd, lib, dd, st, docs) = setup("avanti");
+        let mine = personal(&docs, "Storia", "Maria");
+        st.publish(&mine.file, &meta("Storia"), &docs, "Maria")
+            .unwrap();
+        // Un altro PC aggiorna il documento di biblioteca (revisione 2).
+        let other_pc = DocStore::new(tmp("avanti-altro"));
+        std::fs::copy(dd.join(&mine.file), other_pc.dir().join("x.caa")).ok();
+        let lib_file = lib.join("biblioteca").join(format!("{}.caa", mine.id));
+        let loaded = caa_doc::read(&lib_file).unwrap();
+        caa_lib::publish::update(&lib, &loaded.doc, 1, "Maria", 1_800_000_000).unwrap();
+        // Questo PC è ancora alla revisione 1: il documento si salva come nuovo, con un id nuovo.
+        let out = st.update(&mine.file, &docs, "Maria").unwrap();
+        assert_eq!((out.kind, out.rev), ("saved_as_new", 1));
+        assert_ne!(out.entry.id, mine.id);
+        assert_eq!(out.entry.published_rev, Some(1));
+        assert_eq!(
+            caa_doc::read(&lib_file).unwrap().doc.manifest.rev,
+            2,
+            "il documento di biblioteca non è stato sovrascritto"
+        );
+        assert!(lib
+            .join("biblioteca")
+            .join(format!("{}.caa", out.entry.id))
+            .is_file());
+        // E da adesso aggiorna il documento nuovo.
+        assert_eq!(
+            st.update(&mine.file, &docs, "Maria").unwrap().kind,
+            "updated"
+        );
+        let _ = std::fs::remove_dir_all(other_pc.dir());
+        for d in [&sd, &lib, &dd] {
+            let _ = std::fs::remove_dir_all(d);
+        }
+    }
+
+    #[test]
+    fn aggiornare_un_documento_ritirato_lo_rende_di_nuovo_pubblicabile() {
+        let (sd, lib, dd, st, docs) = setup("ritirato");
+        let mine = personal(&docs, "Storia", "Maria");
+        st.publish(&mine.file, &meta("Storia"), &docs, "Maria")
+            .unwrap();
+        st.retire(&format!("{}.caa", mine.id), "Maria", "maria")
+            .unwrap();
+        assert!(lib
+            .join("archivio")
+            .join(format!("{}.caa", mine.id))
+            .is_file());
+        let err = st.update(&mine.file, &docs, "Maria").unwrap_err();
+        assert!(err.contains("non è più in biblioteca"), "{err}");
+        assert_eq!(
+            docs.read(&mine.file).unwrap().doc.manifest.published_rev,
+            None
+        );
+        // Si può pubblicare di nuovo.
+        assert_eq!(
+            st.publish(&mine.file, &meta("Storia"), &docs, "Maria")
+                .unwrap()
+                .kind,
+            "published"
+        );
+        for d in [&sd, &lib, &dd] {
+            let _ = std::fs::remove_dir_all(d);
+        }
+    }
+
+    #[test]
+    fn ritira_per_autore_o_amministratore() {
+        let (sd, lib, dd, st, docs) = setup("ritira");
+        let mine = personal(&docs, "Storia", "Maria Rossi");
+        st.publish(&mine.file, &meta("Storia"), &docs, "Maria Rossi")
+            .unwrap();
+        let file = format!("{}.caa", mine.id);
+        // Un altro docente no.
+        assert!(st
+            .retire(&file, "Luca Bianchi", "luca")
+            .unwrap_err()
+            .contains("solo l'autore"));
+        assert!(lib.join("biblioteca").join(&file).is_file());
+        // Un amministratore (nome utente di Windows nel config.json) sì, anche con un altro nome da mostrare.
+        st.retire(&file, "Segretaria Anna", "Segreteria").unwrap();
+        assert!(
+            !lib.join("biblioteca").join(&file).exists()
+                && lib.join("archivio").join(&file).is_file()
+        );
+        assert!(st.retire("../x.caa", "Maria Rossi", "maria").is_err());
+        for d in [&sd, &lib, &dd] {
+            let _ = std::fs::remove_dir_all(d);
+        }
+    }
+
+    #[test]
+    fn senza_il_drive_non_si_scrive_niente() {
+        let (sd, lib, dd, st, docs) = setup("offline-w");
+        let mine = personal(&docs, "Storia", "Maria");
+        std::fs::remove_dir_all(&lib).unwrap();
+        for e in [
+            st.publish(&mine.file, &meta("Storia"), &docs, "Maria")
+                .unwrap_err(),
+            st.update(&mine.file, &docs, "Maria").unwrap_err(),
+            st.retire("x.caa", "Maria", "maria").unwrap_err(),
+        ] {
+            assert!(e.contains("non risponde"), "{e}");
+        }
+        assert_eq!(
+            docs.read(&mine.file).unwrap().doc.manifest.published_rev,
+            None
+        );
+        // L'originale si legge lo stesso dalla copia locale, senza cache: errore chiaro.
+        assert!(st
+            .open_original("x.caa", &CustomStore::open(sd.join("c")))
+            .is_err());
+        for d in [&sd, &dd] {
+            let _ = std::fs::remove_dir_all(d);
+        }
+    }
+
+    #[test]
+    fn l_originale_si_apre_in_sola_lettura_e_la_versione_nuova_si_annuncia() {
+        let (sd, lib, dd, st, docs) = setup("orig");
+        let mine = personal(&docs, "Storia", "Maria");
+        st.publish(&mine.file, &meta("Storia"), &docs, "Maria")
+            .unwrap();
+        let file = format!("{}.caa", mine.id);
+        let custom = CustomStore::open(sd.join("custom"));
+        let o = st.open_original(&file, &custom).unwrap();
+        assert!(o.read_only);
+        assert_eq!((o.entry.id.as_str(), o.entry.rev), (mine.id.as_str(), 1));
+        // Versione del programma: nessun file = niente; una più nuova = avviso; uguale o più vecchia = niente.
+        assert_eq!(st.newer_version("0.1.0"), None);
+        std::fs::create_dir_all(lib.join("aggiornamenti")).unwrap();
+        std::fs::write(
+            lib.join("aggiornamenti/version.json"),
+            br#"{"version":"0.2.0","notes":"Nuove cose"}"#,
+        )
+        .unwrap();
+        assert_eq!(
+            st.newer_version("0.1.0"),
+            Some(VersionInfo {
+                version: "0.2.0".into(),
+                notes: "Nuove cose".into()
+            })
+        );
+        assert_eq!(st.newer_version("0.2.0"), None);
+        std::fs::write(lib.join("aggiornamenti/version.json"), b"{rotto").unwrap();
+        assert_eq!(st.newer_version("0.1.0"), None);
+        for d in [&sd, &lib, &dd] {
+            let _ = std::fs::remove_dir_all(d);
+        }
     }
 }

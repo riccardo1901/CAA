@@ -85,6 +85,8 @@ pub struct DocEntry {
     pub origin: Option<Origin>,
     /// Il file era stato cambiato da un'altra copia del programma: questo documento è stato salvato come nuovo.
     pub conflict: bool,
+    /// La revisione che il documento ha in biblioteca, se è stato pubblicato.
+    pub published_rev: Option<u32>,
 }
 
 fn entry_of(file: &str, m: &Manifest) -> DocEntry {
@@ -97,6 +99,7 @@ fn entry_of(file: &str, m: &Manifest) -> DocEntry {
         author: m.author.clone(),
         origin: m.origin.clone(),
         conflict: false,
+        published_rev: m.published_rev,
     }
 }
 
@@ -258,6 +261,8 @@ impl DocStore {
             manifest.level = old.level.clone();
             manifest.tags = old.tags.clone();
             manifest.author = old.author.clone();
+            // Il ricordo della pubblicazione resta (il salvataggio automatico non lo deve perdere).
+            manifest.published_rev = old.published_rev;
         } else if let Some(id) =
             p.id.as_deref()
                 .filter(|i| !conflict && caa_doc::valid_media_name(&format!("{i}.webp")))
@@ -304,6 +309,46 @@ impl DocStore {
     pub fn open(&self, file: &str, custom: &CustomStore) -> Result<Opened, String> {
         let path = self.path(file)?;
         let loaded = caa_doc::read(&path).map_err(|e| e.to_string())?;
+        Ok(opened_from(file, loaded, custom, false))
+    }
+
+    /// Un documento letto per intero, per cambiarne i metadati o per pubblicarlo.
+    pub fn read(&self, file: &str) -> Result<caa_doc::Loaded, String> {
+        caa_doc::read(&self.path(file)?).map_err(|e| e.to_string())
+    }
+
+    /// Cambia i metadati di un documento (non la revisione né la data di modifica del contenuto, salvo che lo
+    /// faccia `f`): il salvataggio automatico non lo scambia per un cambiamento di un'altra copia.
+    pub fn update_manifest(
+        &self,
+        file: &str,
+        f: impl FnOnce(&mut Manifest),
+    ) -> Result<DocEntry, String> {
+        let path = self.path(file)?;
+        let mut loaded = caa_doc::read(&path).map_err(|e| e.to_string())?;
+        if loaded.read_only {
+            return Err("il documento è di una versione più recente del programma".into());
+        }
+        f(&mut loaded.doc.manifest);
+        caa_doc::write(&path, &loaded.doc).map_err(|e| e.to_string())?;
+        Ok(entry_of(file, &loaded.doc.manifest))
+    }
+
+    pub fn delete(&self, file: &str) -> Result<(), String> {
+        let path = self.path(file)?;
+        std::fs::remove_file(path).map_err(|e| format!("non riesco a eliminare il documento: {e}"))
+    }
+}
+
+/// Dal documento letto a quello che si manda alla pagina: i simboli personali si importano e si danno
+/// gli id di questo computer. `force_read_only`: per l'originale della biblioteca (non si modifica).
+pub fn opened_from(
+    file: &str,
+    loaded: caa_doc::Loaded,
+    custom: &CustomStore,
+    force_read_only: bool,
+) -> Opened {
+    {
         let mut media = Vec::new();
         for (name, bytes) in &loaded.doc.media {
             let uuid = name.trim_end_matches(".webp");
@@ -317,22 +362,17 @@ impl DocStore {
             }
         }
         let m = &loaded.doc.manifest;
-        Ok(Opened {
+        Opened {
             entry: entry_of(file, m),
-            document: loaded.doc.document,
-            render: loaded.doc.render,
+            document: loaded.doc.document.clone(),
+            render: loaded.doc.render.clone(),
             prefs: m.prefs.clone(),
             sense_locks: m.sense_locks.clone(),
             lexicon: m.lexicon_version.clone(),
             created: m.created.clone(),
-            read_only: loaded.read_only,
+            read_only: loaded.read_only || force_read_only,
             media,
-        })
-    }
-
-    pub fn delete(&self, file: &str) -> Result<(), String> {
-        let path = self.path(file)?;
-        std::fs::remove_file(path).map_err(|e| format!("non riesco a eliminare il documento: {e}"))
+        }
     }
 }
 

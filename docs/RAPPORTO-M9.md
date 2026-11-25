@@ -38,5 +38,27 @@ Limiti noti (accettati):
 - **App**: nome da mostrare al primo avvio (finestra che non si chiude senza un nome), indicatore «● Biblioteca» in alto (controllo all'avvio e ogni 2 minuti), scheda **Biblioteca** nel pannello Documenti (cartelle trovate con «Usa questa», percorso a mano, «Crea la biblioteca qui» per chi la imposta; elenco con autore, materia, livello, etichette, data, ricerca senza accenti, filtri, «copia in conflitto», avviso sui file in sincronizzazione, **Adatta**). La biblioteca non si scrive mai in questo blocco, tranne la creazione delle cartelle.
 - **Scelte confermate**: il nome da mostrare si chiede solo al primo avvio; le cartelle e il `config.json` si usano per nome (la lettera dell'unità cambia da PC a PC); la lettura del Drive ha sempre un tempo massimo e usa la copia locale se non risponde.
 
+---
+
+# M9b-2 — Pubblica, Aggiorna, Ritira, avvisi
+
+**Stato**: scritto e provato con prove automatiche; prove a mano su Windows da fare (`docs/PROVE-M9b2.md`, la più importante per il Drive). M9c deve ancora partire.
+
+## Cosa c'è
+- **`caa-lib::publish`** (senza interfaccia):
+  - **Pubblica**: documento nuovo in biblioteca con l'id del documento personale e revisione 1; non sovrascrive mai (neppure se lo stesso documento c'è già con un altro nome, per esempio una copia in conflitto di Drive).
+  - **Aggiorna in biblioteca**: solo l'autore; blocco `<id>.lock` con utente e ora (scade dopo 2 ore, creazione esclusiva); revisione controllata con il blocco in mano: se la biblioteca è andata avanti da sola, il documento si salva come **documento nuovo** (id nuovo) e lo si dice; il documento personale ne diventa l'autore.
+  - **Ritira**: sposta in `archivio\` (l'autore o un amministratore del `config.json`; un file illeggibile solo un amministratore); un nome già in archivio non si sovrascrive; il blocco di quel documento si toglie.
+  - Tutte le scritture sono atomiche (file temporaneo accanto e rinomina); le prove interrompono pubblicazione e aggiornamento in vari punti: il documento di prima resta intero, senza `.tmp` né blocchi.
+  - Confronto delle versioni (`0.9` < `0.10`) e `original_update`.
+- **Documento personale**: ricorda la revisione che ha in biblioteca (`published_rev`, aggiunta al manifest in modo compatibile: schema invariato) e il salvataggio automatico non la perde.
+- **App**: nel pannello Documenti, **Pubblica** (modulo con titolo, materia, livello, etichette; suggerimenti dai documenti già in biblioteca) e **Aggiorna in biblioteca** per ogni documento; il documento aperto si salva prima; spenti senza Drive; **Ritira** nella scheda Biblioteca per l'autore o gli amministratori (con conferma); barra azzurra **«L'originale è stato aggiornato»** per le copie adattate, con **Apri l'originale** (sola lettura) e **Torna alla mia copia** e **Ignora** (per revisione); avviso **«È disponibile la versione X»** da `aggiornamenti\version.json`; controllo ogni 2 minuti.
+- **Scelte confermate**: «apri l'originale» al posto della copia in sola lettura (non affiancato); l'id del documento di biblioteca è quello del documento personale dell'autore; amministratori = nomi utente di Windows nel `config.json`; materia e livello a testo libero con suggerimenti.
+
+## Difetti trovati dalle prove mentre si scriveva
+- Il blocco: il file nasce vuoto e si riempie un istante dopo. Chi lo leggeva in quel momento lo scambiava per «rovinato», lo toglieva e ne prendeva uno suo (due titolari). Ora un blocco illeggibile ma recente è «preso da qualcuno».
+- Due scritture dello stesso processo (autosalvataggio e pubblicazione, o più thread) usavano lo stesso nome di file temporaneo. Ora ogni scrittura ha il suo.
+- Aprendo «Documenti» subito dopo aver scritto, il documento aperto non era ancora nell'elenco: ora si salva prima.
+
 ## Metriche del motore
 Invariate: il motore non è cambiato in M9.

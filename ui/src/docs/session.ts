@@ -6,7 +6,8 @@ import { clearLegacy, dropLegacyToken, legacyDiff, onEngineUpdate, renderSnapsho
 import { revealPos, setFocusWord } from "../editor/menuHooks";
 import { FORCED_MERGE, pinPictos, sanitizeLocks } from "../editor/picks";
 import { schema } from "../editor/schema";
-import type { DocClient, DocEntry, OpenedDoc, SavePayload } from "../engine/client";
+import type { DocClient, DocEntry, LibEntry, LibraryClient, OpenedDoc, SavePayload } from "../engine/client";
+import type { OriginalBar } from "./originalbar";
 import type { LexBar } from "./lexbar";
 import { COMPLETE_TABLE, sanitizePrefs, type DocPrefs } from "./prefs";
 
@@ -29,6 +30,9 @@ export interface SessionDeps {
   saveStatus: HTMLElement;
   /** La barra «il lessico è cambiato». */
   lexBar: LexBar;
+  /** La biblioteca (per l'avviso «originale aggiornato» e per guardare l'originale) e la sua barra. */
+  library?: LibraryClient;
+  originalBar: OriginalBar;
   /** Attesa prima del salvataggio automatico (ms). */
   delayMs?: number;
   /** Attesa prima di riprovare dopo un errore di salvataggio (ms). */
@@ -58,6 +62,12 @@ export interface Session {
   openFile(file: string): Promise<void>;
   /** Il documento aperto non ha più un file (è stato eliminato). */
   forget(): void;
+  /** Il documento aperto ha cambiato identità o titolo dopo una pubblicazione (salvato come nuovo in biblioteca). */
+  adopt(entry: DocEntry): void;
+  /** Guarda l'originale della biblioteca in sola lettura (con il ritorno alla propria copia). */
+  openOriginal(file: string): Promise<void>;
+  /** Riguarda se la biblioteca ha una revisione più nuova dell'originale del documento aperto (se è una copia). */
+  recheckOriginal(): Promise<void>;
   /** La finestra sta per chiudersi: salva e dice se si può uscire (se il salvataggio non riesce, chiede conferma). */
   prepareClose(): Promise<boolean>;
   /** Segna il documento come modificato (cambiano le preferenze) e fa partire il salvataggio automatico. */
@@ -65,6 +75,30 @@ export interface Session {
   /** Un nuovo documento senza chiedere niente (all'avvio). */
   startFresh(doc?: PMNode): void;
   onChange(cb: () => void): void;
+}
+
+/** Se la biblioteca ha una revisione più nuova dell'originale da cui è nata una copia (e l'originale è uno solo). */
+export function originalUpdate(entries: LibEntry[], origin: { id: string; rev: number }): LibEntry | null {
+  const newer = entries.filter((e) => e.id === origin.id && e.rev > origin.rev && !e.conflict);
+  return newer.sort((a, b) => b.rev - a.rev)[0] ?? null;
+}
+
+const ignoreKey = (id: string): string => `caa.ignore-original.${id}`;
+
+function ignoredRev(id: string): number {
+  try {
+    return Number(localStorage.getItem(ignoreKey(id)) ?? 0) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+function ignoreRev(id: string, rev: number): void {
+  try {
+    localStorage.setItem(ignoreKey(id), String(rev));
+  } catch {
+    /* non è grave: l'avviso ricompare */
+  }
 }
 
 /** Dal contenuto di un documento al titolo: la prima riga con del testo, corta. */
@@ -153,6 +187,8 @@ export function createSession(deps: SessionDeps): Session {
   let docLexicon = "";
   let review: number | null = null;
   let shownReview = "";
+  // Se si sta guardando l'originale della biblioteca: il file della propria copia a cui tornare.
+  let returnTo: string | null = null;
 
   const statusText = (): string => {
     if (st.readOnly) return "Sola lettura";
@@ -370,6 +406,8 @@ export function createSession(deps: SessionDeps): Session {
     st.readOnly = false;
     deps.setReadOnly(false);
     deps.banner(null);
+    deps.originalBar.set(null);
+    returnTo = null;
   };
 
   function load(doc: PMNode): void {
@@ -396,10 +434,8 @@ export function createSession(deps: SessionDeps): Session {
     startFresh(doc);
   }
 
-  async function openFile(file: string): Promise<void> {
-    if (!(await flush()) && !deps.confirm("Il documento aperto non si è salvato e andrà perso. Continuare?")) return;
-    const o: OpenedDoc = await deps.docs.open(file);
-    // Un file è un dato non fidato: il documento deve essere valido per lo schema dell'editor.
+  /** Mette un documento letto in pagina (dato non fidato: deve essere valido per lo schema dell'editor). */
+  function present(o: OpenedDoc, original: boolean): void {
     const json = remapMedia(o.document, o.media);
     let doc: PMNode;
     try {
@@ -410,27 +446,81 @@ export function createSession(deps: SessionDeps): Session {
     }
     if (timer) clearTimeout(timer);
     timer = null;
+    const back = original ? st.file : null;
     reset();
     deps.setPrefs({ ...sanitizePrefs(o.prefs) });
     load(doc);
-    st.file = o.entry.file;
-    st.id = o.entry.id;
-    st.rev = o.entry.rev;
+    // L'originale della biblioteca non è un documento personale: nessun file, sola lettura.
+    st.file = original ? null : o.entry.file;
+    st.id = original ? null : o.entry.id;
+    st.rev = original ? null : o.entry.rev;
     st.created = o.created;
-    st.origin = o.entry.origin;
+    st.origin = original ? null : o.entry.origin;
     st.title = o.entry.title;
-    st.readOnly = o.read_only;
+    st.readOnly = o.read_only || original;
     st.savedAt = null;
     docLexicon = o.lexicon;
     // Un lessico diverso da quello con cui è stato salvato: si mostrano i simboli vecchi e si chiede.
-    if (deps.lexicon && o.lexicon && o.lexicon !== deps.lexicon && Array.isArray(o.render) && o.render.length > 0 && !o.read_only) {
+    if (deps.lexicon && o.lexicon && o.lexicon !== deps.lexicon && Array.isArray(o.render) && o.render.length > 0 && !st.readOnly) {
       setLegacy(view, o.render);
       legacyActive = true;
     }
-    deps.setReadOnly(o.read_only);
-    deps.banner(o.read_only ? "Questo documento è stato scritto da una versione più recente del programma: si apre solo in lettura. Aggiorna il programma per modificarlo." : null);
+    deps.setReadOnly(st.readOnly);
+    if (original) {
+      returnTo = back;
+      deps.banner(null);
+      deps.originalBar.set({ kind: "viewing", title: o.entry.title, onBack: () => void (returnTo ? openFile(returnTo) : newDocument()) });
+    } else {
+      deps.banner(o.read_only ? "Questo documento è stato scritto da una versione più recente del programma: si apre solo in lettura. Aggiorna il programma per modificarlo." : null);
+    }
     changed();
     refreshLexicon();
+  }
+
+  async function openFile(file: string): Promise<void> {
+    if (!(await flush()) && !deps.confirm("Il documento aperto non si è salvato e andrà perso. Continuare?")) return;
+    const o: OpenedDoc = await deps.docs.open(file);
+    present(o, false);
+    void recheckOriginal();
+  }
+
+  async function openOriginal(file: string): Promise<void> {
+    if (!deps.library) return;
+    if (!(await flush()) && !deps.confirm("Il documento aperto non si è salvato e andrà perso. Continuare?")) return;
+    const o = await deps.library.open(file);
+    present(o, true);
+  }
+
+  /** «L'originale è stato aggiornato»: per una copia adattata, se la biblioteca ha una revisione più nuova. */
+  async function recheckOriginal(): Promise<void> {
+    if (!deps.library || !st.origin || st.readOnly) {
+      if (!returnTo) deps.originalBar.set(null);
+      return;
+    }
+    const mine = epoch;
+    const origin = st.origin;
+    let entries: LibEntry[];
+    try {
+      entries = (await deps.library.scan()).entries;
+    } catch {
+      return;
+    }
+    if (mine !== epoch) return; // nel frattempo si è passati a un altro documento
+    const e = originalUpdate(entries, origin);
+    if (!e || e.rev <= ignoredRev(origin.id)) {
+      deps.originalBar.set(null);
+      return;
+    }
+    deps.originalBar.set({
+      kind: "update",
+      title: e.title,
+      rev: e.rev,
+      onOpen: () => void openOriginal(e.file),
+      onIgnore: () => {
+        ignoreRev(origin.id, e.rev);
+        deps.originalBar.set(null);
+      },
+    });
   }
 
   // Le modifiche al documento e alle preferenze fanno partire il salvataggio automatico.
@@ -466,6 +556,13 @@ export function createSession(deps: SessionDeps): Session {
       changed();
     },
     startFresh,
+    adopt: (entry) => {
+      st.id = entry.id;
+      st.rev = entry.rev;
+      changed();
+    },
+    openOriginal,
+    recheckOriginal,
     touch: markDirty,
     onChange: (cb) => listeners.push(cb),
   };
