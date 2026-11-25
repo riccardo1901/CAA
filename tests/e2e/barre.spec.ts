@@ -159,18 +159,25 @@ test("menu «Altro»: si usa da tastiera, Esc torna al pulsante; i comandi che n
   await page.keyboard.press("Escape");
   await expect(altro).toHaveAttribute("aria-expanded", "false");
   await expect(altro).toBeFocused();
-  // A 1024 punti «Contorna simbolo e parola» non sta nella barra: è nel menu e funziona da lì.
-  await expect(page.locator(".toolbar").getByLabel("Contorna simbolo e parola")).toHaveCount(0);
+  // «Contorna simbolo e parola» non è più nella barra né nel menu: da M11-5 è nella scheda «Pagina».
+  await expect(page.locator(".toolbar, #menu-altro").getByLabel(/Contorna simbolo e parola|Riquadro attorno/)).toHaveCount(0);
+  // Senza il contorno, a 1024 punti la barra ci sta tutta. Con l'interfaccia più grande (come lo zoom di Windows)
+  // «Parole funzionali» non ci sta più: è nel menu e funziona da lì.
+  await expect(page.locator(".toolbar").getByLabel("Politica delle parole funzionali")).toBeVisible();
+  await page.addStyleTag({ content: ":root { font-size: 125%; }" });
+  await page.setViewportSize({ width: 1000, height: 600 });
+  await page.setViewportSize({ width: 1024, height: 600 });
+  await expect(page.locator(".toolbar").getByLabel("Politica delle parole funzionali")).toHaveCount(0);
   await altro.click();
-  const contorno = page.locator("#menu-altro").getByLabel("Contorna simbolo e parola");
-  await expect(contorno).toBeVisible();
-  await contorno.check();
-  await expect(page.locator(".sheet")).toHaveClass(/cards/);
+  const politica = page.locator("#menu-altro").getByLabel("Politica delle parole funzionali");
+  await expect(politica).toBeVisible();
+  await politica.selectOption("essential");
+  expect(await page.evaluate(() => (window as any).caaProto.getPrefs().preset)).toBe("essential");
   await page.mouse.click(300, 400);
   await expect(page.locator("#menu-altro")).toBeHidden();
   // Allargando la finestra il gruppo torna nella barra.
   await page.setViewportSize({ width: 1700, height: 900 });
-  await expect(page.locator(".toolbar").getByLabel("Contorna simbolo e parola")).toBeVisible();
+  await expect(page.locator(".toolbar").getByLabel("Politica delle parole funzionali")).toBeVisible();
 });
 
 test("scegliendo «Personalizzato» dal menu «Altro» il menu si chiude e la tabella resta in vista", async ({ page }) => {

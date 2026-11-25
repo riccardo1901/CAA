@@ -52,16 +52,19 @@ test.describe("finestre: Tab dentro, Esc chiude, il fuoco torna a chi le ha aper
     await fuocoSu(page, /^Altro$/);
   });
 
-  test("Stampa", async ({ page }) => {
+  test("Stampa: da M11-5 non è più una finestra ma la scheda «Pagina» (niente velo); Esc torna al pulsante", async ({ page }) => {
     await apriCompleto(page);
-    await page.getByRole("button", { name: "Stampa…" }).focus();
+    const stampa = page.locator(".app-header").getByRole("button", { name: "Stampa…" });
+    await stampa.focus();
     await page.keyboard.press("Enter");
-    const box = page.locator(".print-dialog");
+    const box = page.locator(".page-panel");
     await expect(box).toBeVisible();
-    await tabRestaDentro(page, box);
+    await expect(box.getByRole("button", { name: "Stampa…" })).toBeFocused();
+    await expect(page.locator(".print-dialog, .print-overlay, .dialog-overlay")).toHaveCount(0);
+    expect(await page.locator("#app").getAttribute("inert")).toBeNull();
     await page.keyboard.press("Escape");
-    await expect(box).toHaveCount(0);
     await fuocoSu(page, /^Stampa…$/);
+    await expect(stampa).toBeFocused();
   });
 
   test("Documenti (e mentre è aperta il resto della pagina non si raggiunge)", async ({ page }) => {

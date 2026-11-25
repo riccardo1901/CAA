@@ -68,7 +68,9 @@ const STATI: Array<[string, (page: Page) => Promise<void>]> = [
   }],
   ["06-stampa", async (page) => {
     await apriCompleto(page);
-    await page.getByRole("button", { name: /^Stampa/ }).click();
+    // Da M11-5 la scheda «Pagina» del pannello laterale (prima la finestra Stampa).
+    await page.locator(".app-header").getByRole("button", { name: /^Stampa/ }).click();
+    await page.locator(".page-panel").waitFor();
     await page.waitForTimeout(100);
   }],
   ["07-informazioni", async (page) => {

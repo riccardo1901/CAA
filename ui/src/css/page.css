@@ -1,0 +1,49 @@
+/* La scheda «Pagina» del pannello laterale (M11-5): le impostazioni di stampa accanto al foglio, raggruppate in
+   sezioni, con «Stampa…» sempre in vista in fondo. Il riquadro della scheda (scorrimento, margini interni, sfondo) è
+   quello comune delle schede (side.css); qui solo il contenuto. Niente di questo sta nel foglio né si stampa. */
+.page-panel { display: flex; flex-direction: column; color: var(--c-text); }
+
+.pg-section { padding: 0 0 var(--s-3); margin: 0 0 var(--s-3); border-bottom: 1px solid var(--c-line); }
+.pg-title {
+  margin: 0 0 var(--s-2);
+  font-family: var(--f-title);
+  font-size: var(--fs-md);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+/* Una riga: etichetta a sinistra, controllo a destra (va a capo se il pannello è stretto). */
+.pg-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-1) var(--s-3); margin: var(--s-2) 0; }
+.pg-row select { width: 11rem; min-width: 0; max-width: 100%; }
+.pg-row input[type="number"] { width: 5rem; }
+
+/* Una casella: la casella e il testo; con la figura, la figura a destra. */
+.pg-check { display: flex; align-items: center; gap: var(--s-2); margin: var(--s-1) 0; cursor: pointer; }
+.pg-check input[type="checkbox"] { flex: none; margin: 0; }
+.pg-check span { flex: 1; min-width: 0; }
+.pg-fig-check { padding: var(--s-1) 0; }
+
+/* La figura di «Riquadro» e «Bordo»: un simbolo (quadrato) sopra una parola (riga), con il contorno. */
+.pg-fig { flex: none; width: 2.75rem; height: 2.75rem; padding: 2px; border-radius: var(--r-sm); background: var(--c-surface); }
+.pg-fig-sym { fill: var(--p-200); }
+.pg-fig-word { fill: var(--c-text-2); }
+.pg-fig-line { fill: none; stroke: var(--c-text); stroke-width: 1.5; }
+
+.pg-note { color: var(--c-text-2); font-size: var(--fs-sm); margin: var(--s-2) 0; }
+.pg-note.warn { color: var(--doubt-fg); font-weight: 600; }
+
+/* «Stampa…» in fondo, sempre in vista anche quando la scheda scorre. Copre anche il margine interno in fondo al
+   riquadro della scheda (var(--s-3), in side.css): altrimenti sotto il pulsante si vedrebbe scorrere il testo. */
+.pg-actions {
+  position: sticky;
+  bottom: calc(-1 * var(--s-3));
+  display: flex;
+  justify-content: flex-end;
+  margin: auto 0 calc(-1 * var(--s-3));
+  padding: var(--s-3) 0;
+  border-top: 1px solid var(--c-line);
+  background: var(--c-panel);
+}
+/* Con Tab il controllo che riceve il fuoco non deve finire sotto «Stampa…» (che sta fermo in fondo). Il riquadro
+   della scheda lo crea side/panel.ts con questo id. */
+#riquadro-pagina { scroll-padding-bottom: 4.5rem; }
