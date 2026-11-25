@@ -90,7 +90,13 @@ export const BIBLIOTECA = { configured: true, path: "G:/Drive condivisi/CAA Isti
 /** Il programma come lo vede il docente: archivio dei documenti, biblioteca collegata, un testo con simboli. */
 export async function apriCompleto(page: Page, lib: Record<string, unknown> = BIBLIOTECA, testo = STORIA): Promise<void> {
   await open(page, "", true, lib);
-  await page.evaluate(() => document.fonts.ready);
+  // Se le prove usano il carattere fisso, che sia davvero caricato prima di misurare qualcosa.
+  await page.evaluate(async () => {
+    if (!document.getElementById("caratteri-fissi-prove")) return;
+    await Promise.all(["400 15px \"Segoe UI\"", "700 15px \"Segoe UI\""].map((f) => document.fonts.load(f, "Aa")));
+    if (!document.fonts.check("400 15px \"Segoe UI\"", "Aa")) throw new Error("il carattere fisso delle prove non si è caricato");
+    await document.fonts.ready;
+  });
   if (testo) {
     await page.evaluate((t) => {
       const p = (window as any).caaProto;

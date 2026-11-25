@@ -153,6 +153,17 @@ function impronta(page: Page) {
       return t ? h.toString(16) : "";
     };
     const text = (el: Element) => [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join("");
+    // Si salvano solo i valori diversi da quelli di partenza di questo stesso browser (un elemento senza nessuno stile,
+    // dentro un contenitore «all: initial»). Così le proprietà nuove o rinominate da una versione di Chromium all'altra
+    // (la CI non ha esattamente lo stesso Chromium) si annullano da sole e resta solo quello che fa il nostro CSS.
+    const box = document.createElement("div");
+    box.style.all = "initial";
+    const neutro = document.createElement("span");
+    box.append(neutro);
+    document.body.append(box);
+    const csN = getComputedStyle(neutro);
+    const partenza: Record<string, string> = {};
+    for (let i = 0; i < csN.length; i++) partenza[csN[i]] = csN.getPropertyValue(csN[i]);
     const walk = (el: Element, path: string) => {
       for (const pseudo of ["", "::before", "::after"]) {
         const cs = getComputedStyle(el, pseudo || null);
@@ -160,7 +171,12 @@ function impronta(page: Page) {
         const o: Record<string, string> = {};
         // Le immagini incorporate (data:) diventano una firma breve: restano controllate, ma il file resta piccolo.
         const v = (x: string) => x.replace(/url\("data:[^"]*"\)/g, "url(data)");
-        for (let i = 0; i < cs.length; i++) if (!SKIP.has(cs[i])) o[cs[i]] = v(cs.getPropertyValue(cs[i]));
+        for (let i = 0; i < cs.length; i++) {
+          const k = cs[i];
+          if (SKIP.has(k) || k.startsWith("--")) continue;
+          const val = cs.getPropertyValue(k);
+          if (val !== partenza[k]) o[k] = v(val);
+        }
         for (const c of CUSTOM) o[c] = v(cs.getPropertyValue(c).trim());
         const key = JSON.stringify(o);
         let k = index.get(key);
@@ -175,6 +191,7 @@ function impronta(page: Page) {
     };
     const sheet = document.querySelector(".sheet")!;
     walk(sheet, "div.sheet");
+    box.remove();
     return { els, styles, larghezza: (sheet as HTMLElement).offsetWidth, page: document.getElementById("caa-page")?.textContent ?? "" };
   });
 }
@@ -227,14 +244,15 @@ function spiega(rif: Foto, ora: Foto): string[] {
 
 interface FileImpronta {
   base: Stile;
-  stili: Stile[];
+  stili: Array<Record<string, string | null>>;
   stati: Record<string, { larghezza: number; page: string; elementi: string[] }>;
 }
 
 function leggi(): Record<string, Foto> {
   if (!existsSync(IMPRONTA)) return {};
   const f = JSON.parse(readFileSync(IMPRONTA, "utf8")) as FileImpronta;
-  const pieni = f.stili.map((d) => ({ ...f.base, ...d }));
+  // null = proprietà che lo stile di base ha e questo no (valore di partenza del browser).
+  const pieni = f.stili.map((d) => Object.fromEntries(Object.entries({ ...f.base, ...d }).filter(([, v]) => v !== null)) as Stile);
   return Object.fromEntries(
     Object.entries(f.stati).map(([k, v]) => [
       k,
@@ -253,7 +271,7 @@ function leggi(): Record<string, Foto> {
 function scrivi(tutte: Record<string, Foto>): void {
   const chiavi = Object.keys(tutte).sort();
   const base = tutte[chiavi[0]].elementi[0].s;
-  const stili: Stile[] = [];
+  const stili: FileImpronta["stili"] = [];
   const index = new Map<string, number>();
   const stati: FileImpronta["stati"] = {};
   for (const k of chiavi) {
@@ -262,7 +280,8 @@ function scrivi(tutte: Record<string, Foto>): void {
       larghezza: f.larghezza,
       page: f.page,
       elementi: f.elementi.map((e) => {
-        const d = Object.fromEntries(Object.entries(e.s).filter(([n, v]) => base[n] !== v));
+        const d: Record<string, string | null> = Object.fromEntries(Object.entries(e.s).filter(([n, v]) => base[n] !== v));
+        for (const n of Object.keys(base)) if (!(n in e.s)) d[n] = null;
         const key = JSON.stringify(d);
         let i = index.get(key);
         if (i === undefined) {
