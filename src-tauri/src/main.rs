@@ -5,11 +5,12 @@ mod bridge;
 mod custom;
 mod docs;
 mod library;
+mod memory;
 
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use caa_engine::engine::{DocPrefs, Request, UserMemory};
+use caa_engine::engine::{DocPrefs, Request};
 use caa_store::{open_engine, MappedEngine};
 use serde::Serialize;
 use tauri::http::Response;
@@ -20,6 +21,7 @@ use docs::{docs_dir, DocEntry, DocStore, Opened, SavePayload};
 use library::{
     os_user, FolderDto, LibScan, LibStatus, LibraryState, PublishMeta, PublishOutcome, VersionInfo,
 };
+use memory::{MemoryEntry, MemoryStore};
 
 use bridge::{
     candidates_dto, check_choices, check_request, data_candidates, find_data_dir, image_path,
@@ -35,6 +37,8 @@ struct Backend {
     docs: DocStore,
     /// Impostazioni, biblioteca nel Drive condiviso e sua copia locale (M9b).
     library: LibraryState,
+    /// Cosa il docente ha scelto «per sempre» (M9c-1).
+    memory: MemoryStore,
     engine: Option<MappedEngine>,
     dir: Option<PathBuf>,
     error: Option<String>,
@@ -70,13 +74,15 @@ fn load_backend() -> Backend {
             .ok()
             .map(|h| format!("{h}/.local/share"))
     });
+    let data_dir = app_dir(
+        std::env::var("CAA_APPDATA").ok().as_deref(),
+        std::env::var("APPDATA").ok().as_deref(),
+        xdg_or_home.as_deref(),
+        exe_dir.as_deref(),
+    );
+    let memory = MemoryStore::open(&data_dir);
     let library = LibraryState::new(
-        app_dir(
-            std::env::var("CAA_APPDATA").ok().as_deref(),
-            std::env::var("APPDATA").ok().as_deref(),
-            xdg_or_home.as_deref(),
-            exe_dir.as_deref(),
-        ),
+        data_dir,
         caa_lib::config::load_config(&caa_lib::config::config_path(
             std::env::var("CAA_CONFIG").ok().as_deref(),
             std::env::var("PROGRAMDATA").ok().as_deref(),
@@ -90,6 +96,7 @@ fn load_backend() -> Backend {
             custom,
             docs,
             library,
+            memory,
             engine: None,
             dir: None,
             error: Some(format!(
@@ -103,6 +110,7 @@ fn load_backend() -> Backend {
             custom,
             docs,
             library,
+            memory,
             engine: Some(engine),
             dir: Some(dir),
             error: None,
@@ -111,6 +119,7 @@ fn load_backend() -> Backend {
             custom,
             docs,
             library,
+            memory,
             engine: None,
             dir: Some(dir),
             error: Some(e.to_string()),
@@ -185,6 +194,7 @@ fn symbolize(
         function_policy: parse_policy(&policy),
     };
     let sense_locks = to_locks(&locks);
+    let memory = state.memory.snapshot();
     let has_image = image_check(&state);
     Ok(paras
         .iter()
@@ -195,7 +205,7 @@ fn symbolize(
                 prefs: &prefs,
                 forced: &forced,
                 sense_locks: &sense_locks,
-                memory: &UserMemory::default(),
+                memory: &memory,
             });
             to_dto(&tokens, &has_image)
         })
@@ -219,17 +229,39 @@ fn alternatives(
         function_policy: parse_policy(&policy),
     };
     let forced = to_forced(&para.forced);
+    let memory = state.memory.snapshot();
     let found = engine.alternatives(
         &Request {
             text: &para.text,
             prefs: &prefs,
             forced: &forced,
             sense_locks: &to_locks(&locks),
-            memory: &UserMemory::default(),
+            memory: &memory,
         },
         (s, e),
     );
     Ok(candidates_dto(&found, &image_check(&state)))
+}
+
+/// La memoria del docente: elenco, aggiunta («usa sempre»), voce dimenticata, tutto dimenticato.
+#[tauri::command]
+fn memory_list(state: State<'_, Arc<Backend>>) -> Vec<MemoryEntry> {
+    state.memory.list()
+}
+
+#[tauri::command]
+fn memory_add(state: State<'_, Arc<Backend>>, entry: MemoryEntry) -> Result<(), String> {
+    state.memory.add(entry)
+}
+
+#[tauri::command]
+fn memory_forget(state: State<'_, Arc<Backend>>, entry: MemoryEntry) -> Result<(), String> {
+    state.memory.forget(&entry)
+}
+
+#[tauri::command]
+fn memory_clear(state: State<'_, Arc<Backend>>) -> Result<(), String> {
+    state.memory.clear()
 }
 
 /// "Cerca…" nel menu: pittogrammi per parola chiave (esatta o per inizio di parola).
@@ -479,6 +511,10 @@ fn main() {
             symbolize,
             alternatives,
             search_pictos,
+            memory_list,
+            memory_add,
+            memory_forget,
+            memory_clear,
             save_custom_symbol,
             list_custom_symbols,
             doc_list,

@@ -5,8 +5,8 @@
 import { TextSelection } from "prosemirror-state";
 import type { EditorView } from "prosemirror-view";
 import { cropImage } from "./customDialog";
-import type { CandidateDto, CustomSymbol, EngineClient } from "./engine/client";
-import { nextDoubtful, onEngineUpdate, tokenAt, type TokenAt } from "./editor/engineSymbols";
+import type { CandidateDto, CustomSymbol, EngineClient, MemoryEntry } from "./engine/client";
+import { nextDoubtful, onEngineUpdate, setEngine, tokenAt, type TokenAt } from "./editor/engineSymbols";
 import { focusWordRange, hooks, revealPos, setFocusWord } from "./editor/menuHooks";
 import { groupAction, mergeSelection } from "./editor/groups";
 import { applyChoice, removeLock, type Choice } from "./editor/picks";
@@ -71,8 +71,66 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
 
   const signature = (t: TokenAt): string => `${t.token.picto}|${t.token.display}|${t.pick}|${t.token.why}|${t.token.lemma}|${t.lock?.picto ?? ""}`;
 
+  // La memoria del docente («ricorda per sempre»): vale in tutti i documenti; si cambia e si dimentica da qui.
+  const memory = client.memory;
+  const remember = async (t: TokenAt, picto: number): Promise<void> => {
+    if (!memory) return;
+    const hasLemma = t.token.lemma !== "" && t.token.cat !== "";
+    const entry: MemoryEntry = hasLemma
+      ? { lemma: t.token.lemma, cat: t.token.cat, form: "", picto }
+      : { lemma: "", cat: "", form: t.para.text.slice(t.token.s, t.token.e), picto };
+    try {
+      await memory.add(entry);
+      // Il motore ora decide in un altro modo: i paragrafi si rifanno.
+      setEngine(view, client);
+    } catch (e) {
+      hooks.notice?.(`Non sono riuscito a ricordare la scelta: ${String(e)}`);
+    }
+  };
+  const memoryLabel = (m: MemoryEntry): string => (m.lemma !== "" ? m.lemma : m.form);
+  const fillMemory = (box: HTMLElement, mine: number): void => {
+    if (!memory) return;
+    memory.list().then(
+      (list) => {
+        if (generation !== mine || list.length === 0) return;
+        const wrap = el("div", "side-memory");
+        wrap.append(el("h3", "", "Cosa ricordo"));
+        const ul = el("ul", "side-memory-list");
+        for (const m of list) {
+          const li = el("li");
+          const img = el("img");
+          img.src = client.url(m.picto);
+          img.alt = "";
+          const forget = el("button", "", "Dimentica");
+          forget.type = "button";
+          forget.setAttribute("aria-label", `Dimentica ${memoryLabel(m)}`);
+          forget.addEventListener("click", () => {
+            memory.forget(m).then(() => {
+              setEngine(view, client);
+              showEmpty();
+            }, (e: unknown) => hooks.notice?.(`Non sono riuscito a dimenticare: ${String(e)}`));
+          });
+          li.append(img, el("span", "", memoryLabel(m)), forget);
+          ul.append(li);
+        }
+        const clear = el("button", "", "Dimentica tutto");
+        clear.type = "button";
+        clear.addEventListener("click", () => {
+          if (!window.confirm("Dimenticare tutte le scelte «per sempre»?")) return;
+          memory.clear().then(() => {
+            setEngine(view, client);
+            showEmpty();
+          }, (e: unknown) => hooks.notice?.(`Non sono riuscito a dimenticare: ${String(e)}`));
+        });
+        wrap.append(ul, clear);
+        box.append(wrap);
+      },
+      () => undefined,
+    );
+  };
+
   function showEmpty(): void {
-    generation++;
+    const mine = ++generation;
     target = null;
     sig = "";
     root.replaceChildren();
@@ -80,6 +138,7 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
     box.append(el("h2", "", "Simboli"));
     for (const line of EMPTY_HINT) box.append(el("p", "", line));
     root.append(box);
+    fillMemory(box, mine);
   }
 
   function show(t: TokenAt, focusSide: boolean): void {
@@ -124,10 +183,19 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
     allLabel.append(all, " usa per tutto il testo");
     allLabel.title = canLock ? "Tutte le parole uguali del testo prendono questo simbolo" : "Parola non riconosciuta: vale solo qui";
 
+    const always = el("input");
+    always.type = "checkbox";
+    always.checked = false;
+    always.disabled = !memory || inGroup;
+    const alwaysLabel = el("label", "pm-always");
+    alwaysLabel.append(always, " ricorda per sempre");
+    alwaysLabel.title = inGroup ? "Per un gruppo di parole vale solo qui" : "Da ora, in tutti i documenti, questa parola prende questo simbolo";
+
     const choose = (choice: Choice): void => {
       // La posizione della parola si legge adesso: il testo può essere cambiato da quando la barra l'ha mostrata.
       const w = target ?? t;
       applyChoice(view, { paraPos: w.paraPos, s: w.token.s, e: w.token.e, lemma: w.token.lemma, cat: w.token.cat }, choice, all.checked && canLock);
+      if (always.checked && choice.kind === "picto") void remember(w, choice.id);
       // La barra resta sulla parola e si aggiorna quando il motore risponde; il cursore torna nel testo.
       view.focus();
     };
@@ -269,7 +337,7 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
         saved.append(b);
       }
     }
-    root.replaceChildren(search, head, status, grid, saved, fixed, picker, allLabel, keys);
+    root.replaceChildren(search, head, status, grid, saved, fixed, picker, allLabel, alwaysLabel, keys);
     if (focusSide) root.focus();
 
     client.alternatives(t.para, t.policy, t.locks, t.token.s, t.token.e).then(

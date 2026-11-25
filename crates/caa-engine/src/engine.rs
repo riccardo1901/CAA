@@ -163,9 +163,45 @@ impl SenseLocks {
     }
 }
 
-/// Correzioni passate del docente (M8).
+/// Memoria del docente (livello 3 della scelta): "usa sempre questo simbolo per questa parola", in tutti i
+/// documenti. Per lemma e categoria; la forma esatta solo per i casi che il lemma non copre (plurali fissi).
+/// Il motore la riceve già pronta: non legge né scrive niente.
 #[derive(Debug, Clone, Default)]
-pub struct UserMemory {}
+pub struct UserMemory {
+    by_lemma: std::collections::HashMap<(String, Cat), u32>,
+    by_form: std::collections::HashMap<String, u32>,
+}
+
+impl UserMemory {
+    /// Valori che non sono pittogrammi (nessun simbolo, unisci, dividi) non si ricordano.
+    fn valid(picto: u32) -> bool {
+        picto > 0 && picto < ForcedPick::MERGE
+    }
+
+    pub fn insert_lemma(&mut self, lemma: &str, cat: Cat, picto: u32) {
+        if Self::valid(picto) {
+            self.by_lemma.insert((normalize_key(lemma), cat), picto);
+        }
+    }
+
+    pub fn insert_form(&mut self, form: &str, picto: u32) {
+        if Self::valid(picto) {
+            self.by_form.insert(normalize_key(form), picto);
+        }
+    }
+
+    /// La forma esatta vince sul lemma.
+    pub fn get(&self, form: &str, lemma: &str, cat: Cat) -> Option<u32> {
+        self.by_form
+            .get(&normalize_key(form))
+            .or_else(|| self.by_lemma.get(&(normalize_key(lemma), cat)))
+            .copied()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.by_lemma.is_empty() && self.by_form.is_empty()
+    }
+}
 
 pub struct Request<'a> {
     /// Un paragrafo.
@@ -307,6 +343,8 @@ pub enum PictoReason {
     Teacher,
     /// Blocco di senso del documento (livello 2).
     SenseLock,
+    /// Memoria del docente: "usa sempre" scelto in un altro documento (livello 3).
+    Memory,
 }
 
 /// Perché il motore ha scelto così (debug e menu delle alternative).
@@ -332,6 +370,7 @@ impl Reason {
             PictoReason::Multiword => "espressione multiparola",
             PictoReason::Teacher => "scelta del docente",
             PictoReason::SenseLock => "stesso senso di tutto il testo",
+            PictoReason::Memory => "scelta ricordata dal docente",
         }
     }
 }
@@ -365,6 +404,7 @@ impl fmt::Display for Reason {
             PictoReason::Multiword => "pittogramma dell'espressione multiparola",
             PictoReason::Teacher => "pittogramma scelto dal docente",
             PictoReason::SenseLock => "pittogramma scelto per tutto il testo",
+            PictoReason::Memory => "pittogramma ricordato dal docente",
         };
         write!(f, "{reading}; {picto}")
     }
@@ -503,7 +543,12 @@ const ELISION_TABLE: [(&str, &str, Cat); 18] = [
 /// Livelli 1 e 2 della scelta del pittogramma (SPEC.md, fase 8): la scelta esplicita del docente su un
 /// token vince su tutto, poi il blocco di senso per lemma e categoria. Il pittogramma 0 della scelta
 /// del docente vuol dire "nessun simbolo". Non tocca le parole nascoste.
-fn apply_choices(tokens: &mut [Token], locks: &SenseLocks, forced: &[ForcedPick]) {
+fn apply_choices(
+    tokens: &mut [Token],
+    locks: &SenseLocks,
+    memory: &UserMemory,
+    forced: &[ForcedPick],
+) {
     for t in tokens.iter_mut() {
         // Anche le parole sconosciute: sono proprio quelle per cui il docente sceglie a mano.
         if !matches!(
@@ -535,7 +580,7 @@ fn apply_choices(tokens: &mut [Token], locks: &SenseLocks, forced: &[ForcedPick]
             }
             continue;
         }
-        if locks.is_empty() || t.display == Display::Hidden {
+        if (locks.is_empty() && memory.is_empty()) || t.display == Display::Hidden {
             continue;
         }
         // La testa di un gruppo di parole porta il simbolo della frase: il blocco di senso del lemma
@@ -551,6 +596,14 @@ fn apply_choices(tokens: &mut [Token], locks: &SenseLocks, forced: &[ForcedPick]
                 t.picto = Some(PictoRef { id });
                 t.display = Display::Full;
                 t.reason.picto = PictoReason::SenseLock;
+            }
+        } else if let Some(id) = memory.get(&t.surface, &a.lemma, a.cat) {
+            // Livello 3: quello che il docente ha scelto "per sempre" in altri documenti.
+            t.confidence = 1.0;
+            if t.picto.map(|p| p.id) != Some(id) {
+                t.picto = Some(PictoRef { id });
+                t.display = Display::Full;
+                t.reason.picto = PictoReason::Memory;
             }
         }
     }
@@ -926,7 +979,7 @@ impl<D: AsRef<[u8]>> Engine<D> {
         self.apply_multiword(&mut tokens, req.forced);
         self.apply_manual_merges(&mut tokens, req.forced);
         apply_policy(&mut tokens, req.prefs);
-        apply_choices(&mut tokens, req.sense_locks, req.forced);
+        apply_choices(&mut tokens, req.sense_locks, req.memory, req.forced);
         tokens
     }
 

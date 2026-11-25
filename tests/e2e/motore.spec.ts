@@ -62,7 +62,7 @@ const MOCK = `
     }
     return out;
   }
-  window.__mock = { calls, delay: 4, fail: 0, alts: [], searches: [], altDelay: 3, custom: [], imports: [], docsStore: new Map(), saves: [], saveFail: 0, saveDelay: 0, conflictNext: false, broken: 0, readOnly: {}, mediaMap: [], lib: Object.assign({ configured: false, path: null, reachable: true, name: 'Maria', candidates: [], entries: [], cached: [], incomplete: 0, setCalls: [], scans: 0, adapts: [], adaptFail: false, nameFail: false, user: 'maria', admins: [], publishes: [], updates: [], retires: [], opens: [], publishFail: '', updateMode: '', retireFail: '', version: null }, window.__libInit || {}) };
+  window.__mock = { memory: (window.__memInit || []).slice(), memoryFail: false, calls, delay: 4, fail: 0, alts: [], searches: [], altDelay: 3, custom: [], imports: [], docsStore: new Map(), saves: [], saveFail: 0, saveDelay: 0, conflictNext: false, broken: 0, readOnly: {}, mediaMap: [], lib: Object.assign({ configured: false, path: null, reachable: true, name: 'Maria', candidates: [], entries: [], cached: [], incomplete: 0, setCalls: [], scans: 0, adapts: [], adaptFail: false, nameFail: false, user: 'maria', admins: [], publishes: [], updates: [], retires: [], opens: [], publishFail: '', updateMode: '', retireFail: '', version: null }, window.__libInit || {}) };
   return {
     symbolize: (paras, policy, locks) => { calls.push({ texts: paras.map((p) => p.text), paras, locks, policy }); return new Promise((r, rej) => setTimeout(() => { if (window.__mock.fail > 0) { window.__mock.fail--; rej(new Error('motore guasto')); } else r(paras.map((p) => tokens(p.text, policy, p.forced, locks))); }, window.__mock.delay)); },
     alternatives: (para, policy, locks, s, e) => { window.__mock.alts.push({ para, s, e }); return new Promise((r) => setTimeout(() => r([1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => ({ picto: 1000 + i, keyword: 'alt' + i, reason: 'altro senso', image: i !== 3 }))), window.__mock.altDelay)); },
@@ -147,6 +147,12 @@ const MOCK = `
       setName: async (n) => { if (window.__mock.lib.nameFail) throw new Error('non riesco a salvare il nome'); window.__mock.lib.name = n.trim().replace(/\\s+/g, ' '); return window.__mock.lib.name; },
     } : undefined,
     listCustom: async () => window.__mock.custom.slice(),
+    memory: {
+      list: async () => window.__mock.memory.slice(),
+      add: async (e) => { if (window.__mock.memoryFail) throw new Error('disco pieno'); window.__mock.memory = window.__mock.memory.filter((m) => !(m.lemma === e.lemma && m.form === e.form)).concat([e]); },
+      forget: async (e) => { window.__mock.memory = window.__mock.memory.filter((m) => !(m.lemma === e.lemma && m.form === e.form)); },
+      clear: async () => { window.__mock.memory = []; },
+    },
     importCustom: async (blob, label) => {
       window.__mock.imports.push({ size: blob.size, type: blob.type, label });
       const n = window.__mock.custom.length;
@@ -2024,4 +2030,56 @@ test("versione nuova del programma annunciata nel Drive", async ({ page }) => {
   await expect(page.locator(".update-note")).toHaveAttribute("title", /Nuove funzioni/);
   await page.evaluate(() => { (window as any).__mock.lib.version = null; });
   await expect(page.locator(".update-note")).toBeHidden({ timeout: 5000 });
+});
+
+// ---- M9c-1: memoria del docente («ricorda per sempre») ----
+
+const memoryOf = (page: Page) => page.evaluate(() => (window as any).__mock.memory);
+
+test("«ricorda per sempre»: la scelta va in memoria e i paragrafi si rifanno", async ({ page }) => {
+  await open(page, "pane e casa");
+  await clickSymbol(page, "pane");
+  await expect(page.locator(".pm-always input")).not.toBeChecked(); // di default spenta: ricordare è una scelta
+  const before = await page.evaluate(() => (window as any).__mock.calls.length);
+  await page.locator(".pm-always input").check();
+  await page.locator(".pm-cell").nth(2).click();
+  await expect.poll(() => memoryOf(page)).toEqual([{ lemma: "pane", cat: "NOUN", form: "", picto: 1003 }]);
+  // La cache si è svuotata: il motore è stato richiamato per rifare il paragrafo.
+  await expect.poll(() => page.evaluate(() => (window as any).__mock.calls.length)).toBeGreaterThan(before + 0);
+  // Senza la spunta non si ricorda niente.
+  await clickSymbol(page, "casa");
+  await page.locator(".pm-cell").nth(1).click();
+  expect(await memoryOf(page)).toHaveLength(1);
+});
+
+test("«ricorda per sempre»: «Nessun simbolo» o «Solo testo» non si ricordano; un errore si dice", async ({ page }) => {
+  await open(page, "pane");
+  await clickSymbol(page, "pane");
+  await page.locator(".pm-always input").check();
+  await page.getByRole("button", { name: "Solo testo" }).click();
+  expect(await memoryOf(page)).toEqual([]);
+  await page.evaluate(() => ((window as any).__mock.memoryFail = true));
+  await clickSymbol(page, "pane");
+  await page.locator(".pm-always input").check();
+  await page.locator(".pm-cell").nth(0).click();
+  await expect(page.locator(".statusbar")).toContainText("Non sono riuscito a ricordare");
+});
+
+test("«Cosa ricordo»: elenco nella barra vuota, Dimentica e Dimentica tutto", async ({ page }) => {
+  await page.addInitScript(() => {
+    (window as any).__memInit = [
+      { lemma: "pane", cat: "NOUN", form: "", picto: 1003 },
+      { lemma: "", cat: "", form: "blorpf", picto: 1004 },
+    ];
+  });
+  await open(page, "pane e casa");
+  const list = page.locator(".side-memory");
+  await expect(list).toContainText("Cosa ricordo");
+  await expect(list.locator("li")).toHaveCount(2);
+  await list.getByRole("button", { name: "Dimentica pane" }).click();
+  await expect.poll(() => memoryOf(page)).toEqual([{ lemma: "", cat: "", form: "blorpf", picto: 1004 }]);
+  await expect(page.locator(".side-memory li")).toHaveCount(1);
+  await page.locator(".side-memory").getByRole("button", { name: "Dimentica tutto" }).click();
+  await expect.poll(() => memoryOf(page)).toEqual([]);
+  await expect(page.locator(".side-memory")).toHaveCount(0);
 });

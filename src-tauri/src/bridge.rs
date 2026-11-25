@@ -269,6 +269,7 @@ pub fn explain(t: &Token) -> String {
         PictoReason::Multiword => "espressione di più parole",
         PictoReason::Teacher => "scelto da te",
         PictoReason::SenseLock => "stesso senso già scelto nel testo",
+        PictoReason::Memory => "scelta ricordata («usa sempre»)",
     };
     match &t.analysis {
         Some(a) => format!("{}, {reading} · simbolo: {picto}", cat_label(a.cat)),

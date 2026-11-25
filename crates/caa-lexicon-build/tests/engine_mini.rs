@@ -877,6 +877,75 @@ fn il_blocco_di_senso_vale_per_tutte_le_occorrenze_e_cede_alla_scelta() {
 }
 
 #[test]
+fn la_memoria_del_docente_vale_in_ogni_testo_e_cede_a_blocco_e_scelta() {
+    let mut memory = UserMemory::default();
+    memory.insert_lemma("pane", Cat::Noun, 116);
+    let run = |forced: &[ForcedPick], locks: &SenseLocks| {
+        engine("", "").symbolize(&request_with(
+            "pane e pane",
+            forced,
+            locks,
+            &DocPrefs::default(),
+            &memory,
+        ))
+    };
+    // Senza altro: la memoria decide per tutte le occorrenze, e lo dice.
+    let t = run(&[], &SenseLocks::default());
+    assert!(t
+        .iter()
+        .filter(|x| x.surface == "pane")
+        .all(|x| x.picto.map(|p| p.id) == Some(116) && x.reason.picto == PictoReason::Memory));
+    // Il blocco di senso del documento vince sulla memoria.
+    let mut locks = SenseLocks::default();
+    locks.insert("pane", Cat::Noun, 999);
+    let t = run(&[], &locks);
+    assert_eq!(t[0].picto.map(|p| p.id), Some(999));
+    assert_eq!(t[0].reason.picto, PictoReason::SenseLock);
+    // La scelta esplicita vince su tutto.
+    let forced = [ForcedPick {
+        span_utf16: (0, 4),
+        picto: 101,
+    }];
+    let t = run(&forced, &locks);
+    assert_eq!(t[0].picto.map(|p| p.id), Some(101));
+    // Altri lemmi non sono toccati; una memoria vuota non cambia niente.
+    assert_eq!(
+        engine("", "").symbolize(&request_with(
+            "porta",
+            &[],
+            &SenseLocks::default(),
+            &DocPrefs::default(),
+            &memory
+        ))[0]
+            .picto
+            .map(|p| p.id),
+        Some(101)
+    );
+}
+
+#[test]
+fn la_memoria_per_forma_esatta_non_tocca_le_altre_forme() {
+    let mut memory = UserMemory::default();
+    memory.insert_form("pane", 116);
+    let forms = |text: &str| {
+        engine("", "").symbolize(&request_with(
+            text,
+            &[],
+            &SenseLocks::default(),
+            &DocPrefs::default(),
+            &memory,
+        ))
+    };
+    assert_eq!(forms("pane")[0].picto.map(|p| p.id), Some(116));
+    assert_eq!(forms("Pane")[0].picto.map(|p| p.id), Some(116));
+    // Un valore speciale (unisci/dividi) o 0 non è mai un pittogramma da ricordare.
+    let mut bad = UserMemory::default();
+    bad.insert_lemma("pane", Cat::Noun, 0);
+    bad.insert_lemma("pane", Cat::Noun, ForcedPick::MERGE);
+    assert!(bad.is_empty());
+}
+
+#[test]
 fn il_docente_puo_scegliere_un_simbolo_per_una_parola_sconosciuta() {
     let forced = [ForcedPick {
         span_utf16: (0, 6),

@@ -71,5 +71,16 @@ Ogni difetto confermato ha la prova scritta prima (sul codice vecchio falliva).
 - Minori: la copia da adattare azzera il ricordo della pubblicazione; `version.json` si legge al massimo per 64 KB.
 - Non corretto, noto: la ricerca automatica della cartella senza tempo massimo se un'unità di rete è scollegata (resta da rivedere in M9c o con la prova sul Drive vero); due utenti omonimi si riconoscono come lo stesso autore (SPEC chiede nome utente Windows + nome da mostrare: da decidere, segnalato).
 
+---
+
+# M9c-1 — memoria del docente
+
+**Stato**: codice e prove automatiche fatti; prova a mano su Windows da fare (`docs/PROVE-M9c1.md`).
+
+- **Motore**: `UserMemory`, livello 3 della scelta (`PictoReason::Memory`). Per lemma e categoria; per forma esatta solo le parole senza lemma. Cede alla scelta esplicita e al blocco di senso del documento; vince su curati e indice. Valori speciali (0, unisci, dividi) mai ricordati. Resta senza accesso al disco.
+- **App**: `memoria.json` in `%APPDATA%\Editor CAA` (scrittura atomica, tetto 5.000 voci e 4 MB, voci non valide scartate, file rovinato messo da parte, un salvataggio che fallisce non cambia la memoria). Comandi `memory_list/add/forget/clear`; `symbolize` e `alternatives` la usano.
+- **Editor**: casella «ricorda per sempre» (spenta di default; solo per scelte di un pittogramma), elenco «Cosa ricordo» nella barra vuota con Dimentica e Dimentica tutto; i paragrafi si rifanno quando la memoria cambia.
+- **Scelta aperta**: un documento già fatto, riaperto con la stessa versione del lessico, si ri-simbolizza con la memoria di adesso e può cambiare simbolo. È coerente con «usa sempre»; da confermare con la prova a mano.
+
 ## Metriche del motore
-Invariate: il motore non è cambiato in M9.
+Invariate (la memoria è vuota nelle misure): dorati 48/48; strutture 20/20; corpus sviluppo 6,9 (134/1945); prova 13,4 (86/643).

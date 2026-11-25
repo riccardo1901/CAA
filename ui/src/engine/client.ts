@@ -234,6 +234,21 @@ export interface CustomSymbol {
   label: string;
 }
 
+/** Una voce della memoria del docente («usa sempre»): per lemma e categoria, oppure solo per forma. */
+export interface MemoryEntry {
+  lemma: string;
+  cat: string;
+  form: string;
+  picto: number;
+}
+
+export interface MemoryClient {
+  list(): Promise<MemoryEntry[]>;
+  add(entry: MemoryEntry): Promise<void>;
+  forget(entry: MemoryEntry): Promise<void>;
+  clear(): Promise<void>;
+}
+
 /** Quello che serve all'editor per parlare con il motore. */
 export interface EngineClient {
   symbolize(paras: ParaReq[], policy: Policy, locks: LockReq[]): Promise<TokenDto[][]>;
@@ -245,6 +260,8 @@ export interface EngineClient {
   docs?: DocClient;
   /** La biblioteca nel Drive condiviso e il nome da mostrare; assenti nelle prove senza archivio. */
   library?: LibraryClient;
+  /** La memoria del docente (M9c-1); assente nelle prove senza archivio. */
+  memory?: MemoryClient;
   settings?: { getName(): Promise<string>; setName(name: string): Promise<string> };
   /** I simboli personali già importati. */
   listCustom(): Promise<CustomSymbol[]>;
@@ -286,6 +303,12 @@ export function tauriClient(): EngineClient {
       setName: (name) => invoke<string>("settings_set_name", { name }),
     },
     listCustom: () => invoke<CustomSymbol[]>("list_custom_symbols"),
+    memory: {
+      list: () => invoke<MemoryEntry[]>("memory_list"),
+      add: (entry) => invoke<void>("memory_add", { entry }),
+      forget: (entry) => invoke<void>("memory_forget", { entry }),
+      clear: () => invoke<void>("memory_clear"),
+    },
     importCustom: async (image, label) =>
       invoke<CustomSymbol>("save_custom_symbol", new Uint8Array(await image.arrayBuffer()), {
         headers: { "x-label": encodeURIComponent(label) },

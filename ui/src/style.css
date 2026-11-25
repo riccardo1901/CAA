@@ -440,3 +440,12 @@ body { margin: 0; }
 .pub-form input { padding: 6px 8px; font: inherit; }
 .pub-form .lib-actions { margin-top: 4px; }
 .docs-row button:disabled { opacity: 0.5; cursor: default; }
+
+/* Memoria del docente («ricorda per sempre») */
+.side-memory { margin-top: 18px; border-top: 1px solid var(--line, #d0d0d0); padding-top: 10px; }
+.side-memory h3 { font-size: 14px; margin: 0 0 6px; }
+.side-memory-list { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 4px; }
+.side-memory-list li { display: flex; align-items: center; gap: 8px; }
+.side-memory-list img { width: 28px; height: 28px; object-fit: contain; }
+.side-memory-list span { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+.pm-always { display: block; margin-top: 6px; font-size: 14px; }
