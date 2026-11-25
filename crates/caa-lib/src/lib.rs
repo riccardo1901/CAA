@@ -14,6 +14,7 @@ pub mod cache;
 pub mod config;
 pub mod detect;
 pub mod index;
+pub mod publish;
 pub mod reach;
 
 use caa_doc::{Document, Origin};
@@ -36,5 +37,7 @@ pub fn adapted_copy(original: &Document, author: &str) -> Document {
     copy
 }
 
+#[cfg(test)]
+mod publish_tests;
 #[cfg(test)]
 mod tests;

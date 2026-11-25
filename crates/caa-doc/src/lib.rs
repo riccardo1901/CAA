@@ -70,6 +70,10 @@ pub struct Manifest {
     /// lettura lo controlla, così un'immagine persa per un byte rovinato non passa inosservata.
     #[serde(default)]
     pub media: Vec<String>,
+    /// La revisione che questo documento ha in biblioteca, se è stato pubblicato (lo ricorda per «Aggiorna in
+    /// biblioteca»: se la biblioteca è andata avanti da sola, non si sovrascrive).
+    #[serde(default)]
+    pub published_rev: Option<u32>,
     /// `render.json` deve esserci (la scrittura lo mette sempre): se manca, il file è rovinato.
     #[serde(default)]
     pub has_render: bool,
@@ -96,6 +100,7 @@ impl Manifest {
             prefs: Value::Null,
             sense_locks: Value::Null,
             media: Vec::new(),
+            published_rev: None,
             has_render: false,
         }
     }
@@ -478,11 +483,19 @@ fn write_zip<W: Write + Seek>(w: W, doc: &Document) -> Result<(), DocError> {
 /// Il nome del file temporaneo accanto a `path`: lo stesso nome più il numero del processo, così due
 /// copie del programma non si pestano; gli altri PC e l'indice ignorano i `.tmp`.
 pub fn tmp_path(path: &Path) -> PathBuf {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    // Anche due scritture dello stesso processo (salvataggio automatico e pubblicazione, o più thread) hanno
+    // nomi diversi.
+    static COUNTER: AtomicU64 = AtomicU64::new(0);
     let mut name = path
         .file_name()
         .map(|n| n.to_os_string())
         .unwrap_or_default();
-    name.push(format!(".{}.tmp", std::process::id()));
+    name.push(format!(
+        ".{}.{}.tmp",
+        std::process::id(),
+        COUNTER.fetch_add(1, Ordering::Relaxed)
+    ));
     path.with_file_name(name)
 }
 
