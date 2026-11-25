@@ -3,6 +3,7 @@
 // "Dividi" su un'unione fatta a mano toglie il mark, "Riunisci" toglie una divisione.
 import type { EditorView } from "prosemirror-view";
 import type { TokenAt } from "./engineSymbols";
+import { hooks } from "./menuHooks";
 import { paraInfo } from "./picks";
 import { schema } from "./schema";
 import { wordRanges } from "./words";
@@ -27,10 +28,15 @@ function selectedWords(view: EditorView): Selected | null {
   const start = $from.start();
   const text = $from.parent.textContent;
   const words = wordRanges(text).filter(([a, b]) => b > from - start && a < to - start);
-  if (words.length < 2) return null;
+  if (words.length < 1) return null;
+  // Due parti attaccate dall'apostrofo ("dell'" + "acqua") sono una parola sola per il docente.
+  let units = 1;
   for (let i = 1; i < words.length; i++) {
-    if (text.slice(words[i - 1][1], words[i][0]).trim() !== "") return null;
+    const gap = text.slice(words[i - 1][1], words[i][0]);
+    if (gap.trim() !== "") return null;
+    if (gap.length > 0) units++;
   }
+  if (units < 2) return null;
   return { paraPos: $from.before(), from: words[0][0], to: words[words.length - 1][1], count: words.length };
 }
 
@@ -47,6 +53,16 @@ export function mergeSelection(view: EditorView): string | null {
   const a = sel.paraPos + 1 + sel.from;
   const b = sel.paraPos + 1 + sel.to;
   const text = node.textContent.slice(sel.from, sel.to).toLowerCase();
+  const info = paraInfo(node);
+  // Una divisione già fatta non si taglia: si riunisce prima l'espressione.
+  if (info.groups.some((g) => g.mode === "split" && g.s < sel.to && sel.from < g.e)) {
+    return "Queste parole fanno parte di un'espressione divisa: premi prima «Riunisci», poi unisci.";
+  }
+  // Le scelte sulle singole parole cadono; se una era un «per tutto il testo», si dice.
+  const locks = info.picks.filter((p) => p.lock && p.s < sel.to && sel.from < p.e).map((p) => p.lemma || p.word);
+  if (locks.length > 0) {
+    hooks.notice?.(`Unito. Attenzione: la scelta «per tutto il testo» di «${[...new Set(locks)].join("», «")}» è stata sciolta.`);
+  }
   const tr = view.state.tr.removeMark(a, b, schema.marks.pick).removeMark(a, b, schema.marks.group);
   tr.addMark(a, b, schema.marks.group.create({ text, mode: "merge" }));
   view.dispatch(tr.scrollIntoView());
@@ -68,7 +84,9 @@ export function groupAction(view: EditorView, t: TokenAt): GroupAction | null {
     const [a, b] = abs(covering.s, covering.e);
     return {
       label: covering.mode === "merge" ? "Dividi" : "Riunisci",
-      run: (v) => v.dispatch(v.state.tr.removeMark(a, b, schema.marks.group)),
+      // Le scelte fatte su una parola del gruppo (o sulle parole separate) cadono: così la prima parola
+      // non tiene il simbolo della frase dopo la divisione, né quello di una parola sola dopo l'unione.
+      run: (v) => v.dispatch(v.state.tr.removeMark(a, b, schema.marks.group).removeMark(a, b, schema.marks.pick)),
     };
   }
   if (t.token.gkind === "multiword" && t.groupSpan) {
@@ -77,7 +95,7 @@ export function groupAction(view: EditorView, t: TokenAt): GroupAction | null {
     const text = node.textContent.slice(s, e).toLowerCase();
     return {
       label: "Dividi",
-      run: (v) => v.dispatch(v.state.tr.addMark(a, b, schema.marks.group.create({ text, mode: "split" }))),
+      run: (v) => v.dispatch(v.state.tr.removeMark(a, b, schema.marks.pick).addMark(a, b, schema.marks.group.create({ text, mode: "split" }))),
     };
   }
   return null;

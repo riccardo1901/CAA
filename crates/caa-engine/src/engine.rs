@@ -538,6 +538,11 @@ fn apply_choices(tokens: &mut [Token], locks: &SenseLocks, forced: &[ForcedPick]
         if locks.is_empty() || t.display == Display::Hidden {
             continue;
         }
+        // La testa di un gruppo di parole porta il simbolo della frase: il blocco di senso del lemma
+        // della sua prima parola ("ferro", "fare") non lo sostituisce.
+        if t.group.is_some_and(|g| g.kind == GroupKind::Multiword) {
+            continue;
+        }
         let Some(a) = &t.analysis else { continue };
         if let Some(id) = locks.get(&a.lemma, a.cat) {
             // Il docente ha deciso il senso per tutto il testo: la parola non e' piu' da controllare.

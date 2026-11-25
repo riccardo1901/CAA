@@ -89,5 +89,20 @@ Rimandati o accettati:
 - Barra laterale: «Simbolo personale…», «I miei simboli» (riuso con un clic), il simbolo personale con l'etichetta della parola è la prima alternativa, la ricerca li trova per etichetta.
 - Non c'è ancora: cancellare un simbolo salvato, raccolta della scuola, memoria fra documenti (M9).
 
+## Revisione indipendente (Opus) e correzioni
+Dieci osservazioni; otto corrette con una prova prima della correzione:
+- Un blocco di senso sul lemma della prima parola sostituiva il simbolo di un gruppo (unione o espressione): ora le teste di gruppo non lo subiscono (c'era già prima, pesava di più con M8c).
+- Un simbolo personale scelto dalla griglia o dalla ricerca perdeva l'`uuid`: ora lo porta sempre.
+- «Unisci» cancellava in silenzio un «per tutto il testo»: ora lo dice. «Dividi» e «Riunisci» tolgono le scelte fatte sul gruppo (altrimenti la prima parola teneva il simbolo della frase).
+- «Unisci» dentro una divisione già fatta accorciava la divisione e perdeva tutto: ora si rifiuta con un messaggio («Riunisci» prima).
+- I valori speciali di unisci/dividi non possono più arrivare come pittogramma di un blocco di senso (né da un HTML incollato).
+- Due copie dell'app aperte insieme: salvataggi che si pestavano; ora l'indice si rilegge prima di assegnare un id, i file temporanei hanno il numero del processo, e un indice perso non fa riusare gli id (il contatore parte dal numero di file).
+- «Unisci» su una parola sola con l'apostrofo («dell'acqua») non è più possibile; un numero che apre un gruppo senza simbolo mostra il segnaposto.
+
+Accettati come limiti noti:
+- Se il motore rifiuta un'unione (per esempio «la scuola» dentro l'espressione «scuola media»), il segno resta e la barra offre «Dividi» senza spiegare.
+- Dopo Riunisci/Dividi la barra può svuotarsi o la vecchia evidenziazione restare un attimo: solo estetico.
+- Su Linux/macOS WebKit di solito non codifica WebP dal canvas (l'importazione fallirebbe) e Ctrl+Maiusc+U può essere preso da IBus: fuori dall'ambito v1 (solo Windows).
+
 ## Metriche del motore
 Invariate in tutto M8c: dorati 48/48, strutture 20/20, corpus sviluppo 6,9 e prova 13,4 correzioni per 100 parole.

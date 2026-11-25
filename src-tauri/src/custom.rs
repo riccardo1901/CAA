@@ -94,9 +94,20 @@ fn new_uuid(counter: u32) -> String {
     format!("{:016x}{:016x}", part(1), part(2))
 }
 
+/// Quanti file `.webp` ci sono nella cartella.
+fn count_images(dir: &Path) -> u32 {
+    std::fs::read_dir(dir).map_or(0, |d| {
+        d.flatten()
+            .filter(|e| e.path().extension().is_some_and(|x| x == "webp"))
+            .count() as u32
+    })
+}
+
 /// Scrive un file in modo che non resti mai a metà: prima un file temporaneo, poi lo si rinomina.
 fn write_atomic(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
-    let tmp = path.with_extension("tmp");
+    // Il nome del file temporaneo include il numero del processo: due copie dell'app aperte insieme
+    // non si pestano il file.
+    let tmp = path.with_extension(format!("{}.tmp", std::process::id()));
     std::fs::write(&tmp, bytes)?;
     std::fs::rename(&tmp, path)
 }
@@ -116,9 +127,24 @@ impl CustomStore {
             },
             Err(_) => IndexFile::default(),
         };
+        let mut state = state;
+        // Ogni simbolo salvato ha il suo file: il contatore non può essere sotto il numero dei file, neanche
+        // se l'indice è andato perso (gli id già usati nei documenti non devono puntare a immagini nuove).
+        state.next = state.next.max(count_images(&dir));
         CustomStore {
             dir,
             state: Mutex::new(state),
+        }
+    }
+
+    /// Rilegge l'indice dal disco se un'altra copia dell'app ne ha scritto uno più avanti.
+    fn refresh(&self, state: &mut IndexFile) {
+        if let Ok(bytes) = std::fs::read(self.dir.join("index.json")) {
+            if let Ok(disk) = serde_json::from_slice::<IndexFile>(&bytes) {
+                if disk.next >= state.next {
+                    *state = disk;
+                }
+            }
         }
     }
 
@@ -139,6 +165,7 @@ impl CustomStore {
             return Err("l'immagine non è nel formato atteso (WebP)".into());
         }
         let mut state = self.lock();
+        self.refresh(&mut state);
         if state.symbols.len() >= MAX_SYMBOLS {
             return Err("troppi simboli personali".into());
         }
@@ -165,7 +192,11 @@ impl CustomStore {
 
     /// Il file di un simbolo personale, se esiste nella raccolta.
     pub fn path_of(&self, id: u32) -> Option<PathBuf> {
-        let state = self.lock();
+        let mut state = self.lock();
+        // Un simbolo salvato da un'altra copia dell'app: si rilegge l'indice una volta.
+        if !state.symbols.iter().any(|s| s.id == id) {
+            self.refresh(&mut state);
+        }
         let s = state.symbols.iter().find(|s| s.id == id)?;
         Some(self.dir.join(format!("{}.webp", s.uuid)))
     }
@@ -257,6 +288,35 @@ mod tests {
         );
         store.save(&webp(40), "ok").unwrap();
         assert_eq!(store.list().len(), 1);
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn due_istanze_sulla_stessa_cartella_non_si_pestano() {
+        let dir = tmp("due");
+        let a = CustomStore::open(dir.clone());
+        let b = CustomStore::open(dir.clone()); // aperta quando la raccolta era ancora vuota
+        let x = a.save(&webp(30), "uno").unwrap();
+        let y = b.save(&webp(31), "due").unwrap();
+        // Id diversi, e ciascuna istanza vede anche i simboli salvati dall'altra.
+        assert_ne!(x.id, y.id);
+        assert_eq!(b.path_of(x.id).map(|p| p.is_file()), Some(true));
+        assert_eq!(a.path_of(y.id).map(|p| p.is_file()), Some(true));
+        assert_eq!(CustomStore::open(dir.clone()).list().len(), 2);
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn un_indice_perso_non_fa_riusare_gli_id() {
+        let dir = tmp("perso");
+        let store = CustomStore::open(dir.clone());
+        let first = store.save(&webp(30), "a").unwrap();
+        let second = store.save(&webp(31), "b").unwrap();
+        std::fs::write(dir.join("index.json"), b"rotto").unwrap();
+        let again = CustomStore::open(dir.clone());
+        let third = again.save(&webp(32), "c").unwrap();
+        // Gli id gia' usati nei documenti non puntano a immagini nuove.
+        assert!(third.id > second.id && third.id > first.id, "{third:?}");
         std::fs::remove_dir_all(&dir).unwrap();
     }
 

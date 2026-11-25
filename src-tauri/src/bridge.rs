@@ -87,7 +87,11 @@ pub fn to_forced(v: &[ForcedDto]) -> Vec<ForcedPick> {
 pub fn to_locks(v: &[LockDto]) -> SenseLocks {
     let mut locks = SenseLocks::default();
     for l in v {
-        if let (Some(cat), true) = (Cat::from_name(&l.cat), l.picto > 0) {
+        // I valori speciali di "unisci" e "dividi" non sono pittogrammi.
+        if let (Some(cat), true) = (
+            Cat::from_name(&l.cat),
+            l.picto > 0 && l.picto < ForcedPick::MERGE,
+        ) {
             locks.insert(&l.lemma, cat, l.picto);
         }
     }
@@ -296,6 +300,9 @@ pub fn to_dto(tokens: &[Token], has_image: &dyn Fn(u32) -> bool) -> Vec<TokenDto
             let image = picto.is_some_and(has_image);
             let content = t.analysis.as_ref().is_some_and(|a| is_content(a.cat));
             let word = matches!(t.kind, TokenKind::Word | TokenKind::Unknown);
+            // Un numero che apre un gruppo ("3 gatti") senza simbolo mostra il segnaposto come una parola.
+            let group_number =
+                t.kind == TokenKind::Number && t.group.is_some_and(|g| g.role == GroupRole::Head);
             let hidden = t.display == Display::Hidden;
             let teacher = t.reason.picto == PictoReason::Teacher;
             let group_head = t.group.is_some_and(|g| g.role == GroupRole::Head);
@@ -319,7 +326,7 @@ pub fn to_dto(tokens: &[Token], has_image: &dyn Fn(u32) -> bool) -> Vec<TokenDto
                 doubtful: word && !hidden && t.confidence < DOUBT_THRESHOLD,
                 // Una parola piena visibile senza simbolo (o con simbolo non disponibile).
                 // (non se il docente ha scelto "nessun simbolo": è una scelta, non una mancanza).
-                placeholder: word
+                placeholder: (word || group_number)
                     && !hidden
                     && !(teacher && picto.is_none())
                     && (content || t.kind == TokenKind::Unknown || group_head)
@@ -602,6 +609,15 @@ mod tests {
         });
         let b = &to_dto(&[bare], &|_| true)[0];
         assert!(b.placeholder && b.gkind == "multiword");
+        // Anche un numero che apre un gruppo ("3 gatti") senza simbolo: segnaposto; da solo no.
+        let mut num = token(TokenKind::Number, None, None, Display::Full, 1.0);
+        assert!(!to_dto(std::slice::from_ref(&num), &|_| true)[0].placeholder);
+        num.group = Some(GroupRef {
+            id: 2,
+            kind: GroupKind::Multiword,
+            role: GroupRole::Head,
+        });
+        assert!(to_dto(&[num], &|_| true)[0].placeholder);
     }
 
     #[test]
@@ -636,6 +652,27 @@ mod tests {
         assert_eq!(locks.get("pesca", Cat::Noun), Some(5));
         assert_eq!(locks.get("x", Cat::Noun), None);
         assert_eq!(locks.get("y", Cat::Noun), None);
+        // I valori speciali di «unisci» e «dividi» non sono mai un pittogramma, neanche in un blocco.
+        let locks = to_locks(&[
+            LockDto {
+                lemma: "a".into(),
+                cat: "NOUN".into(),
+                picto: ForcedPick::MERGE,
+            },
+            LockDto {
+                lemma: "b".into(),
+                cat: "NOUN".into(),
+                picto: ForcedPick::SPLIT,
+            },
+            LockDto {
+                lemma: "c".into(),
+                cat: "NOUN".into(),
+                picto: 0x8000_0001,
+            },
+        ]);
+        assert_eq!(locks.get("a", Cat::Noun), None);
+        assert_eq!(locks.get("b", Cat::Noun), None);
+        assert_eq!(locks.get("c", Cat::Noun), Some(0x8000_0001)); // un simbolo personale sì
         assert!(check_choices(MAX_FORCED, MAX_LOCKS).is_ok());
         assert!(check_choices(MAX_FORCED + 1, 0).is_err());
         assert!(check_choices(0, MAX_LOCKS + 1).is_err());

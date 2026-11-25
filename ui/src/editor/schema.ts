@@ -64,7 +64,8 @@ export const schema = new Schema({
             const e = dom as HTMLElement;
             return {
               word: e.dataset.word ?? "",
-              picto: Number(e.dataset.picto ?? 0) || 0,
+              // I valori speciali di «unisci» e «dividi» (da 2^32-2) non sono pittogrammi: un HTML incollato non li porta nel motore.
+              picto: Math.min(Number(e.dataset.picto ?? 0) || 0, 4294967293),
               lock: e.dataset.lock === "1" ? 1 : 0,
               lemma: e.dataset.lemma ?? "",
               cat: e.dataset.cat ?? "",

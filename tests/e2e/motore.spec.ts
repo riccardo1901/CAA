@@ -946,3 +946,69 @@ test("i miei simboli si riusano per un'altra parola, si trovano per etichetta e 
   await expect(page.locator(".pm-cell").first()).toHaveAttribute("title", "simbolo personale");
   await expect(page.locator(".pm-cell")).toHaveCount(3);
 });
+
+// ---- Revisione di M8c ----
+
+test("un simbolo personale scelto dalla griglia porta il suo uuid", async ({ page }) => {
+  await open(page, "Marco mangia pane e pane");
+  await clickSymbol(page, "pane", 0);
+  await page.locator(".pm-all input").uncheck();
+  await page.locator(".side input[type=file]").setInputFiles(photo);
+  await page.locator(".crop-dialog").getByRole("button", { name: "Usa questo simbolo" }).click();
+  await expect.poll(async () => (await docPicks(page)).length).toBe(1);
+  await clickSymbol(page, "pane", 1);
+  await page.locator(".pm-all input").uncheck();
+  await page.locator(".pm-cell").first().click(); // il simbolo personale con l'etichetta «pane»
+  await expect.poll(async () => (await docPicks(page)).length).toBe(2);
+  expect((await docPicks(page)).map((p) => p.uuid)).toEqual(["uuid-0", "uuid-0"]);
+  // Anche dalla ricerca (Invio).
+  await clickSymbol(page, "mangia");
+  await page.locator(".pm-all input").uncheck();
+  await page.locator(".pm-search").fill("pan");
+  await expect(page.locator(".pm-cell").first()).toHaveAttribute("title", "simbolo personale");
+  await page.locator(".pm-search").press("Enter");
+  await expect.poll(async () => (await docPicks(page)).length).toBe(3);
+  expect((await docPicks(page)).find((p) => p.word === "mangia")).toMatchObject({ uuid: "uuid-0" });
+});
+
+test("Unisci avvisa se scioglie un «per tutto il testo»", async ({ page }) => {
+  await open(page, "pesca e pesca noce");
+  await clickSymbol(page, "pesca", 1);
+  await page.locator(".pm-cell").nth(1).click(); // con blocco: «per tutto il testo»
+  await expect.poll(async () => (await docPicks(page)).filter((p) => p.lock === 1).length).toBe(1);
+  await selectText(page, 1 + 8, 1 + 18);
+  await page.keyboard.press("Control+Shift+u");
+  await expect(page.locator(".statusbar")).toContainText("pesca");
+  await expect(page.locator(".statusbar")).toContainText("tutto il testo");
+});
+
+test("Dividi e Riunisci tolgono le scelte fatte sul gruppo", async ({ page }) => {
+  await open(page, "Vado alla scuola media di Roma.");
+  await clickSymbol(page, "scuola");
+  await page.locator(".pm-cell").nth(1).click(); // un'alternativa per la frase
+  await expect.poll(async () => (await docPicks(page)).length).toBe(1);
+  await page.locator(".side").getByRole("button", { name: "Dividi" }).click();
+  // Dopo la divisione «scuola» torna con il suo simbolo, non quello scelto per la frase.
+  await expect.poll(async () => (await docPicks(page)).length).toBe(0);
+});
+
+test("Unisci non tocca una divisione già fatta", async ({ page }) => {
+  await open(page, "Vado alla scuola media di Roma.");
+  await page.evaluate(() => (window as any).caaProto.setCaret(1 + 17));
+  await page.keyboard.press("Control+Shift+d"); // divide «scuola media»
+  await expect.poll(() => page.evaluate(() => JSON.stringify((window as any).caaProto.docJSON()).includes('"split"'))).toBe(true);
+  await selectText(page, 1 + 17, 1 + 25); // «media di», dentro la divisione
+  await page.keyboard.press("Control+Shift+u");
+  await expect(page.locator(".statusbar")).toContainText("Riunisci");
+  const marks = await page.evaluate(() => JSON.stringify((window as any).caaProto.docJSON()));
+  expect(marks.includes('"merge"')).toBe(false);
+  expect(marks.includes('"split"')).toBe(true);
+});
+
+test("una parola con l'apostrofo non si può «unire» con se stessa", async ({ page }) => {
+  await open(page, "Vado dell'acqua fresca");
+  await selectText(page, 1 + 5, 1 + 15); // «dell'acqua»: una parola sola
+  await expect(page.getByRole("button", { name: "Unisci" })).toBeDisabled();
+  await selectText(page, 1 + 5, 1 + 22); // «dell'acqua fresca»: due parole
+  await expect(page.getByRole("button", { name: "Unisci" })).toBeEnabled();
+});

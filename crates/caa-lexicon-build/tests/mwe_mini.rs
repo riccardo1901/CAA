@@ -257,3 +257,49 @@ fn le_alternative_di_un_gruppo_partono_dalla_frase() {
     assert_eq!(alts.first().map(|c| c.picto.id), Some(131), "{alts:?}");
     assert!(alts.iter().all(|c| c.picto.id != 104));
 }
+
+#[test]
+fn un_blocco_di_senso_non_sostituisce_il_simbolo_della_frase() {
+    // La testa di un gruppo di parole porta il simbolo della frase: il blocco di senso del lemma
+    // della sua prima parola ("ferro") non lo deve sostituire.
+    let mut locks = SenseLocks::default();
+    locks.insert("ferro", caa_engine::types::Cat::Noun, 116);
+    let e = engine("", "");
+    let t = e.symbolize(&Request {
+        text: "ferro da stiro",
+        prefs: &DocPrefs::default(),
+        forced: &[forced(0, 14, ForcedPick::MERGE)],
+        sense_locks: &locks,
+        memory: &UserMemory::default(),
+    });
+    assert_eq!(t[0].picto.map(|p| p.id), Some(131));
+    // Fuori da un gruppo il blocco vale come sempre.
+    let t = e.symbolize(&Request {
+        text: "ferro",
+        prefs: &DocPrefs::default(),
+        forced: &[],
+        sense_locks: &locks,
+        memory: &UserMemory::default(),
+    });
+    assert_eq!(t[0].picto.map(|p| p.id), Some(116));
+    // Anche per un'espressione riconosciuta da sola ("far colazione": blocco sul lemma di "fatto").
+    let em = engine_mwe("", "");
+    let base = with_forced(&em, "Hanno fatto colazione", &[]);
+    let lemma = find(&base, "fatto")
+        .analysis
+        .as_ref()
+        .unwrap()
+        .lemma
+        .clone();
+    let cat = find(&base, "fatto").analysis.as_ref().unwrap().cat;
+    let mut locks = SenseLocks::default();
+    locks.insert(&lemma, cat, 116);
+    let t = em.symbolize(&Request {
+        text: "Hanno fatto colazione",
+        prefs: &DocPrefs::default(),
+        forced: &[],
+        sense_locks: &locks,
+        memory: &UserMemory::default(),
+    });
+    assert_eq!(find(&t, "fatto").picto.map(|p| p.id), Some(132));
+}

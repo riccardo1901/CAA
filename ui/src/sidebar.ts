@@ -61,6 +61,8 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
     );
   };
   loadCustom();
+  // La scelta di un pittogramma; per un simbolo personale porta anche il suo identificativo stabile (per il documento).
+  const pictoChoice = (id: number): Choice => ({ kind: "picto", id, uuid: customList.find((c) => c.id === id)?.uuid });
   const asCandidate = (c: CustomSymbol): CandidateDto => ({ picto: c.id, keyword: c.label || "personale", reason: "simbolo personale", image: true });
   // Il ritardo della ricerca è unico: passando a un'altra parola quello vecchio si annulla.
   let searchTimer: ReturnType<typeof setTimeout> | null = null;
@@ -146,7 +148,7 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
         }
         b.append(el("span", "pm-kw", c.keyword));
         if (numbered) b.append(el("span", "pm-num", String(i + 1)));
-        b.addEventListener("click", () => choose({ kind: "picto", id: c.picto }));
+        b.addEventListener("click", () => choose(pictoChoice(c.picto)));
         grid.append(b);
       });
     };
@@ -240,7 +242,7 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
         if (searchTimer) clearTimeout(searchTimer);
         runSearch();
       } else if (results[0]) {
-        choose({ kind: "picto", id: results[0].picto });
+        choose(pictoChoice(results[0].picto));
       }
     });
 
