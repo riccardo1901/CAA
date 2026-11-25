@@ -2257,3 +2257,219 @@ test("correzioni anonime: senza Drive non si invia; «Butta via» chiede conferm
   await expect(sec).toContainText("Nessuna correzione in attesa");
   expect(await page.evaluate(() => (window as any).__mock.corr.pending.length)).toBe(0);
 });
+
+// ---- M10: stampa ----
+
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, writeFileSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+const STORIES = [
+  "Marco mangia il pane. La mamma beve il latte. Il gatto dorme sul divano. Anna legge un libro. Il cane corre nel parco.",
+  "Luca va a scuola con il suo amico. La maestra scrive alla lavagna. I bambini giocano in cortile. Dopo la scuola tornano a casa.",
+  "Oggi piove molto. Metto la giacca e prendo l'ombrello. Cammino piano sulla strada bagnata. A casa bevo una tazza di latte.",
+].join("\n");
+
+/** Un PDF dalla pagina in resa di stampa; restituisce il percorso. */
+async function pdfOf(page: Page): Promise<string> {
+  await page.emulateMedia({ media: "print" });
+  const buf = await page.pdf({ preferCSSPageSize: true, printBackground: true });
+  const dir = mkdtempSync(join(tmpdir(), "caa-pdf-"));
+  const file = join(dir, "p.pdf");
+  writeFileSync(file, buf);
+  return file;
+}
+
+const pdfInfo = (file: string) => execFileSync("pdfinfo", [file]).toString();
+/** Larghezza e altezza della pagina in punti (A4 = 595 x 842). */
+const pdfSize = (file: string): [number, number] => {
+  const m = /Page size:\s+([\d.]+) x ([\d.]+) pts/.exec(pdfInfo(file))!;
+  return [Math.round(Number(m[1])), Math.round(Number(m[2]))];
+};
+const pdfPages = (file: string): string[] => execFileSync("pdftotext", ["-layout", file, "-"]).toString().split("\f").filter((t) => t.trim() !== "");
+const ATTR = "Sergio Palao per ARASAAC";
+
+async function openPrintDialog(page: Page) {
+  await page.getByRole("button", { name: "Stampa…" }).click();
+  return page.locator(".print-dialog");
+}
+
+test("stampa: A4 verticale, attribuzione su ogni pagina, nessuna parola spezzata fra le pagine", async ({ page }) => {
+  await open(page, STORIES.repeat(3));
+  await page.keyboard.press("Control+4"); // molto grande: più pagine
+  await page.waitForFunction(() => (window as any).caaProto.engineStats().pending === 0);
+  const file = await pdfOf(page);
+  expect(pdfSize(file)).toEqual([595, 842]);
+  const pages = pdfPages(file);
+  expect(pages.length).toBeGreaterThan(1);
+  // L'attribuzione c'è su OGNI pagina.
+  for (const p of pages) expect(p).toContain(ATTR);
+  // Nessuna parola è stata spezzata: ogni parola del testo compare intera nel PDF.
+  const text = pages.join("\n");
+  for (const w of ["mangia", "latte", "divano", "lavagna", "ombrello", "bagnata"]) expect(text.toLowerCase()).toContain(w);
+  // Simbolo e parola sono un'unica unità che non si divide.
+  const style = await page.locator(".w").first().evaluate((e) => ({ d: getComputedStyle(e).display, b: getComputedStyle(e).breakInside }));
+  expect(style).toEqual({ d: "inline-block", b: "avoid" });
+});
+
+test("stampa: orizzontale, margini e interfaccia nascosta", async ({ page }) => {
+  await open(page, STORIES);
+  const d = await openPrintDialog(page);
+  await d.getByLabel("Orientamento").selectOption("landscape");
+  await d.getByLabel("Margini (mm)").fill("25");
+  await d.getByLabel("Margini (mm)").dispatchEvent("change");
+  await d.getByRole("button", { name: "Chiudi" }).click();
+  await page.waitForFunction(() => (window as any).caaProto.engineStats().pending === 0);
+  const file = await pdfOf(page);
+  expect(pdfSize(file)).toEqual([842, 595]);
+  const text = pdfPages(file).join("\n");
+  // Barre, pulsanti e pannelli non si stampano.
+  for (const ui of ["Stampa…", "Documenti", "Parole funzionali", "Simboli:", "Simboli della scuola"]) expect(text).not.toContain(ui);
+  expect(text).toContain(ATTR);
+  const rule = await page.locator("#caa-page").evaluate((e) => e.textContent);
+  expect(rule).toContain("A4 landscape");
+  expect(rule).toContain("25mm 25mm 34mm 25mm"); // il margine in fondo include lo spazio del piè di pagina
+});
+
+test("stampa: il piè di pagina facoltativo (titolo, autore, pagina); l'attribuzione non si può togliere", async ({ page }) => {
+  await open(page, STORIES.repeat(2), true);
+  await page.getByLabel("Titolo del documento").fill("La mia storia");
+  const d = await openPrintDialog(page);
+  // Con tutto spento c'è solo l'attribuzione.
+  await d.getByRole("button", { name: "Chiudi" }).click();
+  let text = pdfPages(await pdfOf(page)).join("\n");
+  expect(text).toContain(ATTR);
+  expect(text).not.toContain("La mia storia");
+  await page.emulateMedia({ media: "screen" });
+  const d2 = await openPrintDialog(page);
+  await d2.getByLabel("il titolo").check();
+  await d2.getByLabel("il numero di pagina").check();
+  await d2.getByRole("button", { name: "Chiudi" }).click();
+  text = pdfPages(await pdfOf(page)).join("\n");
+  expect(text).toContain("La mia storia");
+  expect(text).toContain(ATTR);
+  // Nessuna impostazione toglie l'attribuzione.
+  expect(await page.locator("#caa-page").evaluate((e) => e.textContent)).toContain(ATTR);
+});
+
+test("stampa: un titolo con virgolette, barre e a capo non rompe il piè di pagina", async ({ page }) => {
+  await open(page, STORIES, true);
+  await page.getByLabel("Titolo del documento").fill('Storia "bella" \\ fine } @page { x');
+  const d = await openPrintDialog(page);
+  await d.getByLabel("il titolo").check();
+  await d.getByRole("button", { name: "Chiudi" }).click();
+  const text = pdfPages(await pdfOf(page)).join("\n");
+  expect(text).toContain(ATTR);
+  expect(text).toContain('Storia "bella"');
+  // La regola resta una sola e la stringa non è uscita dalle virgolette.
+  const rule = await page.locator("#caa-page").evaluate((e) => e.textContent ?? "");
+  const outside = rule.replace(/"(?:\\.|[^"\\])*"/g, '""'); // fuori dalle stringhe
+  expect(outside.match(/@page/g)?.length).toBe(1);
+  expect(outside.match(/[{}]/g)?.length).toBe(4); // @page { ... @bottom-center { ... } }
+});
+
+test("stampa: con un motore di pagine vecchio la finestra avvisa che il piè di pagina potrebbe mancare", async ({ page }) => {
+  await open(page, "Marco mangia pane");
+  await page.evaluate(() => Object.defineProperty(navigator, "userAgent", { value: "Mozilla/5.0 Chrome/120.0.0.0 Safari/537.36", configurable: true }));
+  const d = await openPrintDialog(page);
+  await expect(d).toContainText("Aggiorna WebView2");
+});
+
+test("stampa: una frase per riga solo mentre si stampa, poi torna tutto com'era", async ({ page }) => {
+  await open(page, "Marco mangia. La mamma beve. Il gatto dorme.");
+  await page.evaluate(() => { (window as any).__snap = null; window.print = () => { (window as any).__snap = { br: document.querySelectorAll("br.snl").length, cls: document.documentElement.classList.contains("p-oneper") }; }; });
+  const d = await openPrintDialog(page);
+  await d.getByLabel("Una frase per riga").check();
+  await d.getByRole("button", { name: "Stampa" }).click();
+  await expect.poll(() => page.evaluate(() => (window as any).__snap)).toEqual({ br: 2, cls: true });
+  // Dopo la stampa i segnaposto spariscono e il testo del documento non è cambiato.
+  await expect.poll(() => page.locator("br.snl").count(), { timeout: 4000 }).toBe(0);
+  expect(await page.evaluate(() => (window as any).caaProto.view.state.doc.textContent)).toBe("Marco mangia. La mamma beve. Il gatto dorme.");
+});
+
+test("stampa: «una frase per riga» nel PDF: ogni frase comincia su una riga nuova", async ({ page }) => {
+  const sentences = ["Marco mangia il pane.", "Anna beve il latte.", "Il gatto dorme."];
+  await open(page, sentences.join(" "));
+  await page.waitForFunction(() => (window as any).caaProto.engineStats().pending === 0);
+  const firstWords = ["Marco", "Anna", "Il"];
+  const startsLine = (text: string, w: string) => text.split("\n").some((l) => new RegExp(`^\\s*${w}\\b`).test(l));
+  // Senza l'opzione le frasi di seguito stanno sulla stessa riga (la pagina è larga).
+  await page.keyboard.press("Control+1"); // piccolo
+  let text = pdfPages(await pdfOf(page)).join("\n");
+  expect(["Anna", "Il"].some((w) => !startsLine(text, w))).toBe(true);
+  // Con l'opzione (accesa solo per la stampa) ogni frase va a capo.
+  await page.emulateMedia({ media: "screen" });
+  await page.evaluate(() => { (window as any).caaProto.setOneLine(true); document.documentElement.classList.add("p-oneper"); });
+  text = pdfPages(await pdfOf(page)).join("\n");
+  for (const w of firstWords) expect(startsLine(text, w)).toBe(true);
+});
+
+test("stampa: testo sopra, bordo, maiuscolo e carattere si vedono subito e il testo salvato non cambia", async ({ page }) => {
+  await open(page, "Marco mangia pane");
+  const d = await openPrintDialog(page);
+  await d.getByLabel("Posizione del testo").selectOption("above");
+  await d.getByLabel("Carattere").selectOption("lexend");
+  await d.getByLabel("Bordo attorno a ogni simbolo").check();
+  await d.getByLabel(/Tutto maiuscolo/).check();
+  await d.getByRole("button", { name: "Chiudi" }).click();
+  const cls = await page.evaluate(() => [...document.documentElement.classList]);
+  for (const c of ["p-above", "pf-lexend", "p-border", "p-upper"]) expect(cls).toContain(c);
+  expect(await page.locator(".ProseMirror").evaluate((e) => getComputedStyle(e).textTransform)).toBe("uppercase");
+  const w = page.locator(".w", { hasText: /^pane$/ });
+  expect(await w.evaluate((e) => [getComputedStyle(e).paddingTop, parseFloat(getComputedStyle(e).paddingBottom) > 0])).toEqual(["0px", true]);
+  expect(await page.evaluate(() => (window as any).caaProto.view.state.doc.textContent)).toBe("Marco mangia pane");
+});
+
+test("stampa: le impostazioni stanno nel documento (si salvano, si ritrovano, valori strani si ripuliscono)", async ({ page }) => {
+  await open(page, "", true);
+  await page.locator(".ProseMirror").click();
+  await page.keyboard.type("Pane e latte");
+  const d = await openPrintDialog(page);
+  await d.getByLabel("Orientamento").selectOption("landscape");
+  await d.getByLabel("Carattere").selectOption("atkinson");
+  await d.getByLabel(/Tutto maiuscolo/).check();
+  await d.getByRole("button", { name: "Chiudi" }).click();
+  await expect.poll(async () => (await mockSaves(page)).at(-1)?.prefs?.print?.orientation).toBe("landscape");
+  expect((await mockSaves(page)).at(-1).prefs.print).toMatchObject({ orientation: "landscape", font: "atkinson", uppercase: true, margin: 15 });
+  // Un documento nuovo riparte dalle impostazioni di stampa del documento aperto? No: si riapre quello salvato e si ritrovano.
+  await page.getByRole("button", { name: "Nuovo" }).click();
+  await page.evaluate(() => {
+    const save = (window as any).__mock.saves.at(-1);
+    (window as any).__mock.docsStore.set("Strano.caa", { entry: { file: "Strano.caa", id: "id-x", title: "Strano", modified: new Date().toISOString(), rev: 1, author: "X", origin: null }, payload: { document: save.document, prefs: { print: { orientation: "sideways", margin: 9999, font: "comic", border: "sì", uppercase: true } }, render: [], sense_locks: [], lexicon: "lex-new" } });
+  });
+  await openStored(page, "Strano");
+  const cls = await page.evaluate(() => [...document.documentElement.classList]);
+  expect(cls).toContain("p-upper"); // il valore valido si tiene
+  expect(cls).not.toContain("p-landscape"); // orientamento non valido: quello di partenza
+  expect(cls).not.toContain("pf-lexend");
+  expect(cls).not.toContain("p-border"); // «sì» non è un booleano
+  expect(await page.evaluate(() => document.documentElement.style.getPropertyValue("--p-margin"))).toBe("40mm"); // margine ricondotto al massimo
+});
+
+test("stampa: Ctrl+P apre la finestra con Stampa e Chiudi", async ({ page }) => {
+  await open(page, "Marco mangia pane");
+  await page.keyboard.press("Control+p");
+  await expect(page.locator(".print-dialog")).toBeVisible();
+  await expect(page.locator(".print-dialog")).toContainText("Microsoft Print to PDF");
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".print-dialog")).toHaveCount(0);
+});
+
+test("Informazioni: attribuzioni obbligatorie (ARASAAC, Morph-it!, ISDT, caratteri) e versione; non si stampa", async ({ page }) => {
+  await open(page, "Marco mangia pane");
+  await page.getByRole("button", { name: "Informazioni" }).click();
+  const d = page.locator(".about-dialog");
+  await expect(d).toContainText("Sergio Palao per ARASAAC");
+  await expect(d).toContainText("CC BY-NC-SA");
+  await expect(d).toContainText("Morph-it!");
+  await expect(d).toContainText("ISDT");
+  await expect(d).toContainText("SIL Open Font License");
+  await expect(d).toContainText("Versione 0.1.0");
+  // Con la finestra aperta, la stampa non la include.
+  const file = await pdfOf(page);
+  expect(pdfPages(file).join("\n")).not.toContain("Morph-it!");
+  await page.emulateMedia({ media: "screen" });
+  await page.keyboard.press("Escape");
+  await expect(d).toHaveCount(0);
+});

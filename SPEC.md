@@ -56,7 +56,7 @@ La v1 fa una cosa sola molto bene: trasformare un testo italiano in testo simbol
 - Regole per articoli e preposizioni configurabili per documento
 - Simboli personali: importare un'immagine (foto o disegno) e associarla a una parola
 - Biblioteca condivisa su Drive condiviso Google dell'istituto, copie personali locali, "Adatta" e "Pubblica"
-- Stampa A4 e esportazione PDF
+- Stampa A4 e esportazione PDF (niente PNG: tolto dopo la decisione su M10)
 - Installer Windows (MSI) per distribuzione sui PC della scuola
 
 **Fuori dalla v1 (vedi `docs/IDEE.md`):**
@@ -695,7 +695,6 @@ La stampa è l'uscita principale (le storie si stampano e si leggono su carta), 
 | --- | --- | --- |
 | Stampa | Dialogo di stampa di sistema dalla webview, con CSS `@page` | Da provare sulle stampanti della scuola |
 | PDF | Stampa su PDF della webview (WebView2 offre una funzione dedicata; esporla da Rust è da verificare) | Ripiego: stampante "Microsoft Print to PDF" |
-| Immagine per pagina (PNG) | Rendering della pagina | Utile per lavagna interattiva e messaggi |
 | Word (.docx) | — | Fuori v1: vedi `docs/IDEE.md` |
 
 ## Deployment, aggiornamenti, privacy
@@ -752,6 +751,7 @@ Dodici milestone in ordine di dipendenza. Ognuna si chiude solo quando il criter
     - *Accettazione*: prova con due PC sulla stessa cartella del Drive condiviso; interruzione a metà salvataggio e file incompleti senza documenti corrotti.
 11. **M10 — Stampa ed esportazione.** Impaginazione, preset, piè di pagina di attribuzione, PDF.
     - *Accettazione*: stampa di prova di 3 storie sulle stampanti della scuola, nessuna parola separata dal suo simbolo.
+    - *Esito di M10* (`docs/RAPPORTO-M10.md`, prove a mano su Windows con stampante da fare): finestra Stampa (A4 verticale/orizzontale, margini, testo sopra/sotto, carattere, bordo, una frase per riga, maiuscolo, piè di pagina facoltativo), impostazioni salvate nel documento, piè di pagina con l'attribuzione su ogni pagina (riquadro del margine, Chromium 131+), schermata Informazioni. PDF con la stampante «Microsoft Print to PDF»; PNG tolto; PDF diretto rimandato. Verificato con PDF veri (Chromium 157): A4, attribuzione su ogni pagina, nessuna parola spezzata.
 12. **M11 — Miglioramento dell'interfaccia** (nuova, prima del pilota). Revisione dell'aspetto e dell'uso quotidiano con quello che le prove su Windows e la stampa hanno mostrato: gerarchia delle barre, barra laterale e pannelli, messaggi e avvisi, scorciatoie, accessibilità (contrasto, tastiera, dimensioni), testi in italiano semplice. Si decide il perimetro con le prove a mano fatte, non prima.
     - *Accettazione*: le prove dell'editor restano verdi; un docente che non ha mai visto il programma scrive e stampa una storia senza aiuto.
 13. **M12 — Pilota.** Installazione su 3–5 PC (anche personali dei docenti, con un account Google in comune per Google Drive per computer; l'MSI e il `config.json` del tecnico restano per la scuola), prova con 3–5 docenti per due settimane.

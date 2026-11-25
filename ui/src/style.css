@@ -462,3 +462,56 @@ body { margin: 0; }
 .lib-corrections { margin-top: 18px; border-top: 1px solid var(--line, #d0d0d0); padding-top: 10px; }
 .lib-corrections h3 { font-size: 15px; margin: 0 0 6px; }
 .lib-corr-preview { max-height: 180px; overflow: auto; font-size: 12px; background: #f4f4f4; padding: 6px; white-space: pre-wrap; }
+
+/* ---- Stampa (M10) ---- */
+.pf-atkinson .ProseMirror { font-family: "Atkinson Hyperlegible", "Segoe UI", sans-serif; }
+.pf-lexend .ProseMirror { font-family: "Lexend", "Segoe UI", sans-serif; }
+.p-upper .ProseMirror { text-transform: uppercase; }
+/* Testo sopra il simbolo: il simbolo scende sotto la parola. */
+.p-above .w:not(.wc):not(.txt) { padding-top: 0; padding-bottom: calc(var(--sym) + 4px); }
+.p-above .w:not(.wc):not(.txt)::before { top: auto; bottom: 0; }
+.p-above .w.red::before { top: auto; bottom: 0; }
+.p-above .w.mp::after, .p-above .w.mpast::after, .p-above .w.mfut::after { top: auto; bottom: calc(var(--sym) * 0.7); }
+/* Bordo attorno a ogni simbolo. */
+.p-border .w:not(.wc):not(.txt):not(.ns):not(.ph)::before { border: 0.4mm solid #1c1c1c; border-radius: 1.5mm; }
+/* «Una frase per riga»: i segnaposto <br> esistono solo mentre si stampa. */
+.snl { display: none; }
+.p-oneper .snl { display: inline; }
+.print-overlay { position: fixed; inset: 0; z-index: 95; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.4); }
+.print-dialog { width: min(460px, 94vw); max-height: 92vh; overflow: auto; padding: 18px 20px; background: #fff; border-radius: 8px; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35); font-size: 14px; }
+.print-dialog h2 { margin: 0 0 10px; font-size: 18px; }
+.print-dialog h3 { margin: 14px 0 4px; font-size: 14px; }
+.print-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 6px 0; }
+.print-row select, .print-row input { padding: 3px 6px; font: inherit; }
+.print-row input[type=number] { width: 70px; }
+.print-check { display: block; margin: 5px 0; }
+.print-note { color: #555; font-size: 12.5px; margin: 6px 0; }
+.print-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px; }
+.print-actions button { padding: 5px 14px; border: 1px solid #9a9aa8; border-radius: 4px; background: #fff; font: inherit; cursor: pointer; }
+.print-actions button:first-child { background: #2a5db0; border-color: #2a5db0; color: #fff; }
+
+@media print {
+  html, body { height: auto; overflow: visible; background: #fff; }
+  body > :not(#app) { display: none !important; }
+  .app, .app .layout, .layout, .sheet-wrap { display: block; height: auto; min-height: 0; overflow: visible; padding: 0; margin: 0; background: #fff; }
+  .app > :not(.layout), .layout > :not(.sheet-wrap), .panel { display: none !important; }
+  .sheet { width: auto; min-height: 0; margin: 0; padding: 0; box-shadow: none; background: #fff; }
+  .ProseMirror { color: #000; }
+  /* Quello che serve solo a chi scrive non si stampa. */
+  .w.ph::before { border: none; }
+  .w.dbt { text-decoration: none; }
+  .w.hid { opacity: 1; }
+  .cur { background: none; box-shadow: none; }
+  /* Simbolo e parola non si separano mai tra righe o pagine. */
+  .w { break-inside: avoid; page-break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .w.ph:not(.txt)::before { background: none; }
+}
+.print-note.warn { color: #b8560b; font-weight: 600; }
+
+.about-overlay { position: fixed; inset: 0; z-index: 95; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.4); }
+.about-dialog { width: min(560px, 94vw); max-height: 92vh; overflow: auto; padding: 18px 22px; background: #fff; border-radius: 8px; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35); font-size: 14px; }
+.about-dialog h2 { margin: 0 0 4px; font-size: 19px; }
+.about-version { color: #555; margin: 0 0 10px; }
+.about-dialog dt { font-weight: 600; margin-top: 10px; }
+.about-dialog dd { margin: 2px 0 0; color: #333; }
+.about-dialog button { margin-top: 14px; padding: 5px 14px; border: 1px solid #9a9aa8; border-radius: 4px; background: #fff; font: inherit; cursor: pointer; }

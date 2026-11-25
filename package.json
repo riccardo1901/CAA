@@ -19,6 +19,8 @@
     "vite": "^6.0.0"
   },
   "dependencies": {
+    "@fontsource/atkinson-hyperlegible": "^5.3.0",
+    "@fontsource/lexend": "^5.3.0",
     "@tauri-apps/api": "^2",
     "prosemirror-commands": "^1.7.2",
     "prosemirror-history": "^1.5.2",

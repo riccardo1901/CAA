@@ -2,6 +2,7 @@
 import { TextSelection } from "prosemirror-state";
 import type { EditorView } from "prosemirror-view";
 import { benchmark, checkSymbolHits, checkWrap } from "./checks";
+import { setOneLine } from "./editor/printLines";
 import { createEditor, currentMode, replaceDoc, setReadOnly } from "./editor/editor";
 import { engineStats, onEngineUpdate, setEngine, setPolicy } from "./editor/engineSymbols";
 import { invoke } from "@tauri-apps/api/core";
@@ -154,6 +155,7 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
       };
       poll();
       window.setInterval(poll, w.__caaLibPollMs ?? 120_000);
+      client?.settings?.getName().then((n) => bars.setAuthor(n), () => undefined);
       if (client?.settings) void firstRun({ settings: client.settings, library: lib, notice: (m) => hooks.notice?.(m), libraryStatus: showLib });
     }
   }
@@ -212,6 +214,7 @@ export function startApp(mount: HTMLElement): void {
     setMode: (m: Mode) => view.dispatch(view.state.tr.setMeta(symbolKey, { mode: m })),
     mode: () => currentMode(view),
     setSize: applySize,
+    setOneLine: (on: boolean) => setOneLine(view, on),
     loadSample: (repeat = 1) => replaceDocument(sampleDoc(repeat)),
     loadFragments: () => replaceDocument(fragmentsDoc()),
     setSymbols,

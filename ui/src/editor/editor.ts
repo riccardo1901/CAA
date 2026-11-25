@@ -7,6 +7,7 @@ import { EditorView } from "prosemirror-view";
 import { normalizeMarks, normalizeState, toggleBoldWords } from "./wordMarks";
 import { engineKey, engineSymbolPlugin } from "./engineSymbols";
 import { focusWordPlugin, hooks, symbolClickPlugin } from "./menuHooks";
+import { printLinesPlugin } from "./printLines";
 import { symbolPlugin, symbolKey, type Mode } from "./symbolPlugin";
 
 /** Un documento di uno schema più recente del programma si apre in sola lettura. */
@@ -40,6 +41,7 @@ export function createEditor(mount: HTMLElement, doc: PMNode, mode: Mode = "A"):
       engineSymbolPlugin(),
       symbolClickPlugin(),
       focusWordPlugin(),
+      printLinesPlugin(),
     ],
   }));
   // Lingua italiana e correttore ortografico di sistema (prova 6 di M3).

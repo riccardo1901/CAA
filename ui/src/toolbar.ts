@@ -7,6 +7,10 @@ import { COMPLETE_TABLE, type DocPrefs, type Preset } from "./docs/prefs";
 import { engineStats, setPolicy, tokenAt } from "./editor/engineSymbols";
 import { canMerge, groupAction } from "./editor/groups";
 import { hooks } from "./editor/menuHooks";
+import { DEFAULT_PRINT, type PrintPrefs } from "./docs/prefs";
+import { applyPrintPrefs, printNow } from "./print/print";
+import { openPrintDialog } from "./print/dialog";
+import { openAbout } from "./about";
 
 const SIZES: Array<[string, number]> = [
   ["Piccolo", 45],
@@ -120,6 +124,8 @@ export interface Bars {
   setPrefs(p: Partial<DocPrefs>): void;
   /** Chiamata quando il docente cambia una preferenza. */
   onPrefsChange(cb: () => void): void;
+  /** Il nome di chi scrive, per il piè di pagina facoltativo. */
+  setAuthor(name: string): void;
 }
 
 export function createBars(
@@ -260,7 +266,43 @@ export function createBars(
     return b;
   });
 
-  toolbar.append(doc, el("span", "grow"), cardsLabel, policyLabel, sizes, dialog.root);
+  // Stampa (M10): le impostazioni della pagina stanno nel documento; Ctrl+P apre la finestra.
+  let printPrefs: PrintPrefs = { ...DEFAULT_PRINT };
+  let author = "";
+  const printMeta = () => ({ title: titleInputRef?.value ?? "", author });
+  let titleInputRef: HTMLInputElement | null = null;
+  const printBtn = el("button", "", "Stampa…");
+  printBtn.type = "button";
+  printBtn.title = "Ctrl+P";
+  const openPrint = (): void => {
+    applyPrintPrefs(printPrefs, printMeta());
+    openPrintDialog({
+      get: () => printPrefs,
+      set: (p) => {
+        printPrefs = p;
+        applyPrintPrefs(printPrefs, printMeta());
+        notifyPrefs();
+      },
+      print: () => {
+        applyPrintPrefs(printPrefs, printMeta());
+        void printNow(view, printPrefs);
+      },
+    });
+  };
+  printBtn.addEventListener("click", openPrint);
+  document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "p") {
+      e.preventDefault();
+      openPrint();
+    }
+  });
+  applyPrintPrefs(printPrefs, printMeta());
+
+  const aboutBtn = el("button", "", "Informazioni");
+  aboutBtn.type = "button";
+  aboutBtn.title = "Crediti e licenze";
+  aboutBtn.addEventListener("click", () => openAbout());
+  toolbar.append(doc, el("span", "grow"), cardsLabel, policyLabel, sizes, printBtn, aboutBtn, dialog.root);
 
   const wordsInfo = el("span");
   const doubtInfo = el("span", "link");
@@ -325,6 +367,9 @@ export function createBars(
   titleInput.placeholder = "Senza titolo";
   titleInput.maxLength = 120;
   titleInput.setAttribute("aria-label", "Titolo del documento");
+  titleInputRef = titleInput;
+  // Il titolo scritto aggiorna il piè di pagina facoltativo.
+  titleInput.addEventListener("input", () => applyPrintPrefs(printPrefs, printMeta()));
   const saveStatus = el("span", "save-status");
   const libStatus = el("button", "lib-status");
   libStatus.type = "button";
@@ -333,7 +378,7 @@ export function createBars(
   updateNote.hidden = true;
   docbar.append(docsButton, titleInput, el("span", "grow"), updateNote, libStatus, saveStatus);
 
-  const getPrefs = (): DocPrefs => ({ preset: select.value as Preset, table: { ...table }, size: getSize(), cards: cards.checked });
+  const getPrefs = (): DocPrefs => ({ preset: select.value as Preset, table: { ...table }, size: getSize(), cards: cards.checked, print: { ...printPrefs } });
   const setPrefs = (p: Partial<DocPrefs>): void => {
     if (p.table) {
       Object.assign(table, p.table);
@@ -346,8 +391,17 @@ export function createBars(
       cards.checked = p.cards;
       applyCards(p.cards);
     }
+    if (p.print) {
+      printPrefs = { ...p.print };
+      applyPrintPrefs(printPrefs, printMeta());
+    }
     refresh();
   };
 
-  return { docbar, docsButton, titleInput, saveStatus, libStatus, updateNote, toolbar, statusbar, banner, refresh, getPrefs, setPrefs, onPrefsChange: (cb) => prefsListeners.push(cb) };
+  return { docbar, docsButton, titleInput, saveStatus, libStatus, updateNote, toolbar, statusbar, banner, refresh, getPrefs, setPrefs, onPrefsChange: (cb) => prefsListeners.push(cb),
+    setAuthor: (name) => {
+      author = name;
+      applyPrintPrefs(printPrefs, printMeta());
+    },
+  };
 }
