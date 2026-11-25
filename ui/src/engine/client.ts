@@ -81,6 +81,8 @@ export interface DocEntry {
   rev: number;
   author: string;
   origin: { id: string; rev: number } | null;
+  /** Il file era stato cambiato da un'altra copia del programma: questo documento è stato salvato come nuovo. */
+  conflict?: boolean;
 }
 
 export interface DocList {

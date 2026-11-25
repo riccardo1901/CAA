@@ -7,6 +7,7 @@ import { engineStats, onEngineUpdate, setEngine, setPolicy } from "./editor/engi
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { engineInfo, inTauri, tauriClient, type EngineClient, type EngineInfo, type Policy } from "./engine/client";
+import { hooks } from "./editor/menuHooks";
 import { createDocsPanel } from "./docs/panel";
 import { createLexBar } from "./docs/lexbar";
 import { createSession, type Session } from "./docs/session";
@@ -97,6 +98,7 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
         bars.banner.textContent = message;
       },
       confirm: (m) => window.confirm(m),
+      notice: (m) => hooks.notice?.(m),
       titleInput: bars.titleInput,
       saveStatus: bars.saveStatus,
       lexBar,
@@ -104,7 +106,7 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
       retryMs: w.__caaRetryMs,
     });
     bars.onPrefsChange(() => session?.touch());
-    const panel = createDocsPanel(docs, session, (title) => window.confirm(`Eliminare «${title}»? Non si può annullare.`));
+    const panel = createDocsPanel(docs, session, (title) => window.confirm(`Eliminare «${title}»? Non si può annullare.`), () => view.focus());
     bars.docsButton.addEventListener("click", () => panel.open());
   }
   root.appendChild(app);
@@ -141,11 +143,10 @@ export function startApp(mount: HTMLElement): void {
     // Alla chiusura della finestra il programma salva quello che c'è da salvare e poi esce (se non risponde,
     // esce da solo dopo pochi secondi).
     void listen("caa-close-request", async () => {
-      try {
-        await session?.flush();
-      } finally {
-        await invoke("exit_app");
-      }
+      // La pagina risponde subito (niente uscita forzata), salva con calma e, se non riesce, chiede conferma.
+      await invoke("close_ack").catch(() => undefined);
+      const leave = session ? await session.prepareClose().catch(() => false) : true;
+      if (leave) await invoke("exit_app");
     });
     engineInfo().then(
       (info) => {
@@ -169,6 +170,8 @@ export function startApp(mount: HTMLElement): void {
     // Motore (prove automatiche con un motore finto, app con quello vero).
     enterEngineMode: (client: EngineClient) => enterEngineMode(client, { ok: true, dir: null, error: null, tagger: true, expressions: true, lexicon: "lex-new" }),
     engineStats: () => engineStats(view),
+    // La chiusura della finestra (prova: chiede di uscire solo se il salvataggio è riuscito o il docente conferma).
+    closeRequest: () => (session ? session.prepareClose() : Promise.resolve(true)),
     setPolicy: (p: Policy) => setPolicy(view, p),
     refresh: () => view.dispatch(view.state.tr.setMeta(symbolKey, { refresh: true })),
     checkWrap: () => checkWrap(view),

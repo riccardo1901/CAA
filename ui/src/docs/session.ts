@@ -4,7 +4,7 @@ import type { Node as PMNode } from "prosemirror-model";
 import type { EditorView } from "prosemirror-view";
 import { clearLegacy, dropLegacyToken, legacyDiff, onEngineUpdate, renderSnapshot, setLegacy, type LexChange } from "../editor/engineSymbols";
 import { revealPos, setFocusWord } from "../editor/menuHooks";
-import { pinPictos, sanitizeLocks } from "../editor/picks";
+import { FORCED_MERGE, pinPictos, sanitizeLocks } from "../editor/picks";
 import { schema } from "../editor/schema";
 import type { DocClient, DocEntry, OpenedDoc, SavePayload } from "../engine/client";
 import type { LexBar } from "./lexbar";
@@ -23,6 +23,8 @@ export interface SessionDeps {
   /** Un avviso fisso in alto (`null` lo toglie). */
   banner(message: string | null): void;
   confirm(message: string): boolean;
+  /** Un messaggio breve per il docente. */
+  notice(message: string): void;
   titleInput: HTMLInputElement;
   saveStatus: HTMLElement;
   /** La barra «il lessico è cambiato». */
@@ -56,6 +58,8 @@ export interface Session {
   openFile(file: string): Promise<void>;
   /** Il documento aperto non ha più un file (è stato eliminato). */
   forget(): void;
+  /** La finestra sta per chiudersi: salva e dice se si può uscire (se il salvataggio non riesce, chiede conferma). */
+  prepareClose(): Promise<boolean>;
   /** Segna il documento come modificato (cambiano le preferenze) e fa partire il salvataggio automatico. */
   touch(): void;
   /** Un nuovo documento senza chiedere niente (all'avvio). */
@@ -88,7 +92,11 @@ export function usedMedia(doc: PMNode): string[] {
   return [...uuids];
 }
 
-/** Sostituisce, nel documento letto da un file, gli id dei simboli personali con quelli di questo computer. */
+/**
+ * Prepara il documento letto da un file (dato non fidato): gli id dei simboli personali diventano quelli di
+ * questo computer; le scelte con un simbolo che non c'è, o con valori impossibili, si scartano (la parola
+ * torna automatica: meglio che mostrare un altro simbolo con un id sbagliato).
+ */
 export function remapMedia(json: unknown, media: Array<{ uuid: string; id: number }>): unknown {
   const ids = new Map(media.map((m) => [m.uuid, m.id]));
   const walk = (node: unknown): unknown => {
@@ -96,15 +104,26 @@ export function remapMedia(json: unknown, media: Array<{ uuid: string; id: numbe
     if (Array.isArray(node)) return node.map(walk);
     const n = { ...(node as Record<string, unknown>) };
     if (Array.isArray(n.marks)) {
-      n.marks = n.marks.map((m: unknown) => {
+      n.marks = n.marks.flatMap((m: unknown) => {
         const mark = m as { type?: string; attrs?: Record<string, unknown> };
+        if (mark.type !== "pick") return [m];
+        const picto = mark.attrs?.picto;
         const uuid = mark.attrs?.uuid;
-        if (mark.type === "pick" && typeof uuid === "string" && ids.has(uuid)) return { ...mark, attrs: { ...mark.attrs, picto: ids.get(uuid) } };
-        return m;
+        // Un valore che non è un intero ammesso (-1 = solo testo, 0 = nessun simbolo) o un valore speciale.
+        if (typeof picto !== "number" || !Number.isInteger(picto) || picto < -1 || picto >= FORCED_MERGE) return [];
+        if (typeof uuid === "string" && uuid !== "") {
+          const id = ids.get(uuid);
+          return id === undefined ? [] : [{ ...mark, attrs: { ...mark.attrs, picto: id } }];
+        }
+        return [m];
       });
     }
     if (n.attrs && typeof n.attrs === "object" && Array.isArray((n.attrs as { locks?: unknown }).locks)) {
-      const locks = sanitizeLocks((n.attrs as { locks: unknown }).locks).map((l) => (l.uuid && ids.has(l.uuid) ? { ...l, picto: ids.get(l.uuid) as number } : l));
+      const locks = sanitizeLocks((n.attrs as { locks: unknown }).locks).flatMap((l) => {
+        if (!l.uuid) return [l];
+        const id = ids.get(l.uuid);
+        return id === undefined ? [] : [{ ...l, picto: id }];
+      });
       n.attrs = { ...(n.attrs as Record<string, unknown>), locks };
     }
     if (Array.isArray(n.content)) n.content = n.content.map(walk);
@@ -123,6 +142,12 @@ export function createSession(deps: SessionDeps): Session {
   let loading = false;
   let lastDoc = view.state.doc;
   let again = false;
+  // Cambia ogni volta che la sessione passa a un altro documento: un salvataggio partito prima non deve
+  // più toccare lo stato né far ripartire un salvataggio sul file di prima.
+  let epoch = 0;
+  // Cresce a ogni modifica da salvare (testo, titolo, preferenze): dice se dopo un salvataggio c'è altro.
+  let version = 0;
+  let inflight: Promise<boolean> | null = null;
   // Aggiornamento del lessico: il documento si apre con i simboli vecchi finché il docente non decide.
   let legacyActive = false;
   let docLexicon = "";
@@ -154,6 +179,7 @@ export function createSession(deps: SessionDeps): Session {
 
   const markDirty = (): void => {
     if (st.readOnly || loading) return;
+    version++;
     st.dirty = true;
     changed();
     schedule(delay);
@@ -180,54 +206,84 @@ export function createSession(deps: SessionDeps): Session {
     };
   };
 
-  async function save(): Promise<boolean> {
-    if (st.readOnly) return true;
-    if (st.saving) {
+  /** Salva ora. Se un salvataggio è già in corso lo aspetta e ne fa partire un altro appena finisce. */
+  function save(): Promise<boolean> {
+    if (st.readOnly) return Promise.resolve(true);
+    if (inflight) {
       again = true;
-      return true;
+      return inflight;
     }
+    inflight = doSave().finally(() => {
+      inflight = null;
+      if (again) {
+        again = false;
+        if (st.dirty) schedule(0);
+      }
+    });
+    return inflight;
+  }
+
+  async function doSave(): Promise<boolean> {
     // Un documento nuovo e vuoto non si salva: non nascono file «Senza titolo» da un clic.
     if (!st.file && !hasText(view.state.doc)) {
       st.dirty = false;
       changed();
       return true;
     }
-    const savedDoc = view.state.doc;
+    const myEpoch = epoch;
+    const myVersion = version;
+    const titleAtSave = st.title;
     const body = payload();
     st.saving = true;
     changed();
+    let entry: DocEntry;
     try {
-      const entry: DocEntry = await deps.docs.save(body);
-      st.file = entry.file;
-      st.id = entry.id;
-      st.rev = entry.rev;
-      st.title = entry.title;
-      st.error = null;
-      st.savedAt = new Date();
-      st.dirty = view.state.doc !== savedDoc;
+      entry = await deps.docs.save(body);
     } catch (e) {
+      if (myEpoch !== epoch) return false;
       st.error = String(e);
       st.saving = false;
       changed();
       schedule(retryMs);
       return false;
     }
+    // Nel frattempo si è passati a un altro documento: il file è stato scritto, ma lo stato della sessione
+    // non è più di questo documento e non va toccato.
+    if (myEpoch !== epoch) return true;
+    st.file = entry.file;
+    st.id = entry.id;
+    st.rev = entry.rev;
+    // Il titolo scritto dal docente mentre si salvava non si annulla.
+    if (st.title === titleAtSave) st.title = entry.title;
+    st.error = null;
+    st.savedAt = new Date();
     st.saving = false;
+    st.dirty = version !== myVersion;
     changed();
-    if (st.dirty || again) {
-      again = false;
-      schedule(delay);
+    if (entry.conflict) {
+      deps.notice(`Il file era stato cambiato da un'altra copia del programma: ho salvato questo documento come «${entry.title}» (${entry.file}).`);
     }
+    if (st.dirty) schedule(delay);
     return true;
   }
 
+  /** Salva quello che c'è da salvare, aspettando i salvataggi in corso (anche se lenti). `false` se non riesce. */
   async function flush(): Promise<boolean> {
-    if (st.readOnly || (!st.dirty && !st.saving)) return true;
-    if (timer) clearTimeout(timer);
-    timer = null;
-    // Un salvataggio in corso si aspetta, poi si salva quello che è cambiato.
-    for (let i = 0; i < 50 && st.saving; i++) await new Promise((r) => setTimeout(r, 20));
-    return st.dirty ? save() : !st.error;
+    if (st.readOnly) return true;
+    for (let round = 0; round < 6; round++) {
+      if (timer) clearTimeout(timer);
+      timer = null;
+      if (inflight) await inflight;
+      if (st.error) return false;
+      if (!st.dirty) return true;
+      if (!(await save())) return false;
+    }
+    return !st.dirty && !st.error;
+  }
+
+  async function prepareClose(): Promise<boolean> {
+    if (await flush()) return true;
+    return deps.confirm("Il documento aperto non si è salvato e le ultime modifiche andranno perse. Uscire comunque?");
   }
 
   const endLegacy = (save: boolean): void => {
@@ -250,7 +306,12 @@ export function createSession(deps: SessionDeps): Session {
     if (!d.active) return endLegacy(false);
     if (d.pending) return;
     if (d.changes.length === 0) return endLegacy(true);
-    const pin = (list: LexChange[]): void => pinPictos(view, list.map((c) => ({ paraPos: c.paraPos, s: c.s, e: c.e, picto: c.oldPicto })));
+    // Le posizioni si rileggono al momento del clic: il testo può essere cambiato da quando la barra le ha mostrate.
+    const pin = (list: LexChange[]): void => {
+      const now = legacyDiff(view).changes;
+      const fresh = list.flatMap((c) => now.filter((x) => x.text === c.text && x.s === c.s && x.e === c.e));
+      pinPictos(view, fresh.map((c) => ({ paraPos: c.paraPos, s: c.s, e: c.e, picto: c.oldPicto })));
+    };
     if (review === null) {
       shownReview = "";
       deps.lexBar.set({
@@ -298,6 +359,8 @@ export function createSession(deps: SessionDeps): Session {
   };
 
   const reset = (): void => {
+    epoch++;
+    st.saving = false;
     endLegacy(false);
     st.file = st.id = st.rev = st.created = st.origin = null;
     st.title = "";
@@ -392,9 +455,12 @@ export function createSession(deps: SessionDeps): Session {
   return {
     state: () => ({ ...st }),
     flush,
+    prepareClose,
     newDocument,
     openFile,
     forget: () => {
+      epoch++;
+      st.saving = false;
       st.file = st.id = st.rev = st.created = st.origin = null;
       st.savedAt = null;
       changed();

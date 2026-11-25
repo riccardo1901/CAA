@@ -83,6 +83,8 @@ pub struct DocEntry {
     pub rev: u32,
     pub author: String,
     pub origin: Option<Origin>,
+    /// Il file era stato cambiato da un'altra copia del programma: questo documento è stato salvato come nuovo.
+    pub conflict: bool,
 }
 
 fn entry_of(file: &str, m: &Manifest) -> DocEntry {
@@ -94,6 +96,7 @@ fn entry_of(file: &str, m: &Manifest) -> DocEntry {
         rev: m.rev,
         author: m.author.clone(),
         origin: m.origin.clone(),
+        conflict: false,
     }
 }
 
@@ -220,9 +223,33 @@ impl DocStore {
             }
             None => self.free_name(&p.title),
         };
-        let path = self.dir.join(&file);
+        let mut path = self.dir.join(&file);
         // Il documento di questo file, se c'è già: l'identificativo e la data di creazione restano.
-        let existing = caa_doc::read_manifest(&path).ok();
+        let mut existing = caa_doc::read_manifest(&path).ok();
+        if let Some(old) = &existing {
+            if old.schema > caa_doc::SCHEMA {
+                return Err(
+                    "il file è di una versione più recente del programma: non lo riscrivo".into(),
+                );
+            }
+        }
+        // Se il file non è più quello che questa copia del programma aveva letto (un'altra copia l'ha
+        // riscritto, o c'è un altro documento), non lo si sovrascrive: si salva come documento nuovo.
+        let mut conflict = false;
+        if let Some(old) = &existing {
+            let other_id = p.id.as_deref().is_some_and(|id| id != old.id);
+            let other_rev = p.rev.is_some_and(|r| r != old.rev);
+            if other_id || other_rev {
+                conflict = true;
+                let copy = self.free_name(&format!("{} (copia)", p.title));
+                path = self.dir.join(&copy);
+                existing = None;
+            }
+        }
+        let file = path
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or(file);
         let mut manifest = Manifest::new(&p.title, author, app_version, &p.lexicon);
         if let Some(old) = &existing {
             manifest.id = old.id.clone();
@@ -233,14 +260,18 @@ impl DocStore {
             manifest.author = old.author.clone();
         } else if let Some(id) =
             p.id.as_deref()
-                .filter(|i| caa_doc::valid_media_name(&format!("{i}.webp")))
+                .filter(|i| !conflict && caa_doc::valid_media_name(&format!("{i}.webp")))
         {
             manifest.id = id.to_string();
         }
         if let Some(c) = p.created.as_deref().filter(|_| existing.is_none()) {
             manifest.created = c.to_string();
         }
-        manifest.rev = existing.as_ref().map_or(p.rev.unwrap_or(0), |m| m.rev) + 1;
+        manifest.rev = if conflict {
+            1
+        } else {
+            existing.as_ref().map_or(p.rev.unwrap_or(0), |m| m.rev) + 1
+        };
         manifest.origin = p.origin.or_else(|| existing.and_then(|m| m.origin));
         manifest.prefs = p.prefs;
         manifest.sense_locks = p.sense_locks;
@@ -257,7 +288,9 @@ impl DocStore {
             media,
         };
         caa_doc::write(&path, &doc).map_err(|e| e.to_string())?;
-        Ok(entry_of(&file, &doc.manifest))
+        let mut entry = entry_of(&file, &doc.manifest);
+        entry.conflict = conflict;
+        Ok(entry)
     }
 
     pub fn open(&self, file: &str, custom: &CustomStore) -> Result<Opened, String> {
@@ -266,11 +299,14 @@ impl DocStore {
         let mut media = Vec::new();
         for (name, bytes) in &loaded.doc.media {
             let uuid = name.trim_end_matches(".webp");
-            let symbol = custom.import_uuid(uuid, bytes, "")?;
-            media.push(MediaMap {
-                uuid: symbol.uuid,
-                id: symbol.id,
-            });
+            // Un simbolo che non si importa (immagine rovinata, raccolta piena) non deve rendere
+            // illeggibile tutto il documento: le sue scelte tornano automatiche.
+            if let Ok(symbol) = custom.import_uuid(uuid, bytes, "") {
+                media.push(MediaMap {
+                    uuid: symbol.uuid,
+                    id: symbol.id,
+                });
+            }
         }
         let m = &loaded.doc.manifest;
         Ok(Opened {
@@ -452,6 +488,120 @@ mod tests {
         for d in [&dd, &ca, &cb] {
             std::fs::remove_dir_all(d).unwrap();
         }
+    }
+
+    #[test]
+    fn un_salvataggio_su_un_file_cambiato_da_altri_non_lo_sovrascrive() {
+        let (dd, cd) = (tmp("conflitto"), tmp("conflitto-c"));
+        let (store, custom) = (DocStore::new(dd.clone()), CustomStore::open(cd.clone()));
+        let a = store
+            .save(payload("Storia"), &custom, "M", "0.1.0")
+            .unwrap();
+        assert!(!a.conflict);
+        // Questa copia del programma legge la revisione 1 e salva: va avanti a 2.
+        let mut mine = payload("Storia mia");
+        (mine.file, mine.id, mine.rev) = (Some(a.file.clone()), Some(a.id.clone()), Some(1));
+        let b = store.save(mine, &custom, "M", "0.1.0").unwrap();
+        assert_eq!((b.rev, b.conflict), (2, false));
+        // Un'altra copia del programma, ferma alla revisione 1, salva lo stesso file: non lo sovrascrive.
+        let mut other = payload("Storia dell'altra copia");
+        (other.file, other.id, other.rev) = (Some(a.file.clone()), Some(a.id.clone()), Some(1));
+        let c = store.save(other, &custom, "M", "0.1.0").unwrap();
+        assert!(c.conflict);
+        assert_ne!(
+            (c.file.as_str(), c.id.as_str()),
+            (a.file.as_str(), a.id.as_str())
+        );
+        assert!(c.file.contains("(copia)"), "{}", c.file);
+        // Il file di prima è intatto (revisione 2, titolo di «mia»), e c'è anche il nuovo documento.
+        let kept = store.open(&a.file, &custom).unwrap().entry;
+        assert_eq!((kept.rev, kept.title.as_str()), (2, "Storia mia"));
+        assert_eq!(store.list().0.len(), 2);
+        // Stesso se nel file c'è un altro documento (un altro id): non si scrive sopra.
+        let mut stranger = payload("Altro");
+        stranger.file = Some(a.file.clone());
+        stranger.id = Some("un-altro-id".into());
+        assert!(
+            store
+                .save(stranger, &custom, "M", "0.1.0")
+                .unwrap()
+                .conflict
+        );
+        assert_eq!(
+            store.open(&a.file, &custom).unwrap().entry.title,
+            "Storia mia"
+        );
+        // Un file che non c'è più (eliminato altrove) si ricrea: non e' un conflitto.
+        std::fs::remove_file(dd.join(&a.file)).unwrap();
+        let mut again = payload("Storia mia");
+        (again.file, again.id, again.rev) = (Some(a.file.clone()), Some(a.id.clone()), Some(2));
+        let d = store.save(again, &custom, "M", "0.1.0").unwrap();
+        assert!(!d.conflict && d.file == a.file);
+        let _ = std::fs::remove_dir_all(&dd);
+        let _ = std::fs::remove_dir_all(&cd);
+    }
+
+    #[test]
+    fn un_file_di_uno_schema_piu_nuovo_non_si_riscrive() {
+        use std::io::Write;
+        let (dd, cd) = (tmp("nuovo"), tmp("nuovo-c"));
+        let (store, custom) = (DocStore::new(dd.clone()), CustomStore::open(cd.clone()));
+        std::fs::create_dir_all(&dd).unwrap();
+        // Un file scritto da una versione futura (schema 99).
+        let mut buf = std::io::Cursor::new(Vec::new());
+        {
+            let mut z = zip::ZipWriter::new(&mut buf);
+            let o = zip::write::SimpleFileOptions::default();
+            z.start_file("manifest.json", o).unwrap();
+            z.write_all(br#"{"schema":99,"id":"futuro","title":"Dal futuro","rev":3}"#)
+                .unwrap();
+            z.start_file("document.json", o).unwrap();
+            z.write_all(b"{}").unwrap();
+            z.finish().unwrap();
+        }
+        let original = buf.into_inner();
+        std::fs::write(dd.join("Futuro.caa"), &original).unwrap();
+        let mut p = payload("Dal futuro");
+        p.file = Some("Futuro.caa".into());
+        p.id = Some("futuro".into());
+        p.rev = Some(3);
+        assert!(store.save(p, &custom, "M", "0.1.0").is_err());
+        assert_eq!(std::fs::read(dd.join("Futuro.caa")).unwrap(), original);
+        assert!(store.open("Futuro.caa", &custom).unwrap().read_only);
+        let _ = std::fs::remove_dir_all(&dd);
+        let _ = std::fs::remove_dir_all(&cd);
+    }
+
+    #[test]
+    fn un_simbolo_che_non_si_importa_non_blocca_l_apertura() {
+        let (dd, cd) = (tmp("imp"), tmp("imp-c"));
+        let (store, custom) = (DocStore::new(dd.clone()), CustomStore::open(cd.clone()));
+        std::fs::create_dir_all(&dd).unwrap();
+        // Un documento con un'«immagine» che non è un WebP (file rovinato o altra origine).
+        let mut media = std::collections::BTreeMap::new();
+        media.insert("rotta.webp".to_string(), b"non sono una immagine".to_vec());
+        media.insert("buona.webp".to_string(), webp(40));
+        let mut manifest = Manifest::new("Con immagini", "M", "0.1.0", "");
+        manifest.media = media.keys().cloned().collect();
+        let doc = Document {
+            manifest,
+            document: json!({"type":"doc","content":[]}),
+            render: json!([]),
+            media,
+        };
+        caa_doc::write(&dd.join("Mista.caa"), &doc).unwrap();
+        let opened = store.open("Mista.caa", &custom).unwrap();
+        // Il documento si apre; solo il simbolo buono è importato.
+        assert_eq!(
+            opened
+                .media
+                .iter()
+                .map(|m| m.uuid.as_str())
+                .collect::<Vec<_>>(),
+            vec!["buona"]
+        );
+        let _ = std::fs::remove_dir_all(&dd);
+        let _ = std::fs::remove_dir_all(&cd);
     }
 
     #[test]

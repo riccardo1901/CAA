@@ -288,7 +288,55 @@ pub fn read(path: &Path) -> Result<Loaded, DocError> {
     read_from(file)
 }
 
-pub fn read_from<R: Read + Seek>(reader: R) -> Result<Loaded, DocError> {
+/// I nomi delle voci come stanno nella directory centrale dello ZIP, uno per ognuna (la libreria ZIP ne tiene
+/// una sola per nome, quindi i duplicati si vedono solo qui). `None` se non si riesce a leggerla (ZIP64…).
+fn central_directory_names<R: Read + Seek>(r: &mut R) -> std::io::Result<Option<Vec<String>>> {
+    use std::io::SeekFrom;
+    let len = r.seek(SeekFrom::End(0))?;
+    let tail_len = len.min(22 + 65_535);
+    r.seek(SeekFrom::Start(len - tail_len))?;
+    let mut tail = vec![0u8; tail_len as usize];
+    r.read_exact(&mut tail)?;
+    let Some(pos) = tail.windows(4).rposition(|w| w == [0x50, 0x4b, 0x05, 0x06]) else {
+        return Ok(None);
+    };
+    let eocd = &tail[pos..];
+    if eocd.len() < 22 {
+        return Ok(None);
+    }
+    let count = u16::from_le_bytes([eocd[10], eocd[11]]) as usize;
+    let size = u64::from(u32::from_le_bytes([eocd[12], eocd[13], eocd[14], eocd[15]]));
+    let offset = u64::from(u32::from_le_bytes([eocd[16], eocd[17], eocd[18], eocd[19]]));
+    if count == 0xFFFF || offset == 0xFFFF_FFFF || size > 16 * 1024 * 1024 || offset + size > len {
+        return Ok(None);
+    }
+    r.seek(SeekFrom::Start(offset))?;
+    let mut dir = vec![0u8; size as usize];
+    r.read_exact(&mut dir)?;
+    let mut names = Vec::new();
+    let mut i = 0usize;
+    while i + 46 <= dir.len() && dir[i..i + 4] == [0x50, 0x4b, 0x01, 0x02] {
+        let n = u16::from_le_bytes([dir[i + 28], dir[i + 29]]) as usize;
+        let extra = u16::from_le_bytes([dir[i + 30], dir[i + 31]]) as usize;
+        let comment = u16::from_le_bytes([dir[i + 32], dir[i + 33]]) as usize;
+        let Some(raw) = dir.get(i + 46..i + 46 + n) else {
+            return Ok(None);
+        };
+        names.push(String::from_utf8_lossy(raw).into_owned());
+        i += 46 + n + extra + comment;
+    }
+    Ok(Some(names))
+}
+
+pub fn read_from<R: Read + Seek>(mut reader: R) -> Result<Loaded, DocError> {
+    // Due voci con lo stesso nome: quale vale? Si rifiuta il file (il programma non ne scrive mai).
+    if let Ok(Some(names)) = central_directory_names(&mut reader) {
+        let mut seen = std::collections::HashSet::new();
+        if let Some(dup) = names.iter().find(|n| !seen.insert(n.as_str())) {
+            return Err(bad(format!("voce duplicata «{dup}»")));
+        }
+    }
+    reader.rewind()?;
     let mut zip = zip::ZipArchive::new(reader)
         .map_err(|e| bad(format!("non è un archivio completo ({e})")))?;
     let mut budget = MAX_TOTAL_BYTES;
@@ -438,6 +486,24 @@ pub fn tmp_path(path: &Path) -> PathBuf {
     path.with_file_name(name)
 }
 
+/// La rinomina finale, con qualche nuovo tentativo: su Windows un antivirus, l'indicizzazione o Drive possono
+/// tenere aperto il file di destinazione per un istante (errore di condivisione) e poi lasciarlo.
+fn rename_with_retry(from: &Path, to: &Path) -> std::io::Result<()> {
+    let mut last = None;
+    for attempt in 0..6 {
+        match std::fs::rename(from, to) {
+            Ok(()) => return Ok(()),
+            Err(e) => {
+                last = Some(e);
+                if attempt < 5 {
+                    std::thread::sleep(std::time::Duration::from_millis(40 * (attempt + 1)));
+                }
+            }
+        }
+    }
+    Err(last.unwrap_or_else(|| std::io::Error::other("rinomina non riuscita")))
+}
+
 fn write_inner(path: &Path, doc: &Document, fail_after: Option<u64>) -> Result<(), DocError> {
     if doc.manifest.schema != SCHEMA {
         return Err(bad(format!(
@@ -463,7 +529,7 @@ fn write_inner(path: &Path, doc: &Document, fail_after: Option<u64>) -> Result<(
             )?,
         }
         // Nome definitivo solo a file completo: chi legge vede il vecchio documento o il nuovo, mai metà.
-        std::fs::rename(&tmp, path)?;
+        rename_with_retry(&tmp, path)?;
         Ok(())
     })();
     if result.is_err() {

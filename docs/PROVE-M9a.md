@@ -19,6 +19,9 @@ Serve l'app nuova (`caa-app.exe` della CI dell'ultimo commit) e il pacchetto dat
 | 13 | Scrivi `Marco mangia pane` e scegli un simbolo diverso per «pane». Esci dal programma, aggiornalo (con un pacchetto dati nuovo se ce l'hai), riapri. | Se il lessico è cambiato compare una barra gialla «Il nuovo lessico cambierebbe N simboli» e il documento mostra i **vecchi** simboli. Con **Rivedi** passi una parola alla volta (vecchio → nuovo); **Applica tutti** usa i nuovi; **Mantieni i vecchi** li fissa. Se il lessico non è cambiato, nessuna barra. |
 | 14 | Durante la revisione del lessico, scrivi un nuovo paragrafo in fondo. | Il paragrafo si salva; la barra resta; i simboli vecchi degli altri paragrafi non cambiano da soli. |
 
+| 15 | Apri **due volte** il programma sullo stesso documento (doppio clic sul programma) e scrivi in una finestra, poi nell'altra. | Il programma non si blocca: la seconda copia, al salvataggio, dice «Il file era stato cambiato da un'altra copia del programma» e salva sotto un altro nome («… (copia)»). Nessun testo va perso. |
+| 16 | Chiudi la finestra mentre il disco è molto lento (per esempio subito dopo aver incollato molto testo) o quando `Documenti\CAA` non si può scrivere (togli il permesso alla cartella). | Se il salvataggio non riesce compare una domanda: «Il documento aperto non si è salvato… Uscire comunque?». Con «No» resti nel programma. |
+
 ## Come mi riporti il risultato
 
 - Se tutto va bene: "M9a ok".

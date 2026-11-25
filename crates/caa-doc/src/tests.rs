@@ -387,3 +387,30 @@ fn render_mancante_e_un_errore_solo_se_il_file_dice_di_averlo() {
         matches!(read_from(Cursor::new(bytes)), Err(DocError::Unreadable(m)) if m.contains("render.json"))
     );
 }
+
+#[test]
+fn voci_duplicate_nello_zip_sono_un_errore() {
+    // Due voci con lo stesso nome: quale vale? Meglio rifiutare il file che sceglierne una a caso. La libreria
+    // ZIP non le scrive: si costruisce il file con un nome diverso e poi lo si cambia nei byte.
+    let mut bytes = zip_with(&[
+        ("manifest.json", &manifest_json(1)),
+        ("document.json", b"{}"),
+        ("document.jsoX", b"{\"type\":\"doc\"}"),
+    ]);
+    let (from, to) = (b"document.jsoX", b"document.json");
+    let mut i = 0;
+    while i + from.len() <= bytes.len() {
+        if &bytes[i..i + from.len()] == from {
+            bytes[i..i + from.len()].copy_from_slice(to);
+            i += from.len();
+        } else {
+            i += 1;
+        }
+    }
+    let r = read_from(Cursor::new(bytes));
+    assert!(
+        matches!(&r, Err(DocError::Unreadable(m)) if m.contains("duplicat")),
+        "{:?}",
+        r.as_ref().err()
+    );
+}

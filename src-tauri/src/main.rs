@@ -285,6 +285,23 @@ fn doc_delete(state: State<'_, Arc<Backend>>, file: String) -> Result<(), String
     state.docs.delete(&file)
 }
 
+/// Le richieste di chiusura della finestra e quelle a cui la pagina ha risposto (vedi `on_window_event`).
+static CLOSE_REQUESTS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+static CLOSE_ACKED: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+/// Se la pagina non ha risposto a una richiesta di chiusura, il programma esce da solo (la pagina è bloccata o
+/// rotta); se ha risposto, aspetta che abbia finito di salvare, anche più di qualche secondo.
+fn must_force_exit(requested: u64, acked: u64) -> bool {
+    acked < requested
+}
+
+/// La pagina conferma di aver ricevuto la richiesta di chiusura e sta salvando: niente uscita forzata.
+#[tauri::command]
+fn close_ack() {
+    use std::sync::atomic::Ordering;
+    CLOSE_ACKED.store(CLOSE_REQUESTS.load(Ordering::SeqCst), Ordering::SeqCst);
+}
+
 /// Chiude il programma: la pagina lo chiede dopo aver salvato.
 #[tauri::command]
 fn exit_app(app: tauri::AppHandle) {
@@ -305,12 +322,16 @@ fn main() {
         // pagina non risponde (errore, blocco) il programma esce comunque dopo qualche secondo.
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                use std::sync::atomic::Ordering;
                 api.prevent_close();
+                let n = CLOSE_REQUESTS.fetch_add(1, Ordering::SeqCst) + 1;
                 let _ = window.emit("caa-close-request", ());
                 let handle = window.app_handle().clone();
                 std::thread::spawn(move || {
                     std::thread::sleep(std::time::Duration::from_secs(4));
-                    handle.exit(0);
+                    if must_force_exit(n, CLOSE_ACKED.load(Ordering::SeqCst)) {
+                        handle.exit(0);
+                    }
                 });
             }
         })
@@ -342,8 +363,22 @@ fn main() {
             doc_save,
             doc_open,
             doc_delete,
+            close_ack,
             exit_app
         ])
         .run(tauri::generate_context!())
         .expect("errore durante l'avvio dell'applicazione");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::must_force_exit;
+
+    #[test]
+    fn uscita_forzata_solo_se_la_pagina_non_risponde() {
+        assert!(must_force_exit(1, 0)); // nessuna risposta: si esce da soli
+        assert!(!must_force_exit(1, 1)); // la pagina sta salvando: si aspetta
+        assert!(must_force_exit(2, 1)); // una seconda richiesta senza risposta
+        assert!(!must_force_exit(2, 2));
+    }
 }

@@ -62,7 +62,7 @@ const MOCK = `
     }
     return out;
   }
-  window.__mock = { calls, delay: 4, fail: 0, alts: [], searches: [], altDelay: 3, custom: [], imports: [], docsStore: new Map(), saves: [], saveFail: 0, broken: 0, readOnly: {}, mediaMap: [] };
+  window.__mock = { calls, delay: 4, fail: 0, alts: [], searches: [], altDelay: 3, custom: [], imports: [], docsStore: new Map(), saves: [], saveFail: 0, saveDelay: 0, conflictNext: false, broken: 0, readOnly: {}, mediaMap: [] };
   return {
     symbolize: (paras, policy, locks) => { calls.push({ texts: paras.map((p) => p.text), paras, locks, policy }); return new Promise((r, rej) => setTimeout(() => { if (window.__mock.fail > 0) { window.__mock.fail--; rej(new Error('motore guasto')); } else r(paras.map((p) => tokens(p.text, policy, p.forced, locks))); }, window.__mock.delay)); },
     alternatives: (para, policy, locks, s, e) => { window.__mock.alts.push({ para, s, e }); return new Promise((r) => setTimeout(() => r([1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => ({ picto: 1000 + i, keyword: 'alt' + i, reason: 'altro senso', image: i !== 3 }))), window.__mock.altDelay)); },
@@ -71,12 +71,14 @@ const MOCK = `
       list: async () => ({ entries: [...window.__mock.docsStore.values()].map((v) => v.entry).sort((a, b) => b.modified.localeCompare(a.modified)), broken: window.__mock.broken, dir: 'Documenti/CAA' }),
       save: async (p) => {
         window.__mock.saves.push(JSON.parse(JSON.stringify(p)));
+        if (window.__mock.saveDelay) await new Promise((r) => setTimeout(r, window.__mock.saveDelay));
         if (window.__mock.saveFail > 0) { window.__mock.saveFail--; throw new Error('disco pieno'); }
         const store = window.__mock.docsStore;
         let file = p.file;
         if (!file) { let n = 1; do { file = (p.title || 'Senza titolo') + (n > 1 ? ' (' + n + ')' : '') + '.caa'; n++; } while (store.has(file)); }
         const prev = store.get(file);
-        const entry = { file, id: prev ? prev.entry.id : 'id-' + store.size, title: p.title, modified: new Date(Date.now() + store.size * 1000).toISOString(), rev: (prev ? prev.entry.rev : 0) + 1, author: 'Maria', origin: p.origin || null };
+        const conflict = !!window.__mock.conflictNext; window.__mock.conflictNext = false;
+        const entry = { conflict, file, id: prev ? prev.entry.id : 'id-' + store.size, title: p.title, modified: new Date(Date.now() + store.size * 1000).toISOString(), rev: (prev ? prev.entry.rev : 0) + 1, author: 'Maria', origin: p.origin || null };
         store.set(file, { entry, payload: JSON.parse(JSON.stringify(p)) });
         return entry;
       },
@@ -1436,4 +1438,174 @@ test("un lessico nuovo che non cambia niente non disturba", async ({ page }) => 
   await expect(page.locator(".lexbar")).toBeHidden();
   // Nessuna differenza: il documento si riscrive con il lessico nuovo alla prima modifica o subito.
   await expect.poll(async () => (await mockSaves(page)).at(-1)?.lexicon).toBe("lex-new");
+});
+
+// ---- Revisione di M9a ----
+
+async function storeDoc(page: Page, file: string, text: string, extra: Record<string, unknown> = {}): Promise<void> {
+  await page.evaluate(
+    ([f, t, ex]) => {
+      const p = (window as any).caaProto;
+      const para = p.view.state.schema.nodes.paragraph.create(null, p.view.state.schema.text(t));
+      const d = p.view.state.schema.nodes.doc.create(null, [para]);
+      const title = f.replace(/\.caa$/, "");
+      (window as any).__mock.docsStore.set(f, { entry: { file: f, id: "id-" + f, title, modified: new Date().toISOString(), rev: 1, author: "X", origin: null }, payload: { document: d.toJSON(), prefs: {}, render: [], sense_locks: [], lexicon: "lex-new", ...ex } });
+    },
+    [file, text, extra] as const,
+  );
+}
+
+const storedText = (page: Page, file: string) =>
+  page.evaluate((f) => {
+    const v = (window as any).__mock.docsStore.get(f);
+    return v ? JSON.stringify(v.payload.document) : null;
+  }, file);
+
+test("un salvataggio lento non scrive un documento sull'altro (Apri)", async ({ page }) => {
+  await open(page, "", true);
+  await storeDoc(page, "B.caa", "Documento B");
+  await page.locator(".ProseMirror").click();
+  await page.keyboard.type("Documento A");
+  await expect.poll(async () => (await mockSaves(page)).length).toBe(1);
+  await page.evaluate(() => { (window as any).__mock.saveDelay = 1800; });
+  await page.keyboard.type("!");
+  await expect.poll(async () => (await mockSaves(page)).length).toBe(2); // il salvataggio lento è partito
+  await page.getByRole("button", { name: "Documenti" }).click();
+  await page.locator(".docs-row", { hasText: "B" }).getByRole("button", { name: "Apri" }).click();
+  await expect.poll(() => page.evaluate(() => (window as any).caaProto.view.state.doc.textContent), { timeout: 8000 }).toBe("Documento B");
+  await page.waitForTimeout(4500); // tempo per un eventuale salvataggio sbagliato
+  expect(await storedText(page, "A.caa")).toBeNull(); // (il file di A si chiama «Documento A.caa»)
+  expect(await storedText(page, "Documento A.caa")).toContain("Documento A!");
+  expect(await storedText(page, "B.caa")).toContain("Documento B");
+  expect(await storedText(page, "B.caa")).not.toContain("Documento A");
+  await expect(page.locator(".doc-title")).toHaveValue("B");
+  const saves = await mockSaves(page);
+  expect(saves.filter((s: any) => s.file === "B.caa")).toHaveLength(0);
+});
+
+test("un salvataggio lento non scrive un documento vuoto sopra il precedente (Nuovo)", async ({ page }) => {
+  await open(page, "", true);
+  await page.locator(".ProseMirror").click();
+  await page.keyboard.type("Testo importante");
+  await expect.poll(async () => (await mockSaves(page)).length).toBe(1);
+  await page.evaluate(() => { (window as any).__mock.saveDelay = 1800; });
+  await page.keyboard.type("!");
+  await expect.poll(async () => (await mockSaves(page)).length).toBe(2);
+  await page.getByRole("button", { name: "Nuovo" }).click();
+  await expect.poll(() => page.evaluate(() => (window as any).caaProto.view.state.doc.textContent), { timeout: 8000 }).toBe("");
+  await page.waitForTimeout(4500);
+  expect(await storedText(page, "Testo importante.caa")).toContain("Testo importante!");
+  await expect(page.locator(".doc-title")).toHaveValue("");
+  expect(await page.evaluate(() => (window as any).__mock.docsStore.size)).toBe(1);
+});
+
+test("il titolo scritto mentre si salva non viene annullato", async ({ page }) => {
+  await open(page, "", true);
+  await page.locator(".ProseMirror").click();
+  await page.keyboard.type("Documento A");
+  await expect.poll(async () => (await mockSaves(page)).length).toBe(1);
+  await page.evaluate(() => { (window as any).__mock.saveDelay = 700; });
+  await page.keyboard.type("!");
+  await expect.poll(async () => (await mockSaves(page)).length).toBe(2); // salvataggio lento in corso
+  await page.locator(".doc-title").fill("Titolo mio");
+  await page.waitForTimeout(1500);
+  await expect(page.locator(".doc-title")).toHaveValue("Titolo mio");
+  await expect.poll(async () => (await mockSaves(page)).at(-1)?.title).toBe("Titolo mio");
+});
+
+test("chiudendo la finestra si aspetta il salvataggio e, se non riesce, si chiede conferma", async ({ page }) => {
+  await open(page, "", true);
+  await page.locator(".ProseMirror").click();
+  await page.keyboard.type("Prima parte");
+  await expect.poll(async () => (await mockSaves(page)).length).toBe(1);
+  // Salvataggio lento: la chiusura lo aspetta tutto (anche oltre un secondo) e poi esce.
+  await page.evaluate(() => { (window as any).__mock.saveDelay = 1600; });
+  await page.keyboard.type(" e seconda parte");
+  const closed = await page.evaluate(() => (window as any).caaProto.closeRequest());
+  expect(closed).toBe(true);
+  expect(await storedText(page, "Prima parte.caa")).toContain("Prima parte e seconda parte");
+  // Salvataggio impossibile: si chiede conferma; «no» resta nel programma, «sì» esce.
+  await page.evaluate(() => { const m = (window as any).__mock; m.saveDelay = 0; m.saveFail = 100; (window as any).__asked = []; (window as any).confirm = (msg: string) => { (window as any).__asked.push(msg); return (window as any).__answer; }; });
+  await page.keyboard.type(" e terza");
+  await page.evaluate(() => { (window as any).__answer = false; });
+  expect(await page.evaluate(() => (window as any).caaProto.closeRequest())).toBe(false);
+  expect(await page.evaluate(() => (window as any).__asked.length)).toBe(1);
+  expect(await page.evaluate(() => (window as any).__asked[0])).toContain("non si è salvato");
+  await page.evaluate(() => { (window as any).__answer = true; });
+  expect(await page.evaluate(() => (window as any).caaProto.closeRequest())).toBe(true);
+  // Senza modifiche da salvare si esce senza chiedere niente.
+  await page.evaluate(() => { (window as any).__mock.saveFail = 0; });
+  await page.getByRole("button", { name: "Nuovo" }).click();
+  const before = await page.evaluate(() => (window as any).__asked.length);
+  expect(await page.evaluate(() => (window as any).caaProto.closeRequest())).toBe(true);
+  expect(await page.evaluate(() => (window as any).__asked.length)).toBe(before);
+});
+
+test("un documento eliminato mentre si salva non rinasce con lo stesso file", async ({ page }) => {
+  await open(page, "", true);
+  await page.locator(".ProseMirror").click();
+  await page.keyboard.type("Da eliminare");
+  await expect.poll(async () => (await mockSaves(page)).length).toBe(1);
+  await page.evaluate(() => { (window as any).__mock.saveDelay = 900; });
+  await page.keyboard.type("!");
+  await expect.poll(async () => (await mockSaves(page)).length).toBe(2);
+  await page.getByRole("button", { name: "Documenti" }).click();
+  await page.locator(".docs-row.current").getByRole("button", { name: "Elimina" }).click();
+  await page.locator(".docs-panel").getByRole("button", { name: "Chiudi" }).click();
+  await page.waitForTimeout(1500);
+  await page.evaluate(() => { (window as any).__mock.saveDelay = 0; });
+  await page.locator(".ProseMirror").click();
+  await page.keyboard.press("End");
+  await page.keyboard.type("?");
+  await expect.poll(async () => (await mockSaves(page)).length).toBeGreaterThan(2);
+  expect((await mockSaves(page)).at(-1).file).toBeNull();
+});
+
+test("se il file è stato cambiato da un'altra copia, il documento si salva come nuovo e lo dice", async ({ page }) => {
+  await open(page, "", true);
+  await page.locator(".ProseMirror").click();
+  await page.keyboard.type("Storia");
+  await expect.poll(async () => (await mockSaves(page)).length).toBe(1);
+  await page.evaluate(() => { (window as any).__mock.conflictNext = true; });
+  await page.keyboard.type(" lunga");
+  await expect(page.locator(".statusbar")).toContainText("un'altra copia del programma");
+});
+
+test("un documento letto da un file: scelte non valide o con simboli che mancano si scartano", async ({ page }) => {
+  await open(page, "", true);
+  await page.evaluate(() => {
+    const p = (window as any).caaProto;
+    const sc = p.view.state.schema;
+    const pick = (word: string, picto: unknown, uuid = "") => sc.marks.pick.create({ word, picto, uuid });
+    const para = sc.nodes.paragraph.create(null, [
+      sc.text("uno", [pick("uno", 1002)]), sc.text(" "),
+      sc.text("due", [pick("due", "storto")]), sc.text(" "),
+      sc.text("tre", [pick("tre", 4294967294)]), sc.text(" "),
+      sc.text("quattro", [pick("quattro", 2147490000, "assente")]), sc.text(" "),
+      sc.text("cinque", [pick("cinque", 2147490001, "presente")]), sc.text(" "),
+      sc.text("sei", [pick("sei", 1.5)]),
+    ]);
+    const d = sc.nodes.doc.create({ locks: [{ lemma: "otto", cat: "NOUN", picto: 2147490002, uuid: "assente" }, { lemma: "nove", cat: "NOUN", picto: 1003, uuid: "" }] }, [para]);
+    (window as any).__mock.docsStore.set("Misto.caa", { entry: { file: "Misto.caa", id: "id-m", title: "Misto", modified: new Date().toISOString(), rev: 1, author: "X", origin: null }, payload: { document: d.toJSON(), prefs: {}, render: [], sense_locks: [], lexicon: "lex-new" } });
+    (window as any).__mock.mediaMap = [{ uuid: "presente", id: 2147499999 }];
+  });
+  await openStored(page, "Misto");
+  await expect.poll(async () => (await docPicks(page)).map((p) => p.word)).toEqual(["uno", "cinque"]);
+  const picks = await docPicks(page);
+  expect(picks.find((p) => p.word === "cinque")?.picto).toBe(2147499999); // id di questo computer
+  expect(picks.find((p) => p.word === "uno")?.picto).toBe(1002);
+  expect((await docLocks(page)).map((l) => l.lemma)).toEqual(["nove"]);
+});
+
+test("revisione del lessico: se si inserisce un paragrafo sopra, «Tieni il vecchio» agisce sulla parola giusta", async ({ page }) => {
+  await open(page, "", true);
+  await storeOldDoc(page);
+  await openStored(page, "Vecchio");
+  await page.locator(".lexbar").getByRole("button", { name: "Rivedi" }).click();
+  await expect(page.locator(".lexbar")).toContainText("«mangia»");
+  await page.evaluate(() => (window as any).caaProto.setCaret(1));
+  await page.keyboard.press("Enter"); // un paragrafo vuoto sopra: le posizioni slittano
+  await expect(page.locator(".lexbar")).toContainText("«mangia»");
+  await page.locator(".lexbar").getByRole("button", { name: "Tieni il vecchio" }).click();
+  await expect.poll(async () => (await docPicks(page)).map((p) => [p.word, p.picto])).toEqual([["mangia", 5001]]);
 });

@@ -22,13 +22,16 @@ export interface DocsPanel {
   close(): void;
 }
 
-export function createDocsPanel(docs: DocClient, session: Session, confirmDelete: (title: string) => boolean): DocsPanel {
+export function createDocsPanel(docs: DocClient, session: Session, confirmDelete: (title: string) => boolean, onClose?: () => void): DocsPanel {
   let overlay: HTMLElement | null = null;
 
   const close = (): void => {
     document.removeEventListener("keydown", onKey, true);
+    const was = overlay;
     overlay?.remove();
     overlay = null;
+    // Chiudendo il pannello il cursore torna nel testo.
+    if (was) onClose?.();
   };
   function onKey(e: KeyboardEvent): void {
     if (e.key === "Escape") {
@@ -56,6 +59,9 @@ export function createDocsPanel(docs: DocClient, session: Session, confirmDelete
     box.append(tabs, body);
     overlay.append(box);
     document.body.append(overlay);
+    // Il fuoco entra nel pannello (la tastiera funziona lì e Esc lo chiude).
+    box.tabIndex = -1;
+    box.focus();
     document.addEventListener("keydown", onKey, true);
     closeBtn.addEventListener("click", close);
     overlay.addEventListener("mousedown", (e) => {
