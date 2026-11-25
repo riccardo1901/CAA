@@ -123,6 +123,37 @@ pub fn alternative_ids_for_texts<D: AsRef<[u8]>>(
     ids
 }
 
+/// Pittogrammi delle frasi di 2 o 3 parole vicine dei testi ("scuola media", "gatto nero"): servono al
+/// pacchetto di prova perché "Unisci" (M8c-2) mostri l'immagine della frase.
+pub fn phrase_ids_for_texts<D: AsRef<[u8]>>(
+    engine: &Engine<D>,
+    texts: &[String],
+) -> std::collections::BTreeSet<u32> {
+    let mut ids = std::collections::BTreeSet::new();
+    for text in texts {
+        for sentence in corpus::split_sentences(text) {
+            let words: Vec<String> = engine
+                .symbolize_text(&sentence)
+                .iter()
+                .filter(|t| t.kind == TokenKind::Word)
+                .map(|t| caa_engine::norm::normalize_key(&t.surface))
+                .collect();
+            for n in 2..=3 {
+                for w in words.windows(n) {
+                    ids.extend(
+                        engine
+                            .picto_index()
+                            .lookup(&w.join(" "))
+                            .iter()
+                            .map(|e| e.id),
+                    );
+                }
+            }
+        }
+    }
+    ids
+}
+
 /// Una parola di base: forma (lemma) e categoria indicativa.
 #[derive(Debug, Clone)]
 pub struct BaseWord {

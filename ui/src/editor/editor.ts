@@ -22,6 +22,9 @@ export function createEditor(mount: HTMLElement, doc: PMNode, mode: Mode = "A"):
         // Barra laterale dei simboli (M8b).
         "Alt-ArrowDown": () => hooks.openAtCursor?.() ?? false,
         F8: () => hooks.next?.() ?? false,
+        // Unisci e dividi parole (M8c-2).
+        "Shift-Mod-u": () => hooks.merge?.() ?? false,
+        "Shift-Mod-d": () => hooks.split?.() ?? false,
       }),
       keymap(baseKeymap),
       normalizeMarks(),

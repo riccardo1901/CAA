@@ -452,6 +452,7 @@ fn main() -> ExitCode {
             let mut ids = caa_eval::picto_ids_for_texts(&engine, &texts, &extra);
             // Il menu delle alternative (M8b) mostra le immagini: quelle delle parole del testo di esempio.
             ids.extend(caa_eval::alternative_ids_for_texts(&engine, &sample, 8));
+            ids.extend(caa_eval::phrase_ids_for_texts(&engine, &sample));
             let copy = |rel: &str| -> Result<(), String> {
                 let from = lexicon.join(rel);
                 let to = out.join(rel);

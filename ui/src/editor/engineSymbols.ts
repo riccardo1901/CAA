@@ -426,10 +426,17 @@ export interface TokenAt {
   locks: LockReq[];
   /** Scelta del docente su questa parola, se c'è (valore di `picto` del mark). */
   pick: number | null;
+  /** Estensione (offset nel paragrafo) del gruppo di cui la parola è la testa, se ne ha uno. */
+  groupSpan: [number, number] | null;
 }
 
-function tokenInfo(view: EditorView, st: State, paraPos: number, node: PMNode, token: TokenDto): TokenAt {
+function tokenInfo(view: EditorView, st: State, paraPos: number, node: PMNode, token: TokenDto, tokens: TokenDto[]): TokenAt {
   const info = paraInfo(node);
+  let groupSpan: [number, number] | null = null;
+  if (token.group !== 0 && token.head) {
+    const members = tokens.filter((x) => x.group === token.group);
+    groupSpan = [Math.min(...members.map((x) => x.s)), Math.max(...members.map((x) => x.e))];
+  }
   const p = info.picks.find((x) => x.s === token.s && x.e === token.e);
   return {
     paraPos,
@@ -440,6 +447,7 @@ function tokenInfo(view: EditorView, st: State, paraPos: number, node: PMNode, t
     policy: st.policy,
     locks: st.locks,
     pick: p ? p.picto : null,
+    groupSpan,
   };
 }
 
@@ -461,9 +469,15 @@ export function tokenAt(view: EditorView, pos: number): TokenAt | null {
   const entry = st.cache.get(paraKey(node, st.locksSig));
   if (!entry) return null;
   const off = pos - $pos.start();
-  const words = entry.tokens.filter(pickable);
-  const hit = words.find((t) => t.s <= off && off < t.e) ?? words.find((t) => t.e === off);
-  return hit ? tokenInfo(view, st, $pos.before(), node, hit) : null;
+  const all = entry.tokens.filter((t) => t.kind !== "punct" && t.s < t.e);
+  let hit = all.find((t) => t.s <= off && off < t.e) ?? all.find((t) => t.e === off);
+  // Una parola nascosta perché fa parte di un gruppo ("ho" in "ho mangiato", "media" in una unione) porta
+  // alla testa del gruppo, che ha il simbolo.
+  if (hit && hit.display === "hidden" && hit.group !== 0) {
+    const g = hit.group;
+    hit = all.find((t) => t.group === g && t.head);
+  }
+  return hit && pickable(hit) ? tokenInfo(view, st, $pos.before(), node, hit, entry.tokens) : null;
 }
 
 /** La prossima parola da controllare dopo `from` (con giro completo del documento). */
@@ -478,7 +492,7 @@ export function nextDoubtful(view: EditorView, from: number): TokenAt | null {
     if (!entry) return false;
     for (const t of entry.tokens) {
       if (!t.doubtful || !pickable(t)) continue;
-      const found = tokenInfo(view, st, pos, node, t);
+      const found = tokenInfo(view, st, pos, node, t, entry.tokens);
       first ??= found;
       if (!after && found.from > from) after = found;
     }

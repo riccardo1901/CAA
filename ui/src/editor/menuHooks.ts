@@ -12,7 +12,13 @@ export const hooks: {
   next: (() => boolean) | null;
   /** Mostra nella barra la parola alla posizione indicata (clic sul simbolo). */
   openAt: ((pos: number) => boolean) | null;
-} = { openAtCursor: null, next: null, openAt: null };
+  /** Unisce le parole selezionate in un simbolo solo (Ctrl+Maiusc+U). */
+  merge: (() => boolean) | null;
+  /** Divide l'unione o l'espressione della parola al cursore, o riunisce una divisione (Ctrl+Maiusc+D). */
+  split: (() => boolean) | null;
+  /** Un messaggio breve per il docente (barra di stato). */
+  notice: ((message: string) => void) | null;
+} = { openAtCursor: null, next: null, openAt: null, merge: null, split: null, notice: null };
 
 /** Altezza (px) della zona del simbolo in una parola: il clic lì mostra le alternative, sul testo sposta il cursore. */
 function symbolHeight(view: EditorView): number {

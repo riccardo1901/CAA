@@ -3,7 +3,8 @@
 import { redo, redoDepth, undo, undoDepth } from "prosemirror-history";
 import type { EditorView } from "prosemirror-view";
 import type { EngineInfo, Policy, PolicyTable, Rule } from "./engine/client";
-import { engineStats, setPolicy } from "./editor/engineSymbols";
+import { engineStats, setPolicy, tokenAt } from "./editor/engineSymbols";
+import { canMerge, groupAction } from "./editor/groups";
 import { hooks } from "./editor/menuHooks";
 
 const SIZES: Array<[string, number]> = [
@@ -137,7 +138,22 @@ export function createBars(
     redo(view.state, view.dispatch);
     view.focus();
   });
-  doc.append(newBtn, " ", sampleBtn, " ", undoBtn, " ", redoBtn);
+  // Unisci e dividi parole (M8c-2).
+  const mergeBtn = el("button", "", "Unisci");
+  mergeBtn.type = "button";
+  mergeBtn.title = "Unisce le parole selezionate in un simbolo solo (Ctrl+Maiusc+U)";
+  mergeBtn.addEventListener("click", () => {
+    hooks.merge?.();
+    view.focus();
+  });
+  const splitBtn = el("button", "", "Dividi");
+  splitBtn.type = "button";
+  splitBtn.title = "Divide il gruppo della parola al cursore (Ctrl+Maiusc+D)";
+  splitBtn.addEventListener("click", () => {
+    hooks.split?.();
+    view.focus();
+  });
+  doc.append(newBtn, " ", sampleBtn, " ", undoBtn, " ", redoBtn, " ", mergeBtn, " ", splitBtn);
 
   const policyLabel = el("label", "", "Parole funzionali: ");
   const select = el("select");
@@ -227,11 +243,25 @@ export function createBars(
   const policyInfo = el("span");
   const engineInfoEl = el("span");
   const errorInfo = el("span");
-  statusbar.append(doubtInfo, wordsInfo, errorInfo, el("span", "grow"), policyInfo, engineInfoEl);
+  const noticeInfo = el("span", "warn");
+  let noticeTimer: ReturnType<typeof setTimeout> | null = null;
+  hooks.notice = (message) => {
+    noticeInfo.textContent = message;
+    if (noticeTimer) clearTimeout(noticeTimer);
+    noticeTimer = setTimeout(() => {
+      noticeInfo.textContent = "";
+    }, 6000);
+  };
+  statusbar.append(doubtInfo, wordsInfo, errorInfo, noticeInfo, el("span", "grow"), policyInfo, engineInfoEl);
 
   function refresh(): void {
     undoBtn.disabled = undoDepth(view.state) === 0;
     redoBtn.disabled = redoDepth(view.state) === 0;
+    mergeBtn.disabled = !canMerge(view);
+    const here = tokenAt(view, view.state.selection.head);
+    const act = here ? groupAction(view, here) : null;
+    splitBtn.textContent = act?.label ?? "Dividi";
+    splitBtn.disabled = !act;
     const s = engineStats(view);
     sizeButtons.forEach((b, i) => b.classList.toggle("on", SIZES[i][1] === getSize()));
     wordsInfo.textContent = `${s.words} parole`;

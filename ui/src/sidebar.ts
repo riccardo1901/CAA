@@ -7,6 +7,7 @@ import type { EditorView } from "prosemirror-view";
 import type { CandidateDto, EngineClient } from "./engine/client";
 import { nextDoubtful, onEngineUpdate, tokenAt, type TokenAt } from "./editor/engineSymbols";
 import { focusWordRange, hooks, revealPos, setFocusWord } from "./editor/menuHooks";
+import { groupAction, mergeSelection } from "./editor/groups";
 import { applyChoice, type Choice } from "./editor/picks";
 
 const GRID = 8;
@@ -84,7 +85,10 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
       now.append(img);
     }
     const titles = el("div", "pm-titles");
-    titles.append(el("strong", "", shownWord), el("span", "pm-why", t.token.why));
+    // Per un gruppo di parole ("scuola media") il titolo è tutta la frase.
+    const inGroup = t.token.gkind === "multiword" && t.groupSpan !== null;
+    const title = inGroup && t.groupSpan ? t.para.text.slice(t.groupSpan[0], t.groupSpan[1]) : shownWord;
+    titles.append(el("strong", "", title), el("span", "pm-why", t.token.why));
     head.append(now, titles);
 
     const grid = el("div", "pm-grid");
@@ -96,7 +100,8 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
     all.addEventListener("change", () => {
       lockAll = all.checked;
     });
-    const canLock = t.token.lemma !== "" && t.token.cat !== "";
+    // Un gruppo di parole ("far colazione") non ha un lemma solo: la scelta vale per quel punto del testo.
+    const canLock = t.token.lemma !== "" && t.token.cat !== "" && !inGroup;
     all.disabled = !canLock;
     const allLabel = el("label", "pm-all");
     allLabel.append(all, " usa per tutto il testo");
@@ -142,6 +147,13 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
     button("Nessun simbolo", "Lascia lo spazio del simbolo vuoto", () => choose({ kind: "none" }));
     button("Solo testo", "Parola senza spazio per il simbolo", () => choose({ kind: "text" }));
     if (t.pick !== null) button("Automatico", "Torna alla scelta del motore", () => choose({ kind: "auto" }));
+    const act = groupAction(view, t);
+    if (act) {
+      button(act.label, act.label === "Dividi" ? "Una parola, un simbolo (Ctrl+Maiusc+D)" : "Torna a un simbolo solo (Ctrl+Maiusc+D)", () => {
+        act.run(view);
+        view.focus();
+      });
+    }
 
     // Ricerca libera: la barra è in alto, i risultati prendono il posto delle alternative.
     const search = el("input", "pm-search");
@@ -256,11 +268,29 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
   }
   unsubscribe = onEngineUpdate(refresh);
 
+  hooks.merge = () => {
+    const message = mergeSelection(view);
+    if (message) hooks.notice?.(message);
+    return true;
+  };
+  hooks.split = () => {
+    const t = tokenAt(view, view.state.selection.head);
+    const act = t ? groupAction(view, t) : null;
+    if (!act) {
+      hooks.notice?.("Metti il cursore su una parola di un gruppo (o di una divisione) per dividerla o riunirla.");
+      return true;
+    }
+    act.run(view);
+    return true;
+  };
+
   const activate = (t: TokenAt, focusSide: boolean): void => {
     // Cambiando l'evidenziazione l'editor si aggiorna e chiama `refresh`: con la parola vecchia ancora
     // "in mostra" lo scambierebbe per una parola cambiata e svuoterebbe la barra.
     target = null;
-    setFocusWord(view, [t.from, t.to]);
+    // Di un gruppo di parole si evidenzia tutta la frase.
+    const range: [number, number] = t.groupSpan ? [t.paraPos + 1 + t.groupSpan[0], t.paraPos + 1 + t.groupSpan[1]] : [t.from, t.to];
+    setFocusWord(view, range);
     show(t, focusSide);
   };
   hooks.openAt = (pos) => {

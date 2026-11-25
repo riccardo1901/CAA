@@ -70,5 +70,22 @@ export const schema = new Schema({
         },
       ],
     },
+    // Unione o divisione manuale di parole (M8c-2): copre le parole (e gli spazi in mezzo) di una frase da
+    // trattare come un simbolo solo (`merge`) o da non unire (`split`, per le espressioni che il motore
+    // riconosce da solo). `text` (minuscolo) dice a quale testo si riferisce: se cambia, non vale più.
+    group: {
+      attrs: { text: { default: "" }, mode: { default: "merge" } },
+      inclusive: false,
+      toDOM: (mark) => ["span", { class: "gp", "data-text": mark.attrs.text as string, "data-mode": mark.attrs.mode as string }, 0],
+      parseDOM: [
+        {
+          tag: "span.gp",
+          getAttrs: (dom) => {
+            const e = dom as HTMLElement;
+            return { text: e.dataset.text ?? "", mode: e.dataset.mode === "split" ? "split" : "merge" };
+          },
+        },
+      ],
+    },
   },
 });

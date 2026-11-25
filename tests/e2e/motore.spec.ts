@@ -14,7 +14,7 @@ const MOCK = `
     for (const m of text.matchAll(RE)) {
       const w = m[0], s = m.index, e = s + w.length;
       const punct = !/[\\p{L}\\d]/u.test(w);
-      let t = { s, e, kind: punct ? 'punct' : 'word', display: punct ? 'text' : 'full', picto: punct ? null : (w.toLowerCase().charCodeAt(0) * 7 + w.length), image: !punct, mods: 0, group: 0, head: false, confidence: 1, doubtful: false, placeholder: false };
+      let t = { s, e, kind: punct ? 'punct' : 'word', display: punct ? 'text' : 'full', picto: punct ? null : (w.toLowerCase().charCodeAt(0) * 7 + w.length), image: !punct, mods: 0, group: 0, head: false, gkind: '', confidence: 1, doubtful: false, placeholder: false };
       const lw = w.toLowerCase();
       if (lw === 'il' || lw === 'la') {
         const m = /articles=(\\w+)/.exec(policy);
@@ -31,13 +31,34 @@ const MOCK = `
       else { t.lemma = ''; t.cat = ''; t.teacher = false; t.why = ''; }
       const lock = locks.find((l) => l.lemma === t.lemma && l.cat === t.cat);
       if (lock) { t.picto = lock.picto; t.image = true; t.display = 'full'; t.placeholder = false; }
-      const f = forced.find((x) => x.s === s && x.e === e);
+      const f = forced.find((x) => x.s === s && x.e === e && x.picto < 4294967294);
       if (f) {
         t.teacher = true; t.confidence = 1; t.doubtful = false; t.why = 'nome, scelto da te';
         if (f.picto === 0) { t.picto = null; t.image = false; t.display = 'text'; t.placeholder = false; }
         else { t.picto = f.picto; t.image = true; t.display = 'full'; t.placeholder = false; }
       }
       out.push(t);
+    }
+    // Gruppi: «scuola media» il motore la riconosce da solo (id 7); l'unione del docente (id 9) e la divisione.
+    const splits = forced.filter((f) => f.picto === 4294967295);
+    const overlaps = (a, b) => splits.some((f) => a < f.e && f.s < b);
+    const group = (from, to, id) => {
+      const idx = out.map((_, i) => i).filter((i) => out[i].s >= from && out[i].e <= to && out[i].kind === 'word');
+      if (idx.length < 2) return;
+      idx.forEach((i, k) => {
+        const t = out[i];
+        t.group = id; t.gkind = 'multiword'; t.head = k === 0;
+        if (k > 0) { t.display = 'hidden'; t.picto = null; t.image = false; t.placeholder = false; t.doubtful = false; }
+        else { t.picto = (from * 3 + to) % 900 + 100; t.image = true; t.display = 'full'; t.why = 'gruppo'; }
+      });
+    };
+    const at = text.toLowerCase().indexOf('scuola media');
+    if (at >= 0 && !overlaps(at, at + 12)) group(at, at + 12, 7);
+    for (const f of forced.filter((x) => x.picto === 4294967294)) group(f.s, f.e, 9);
+    // La scelta del docente sulla testa di un gruppo vince sul simbolo del gruppo.
+    for (const f of forced.filter((x) => x.picto < 4294967294)) {
+      const t = out.find((x) => x.s === f.s && x.e === f.e && x.head && x.group);
+      if (t) { t.teacher = true; t.picto = f.picto || null; t.image = f.picto > 0; t.why = 'scelto da te'; }
     }
     return out;
   }
@@ -744,4 +765,90 @@ test("una parola nascosta dalla politica si può correggere dalla barra", async 
   await page.evaluate(() => (window as any).caaProto.setCaret(10));
   await page.keyboard.press("Alt+ArrowDown");
   await expect(page.locator(".pm-head")).toContainText("il");
+});
+
+// ---- M8c-2: unisci e dividi parole ----
+
+const selectText = (page: Page, from: number, to: number) => page.evaluate(([a, b]) => (window as any).caaProto.setCaret(a, b), [from, to]);
+
+test("Unisci: le parole selezionate diventano un simbolo solo, Dividi le separa, tutto con annulla", async ({ page }) => {
+  await open(page, "Vado a scuola con la cartella.");
+  await expect(page.getByRole("button", { name: "Unisci" })).toBeDisabled();
+  // Seleziono «scuola con» (offset 7–17 nel paragrafo, +1 nel documento).
+  await selectText(page, 1 + 7, 1 + 17);
+  await expect(page.getByRole("button", { name: "Unisci" })).toBeEnabled();
+  await page.getByRole("button", { name: "Unisci" }).click();
+  // Il mark e il simbolo: la prima parola porta l'immagine, la seconda è attenuata.
+  const marks = () => page.evaluate(() => { const out: any[] = []; (window as any).caaProto.view.state.doc.descendants((n: any) => { for (const m of n.marks ?? []) if (m.type.name === "group") out.push({ text: n.text, ...m.attrs }); }); return out; });
+  await expect.poll(async () => (await marks()).length).toBeGreaterThan(0);
+  expect((await marks()).map((m) => m.text).join("")).toBe("scuola con");
+  expect((await marks())[0]).toMatchObject({ mode: "merge", text: "scuola con" });
+  await expect(page.locator(".w.hid", { hasText: /^con$/ })).toHaveCount(1);
+  await expect(page.locator(".w[style*='--img']", { hasText: /^scuola$/ })).toHaveCount(1);
+  const last = await page.evaluate(() => { const c = (window as any).__mock.calls; return c[c.length - 1]; });
+  expect(last.paras[0].forced).toContainEqual({ s: 7, e: 17, picto: 4294967294 });
+  // Un clic sul simbolo (o su una parola del gruppo) mostra tutta la frase nella barra, con «Dividi».
+  await clickSymbol(page, "scuola");
+  await expect(page.locator(".pm-titles strong")).toHaveText("scuola con");
+  await expect(page.locator(".pm-all input")).toBeDisabled(); // un gruppo non ha un lemma solo
+  await expect(page.locator(".w.cur")).toHaveCount(2); // l'evidenziazione copre il gruppo
+  await page.locator(".side").getByRole("button", { name: "Dividi" }).click();
+  await expect.poll(async () => (await marks()).length).toBe(0);
+  await expect(page.locator(".w.hid", { hasText: /^con$/ })).toHaveCount(0);
+  // Annulla riporta l'unione.
+  await page.keyboard.press("Control+z");
+  await expect.poll(async () => (await marks()).length).toBeGreaterThan(0);
+  await expect(page.locator(".w.hid", { hasText: /^con$/ })).toHaveCount(1);
+});
+
+test("Unisci non si può fare con la punteggiatura in mezzo, fra paragrafi o con una parola sola", async ({ page }) => {
+  await open(page, "pane, casa mare\nsole");
+  // Con la virgola in mezzo.
+  await selectText(page, 1, 10);
+  await expect(page.getByRole("button", { name: "Unisci" })).toBeDisabled();
+  await page.keyboard.press("Control+Shift+u");
+  await expect(page.locator(".statusbar")).toContainText("senza punteggiatura");
+  expect(await page.evaluate(() => JSON.stringify((window as any).caaProto.docJSON()).includes('"group"'))).toBe(false);
+  // Una parola sola e due paragrafi.
+  await selectText(page, 1, 5);
+  await expect(page.getByRole("button", { name: "Unisci" })).toBeDisabled();
+  await selectText(page, 12, 22);
+  await expect(page.getByRole("button", { name: "Unisci" })).toBeDisabled();
+  // Due parole vicine: sì, con la tastiera.
+  await selectText(page, 8, 16);
+  await expect(page.getByRole("button", { name: "Unisci" })).toBeEnabled();
+  await page.keyboard.press("Control+Shift+u");
+  await expect(page.locator(".w.hid", { hasText: /^mare$/ })).toHaveCount(1);
+});
+
+test("un'espressione riconosciuta dal motore si divide e si riunisce", async ({ page }) => {
+  await open(page, "Vado alla scuola media di Roma.");
+  await expect(page.locator(".w.hid", { hasText: /^media$/ })).toHaveCount(1);
+  // Cursore dentro «media» (nascosta): Dividi funziona dal cursore e dal clic sul gruppo.
+  await page.evaluate(() => (window as any).caaProto.setCaret(1 + 17));
+  await expect(page.getByRole("button", { name: "Dividi" })).toBeEnabled();
+  await page.keyboard.press("Control+Shift+d");
+  await expect(page.locator(".w.hid", { hasText: /^media$/ })).toHaveCount(0);
+  const mode = await page.evaluate(() => { let m = ""; (window as any).caaProto.view.state.doc.descendants((n: any) => { for (const k of n.marks ?? []) if (k.type.name === "group") m = k.attrs.mode; }); return m; });
+  expect(mode).toBe("split");
+  // Ora le due parole sono separate; il pulsante diventa «Riunisci».
+  await page.evaluate(() => (window as any).caaProto.setCaret(1 + 17));
+  await expect(page.getByRole("button", { name: "Riunisci" })).toBeEnabled();
+  await page.getByRole("button", { name: "Riunisci" }).click();
+  await expect(page.locator(".w.hid", { hasText: /^media$/ })).toHaveCount(1);
+  // Scegliere un simbolo per la testa del gruppo vale solo lì (niente blocco per lemma).
+  await clickSymbol(page, "scuola");
+  await expect(page.locator(".pm-titles strong")).toHaveText("scuola media");
+  await page.locator(".pm-cell").nth(1).click();
+  await expect.poll(async () => (await docPicks(page))[0]).toMatchObject({ lock: 0, word: "scuola" });
+});
+
+test("scrivendo dentro un'unione, l'unione non vale più", async ({ page }) => {
+  await open(page, "Vado a scuola con la cartella.");
+  await selectText(page, 1 + 7, 1 + 17);
+  await page.keyboard.press("Control+Shift+u");
+  await expect(page.locator(".w.hid", { hasText: /^con$/ })).toHaveCount(1);
+  await page.evaluate(() => (window as any).caaProto.setCaret(1 + 12));
+  await page.keyboard.type("x");
+  await expect(page.locator(".w.hid")).toHaveCount(0);
 });

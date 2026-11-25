@@ -14,6 +14,8 @@ export interface TokenDto {
   mods: number;
   group: number;
   head: boolean;
+  /** Tipo di gruppo: compound, progressive, pronominal, multiword (vuoto se non c'è). */
+  gkind: string;
   confidence: number;
   doubtful: boolean;
   placeholder: boolean;

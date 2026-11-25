@@ -11,6 +11,16 @@ import { schema } from "./schema";
 /** Valori speciali di `picto`. */
 export const PICTO_NONE = 0;
 export const PICTO_TEXT_ONLY = -1;
+/** Valori speciali che il motore capisce su più parole (crates/caa-engine: ForcedPick::MERGE e ::SPLIT). */
+export const FORCED_MERGE = 4294967294;
+export const FORCED_SPLIT = 4294967295;
+
+/** Unione o divisione manuale di parole, come sta nel documento (dentro un paragrafo, UTF-16). */
+export interface GroupInfo {
+  s: number;
+  e: number;
+  mode: "merge" | "split";
+}
 
 export interface PickInfo {
   /** Intervallo nel paragrafo (UTF-16). */
@@ -26,6 +36,7 @@ export interface PickInfo {
 export interface ParaInfo {
   text: string;
   picks: PickInfo[];
+  groups: GroupInfo[];
   /** Scelte per il motore (solo testo → "nessun simbolo": lo spazio lo toglie l'editor). */
   forced: ForcedReq[];
   /** Firma delle scelte, per la chiave della cache. */
@@ -55,7 +66,25 @@ export function paraInfo(node: PMNode): ParaInfo {
     picks.push({ s: r.s, e: r.e, word: a.word, picto: a.picto, lock: a.lock === 1, lemma: a.lemma, cat: a.cat });
   }
   const forced = picks.map((p): ForcedReq => ({ s: p.s, e: p.e, picto: Math.max(0, p.picto) }));
-  info = { text, picks, forced, sig: picks.map((p) => `${p.s}-${p.e}:${p.picto}`).join(",") };
+  // Unioni e divisioni: valgono solo se il testo coperto è ancora quello per cui sono state fatte.
+  const rawGroups: Array<{ s: number; e: number; mark: Mark }> = [];
+  node.forEach((child, off) => {
+    const mark = child.isText ? child.marks.find((m) => m.type === schema.marks.group) : undefined;
+    if (!mark) return;
+    const last = rawGroups[rawGroups.length - 1];
+    if (last && last.e === off && last.mark.eq(mark)) last.e = off + child.nodeSize;
+    else rawGroups.push({ s: off, e: off + child.nodeSize, mark });
+  });
+  const groups: GroupInfo[] = [];
+  for (const r of rawGroups) {
+    const a = r.mark.attrs as { text: string; mode: string };
+    if (text.slice(r.s, r.e).toLowerCase() !== a.text) continue;
+    groups.push({ s: r.s, e: r.e, mode: a.mode === "split" ? "split" : "merge" });
+  }
+  for (const g of groups) forced.push({ s: g.s, e: g.e, picto: g.mode === "split" ? FORCED_SPLIT : FORCED_MERGE });
+  const sig =
+    picks.map((p) => `${p.s}-${p.e}:${p.picto}`).join(",") + (groups.length ? `|g${groups.map((g) => `${g.s}-${g.e}:${g.mode}`).join(",")}` : "");
+  info = { text, picks, groups, forced, sig };
   memo.set(node, info);
   return info;
 }
