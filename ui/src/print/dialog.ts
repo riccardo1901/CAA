@@ -1,6 +1,7 @@
 // La finestra «Stampa…» (M10): le impostazioni della pagina e il pulsante Stampa. Le scelte vanno nel documento.
 import type { PrintPrefs } from "../docs/prefs";
 import { footerSupported } from "./print";
+import { conIcona } from "../ui/icons";
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
@@ -88,7 +89,7 @@ export function openPrintDialog(deps: PrintDialogDeps): () => void {
     dialog.append(el("p", "print-note warn", "Il motore di pagine di questo computer è vecchio: l'attribuzione ARASAAC in fondo a ogni pagina potrebbe non comparire. Aggiorna WebView2 (o Edge) prima di stampare."));
   }
   const actions = el("div", "print-actions");
-  const go = el("button", "primary", "Stampa");
+  const go = conIcona(el("button", "primary", "Stampa"), "stampa");
   go.type = "button";
   const close = el("button", "", "Chiudi");
   close.type = "button";

@@ -5,6 +5,7 @@
 import { TextSelection } from "prosemirror-state";
 import type { EditorView } from "prosemirror-view";
 import { cropImage } from "./customDialog";
+import { conIcona, type NomeIcona } from "./ui/icons";
 import type { CandidateDto, CustomSymbol, EngineClient, MemoryEntry } from "./engine/client";
 import { nextDoubtful, onEngineUpdate, setEngine, tokenAt, type TokenAt } from "./editor/engineSymbols";
 import { focusWordRange, hooks, revealPos, setFocusWord } from "./editor/menuHooks";
@@ -101,7 +102,7 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
           const img = el("img");
           img.src = client.url(m.picto);
           img.alt = "";
-          const forget = el("button", "", "Dimentica");
+          const forget = conIcona(el("button", "", "Dimentica"), "dimentica");
           forget.type = "button";
           forget.setAttribute("aria-label", `Dimentica ${memoryLabel(m)}`);
           forget.addEventListener("click", () => {
@@ -113,7 +114,7 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
           li.append(img, el("span", "", memoryLabel(m)), forget);
           ul.append(li);
         }
-        const clear = el("button", "", "Dimentica tutto");
+        const clear = conIcona(el("button", "", "Dimentica tutto"), "elimina");
         clear.type = "button";
         clear.addEventListener("click", () => {
           if (!window.confirm("Dimenticare tutte le scelte «per sempre»?")) return;
@@ -232,16 +233,17 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
     };
 
     const fixed = el("div", "pm-fixed");
-    const button = (label: string, title: string, fn: () => void): void => {
+    const button = (label: string, title: string, fn: () => void, ico?: NomeIcona): void => {
       const b = el("button", "pm-btn", label);
       b.type = "button";
+      if (ico) conIcona(b, ico);
       b.title = title;
       b.addEventListener("click", fn);
       fixed.append(b);
     };
-    button("Nessun simbolo", "Lascia lo spazio del simbolo vuoto", () => choose({ kind: "none" }));
-    button("Solo testo", "Parola senza spazio per il simbolo", () => choose({ kind: "text" }));
-    if (t.pick !== null) button("Automatico", "Torna alla scelta del motore", () => choose({ kind: "auto" }));
+    button("Nessun simbolo", "Lascia lo spazio del simbolo vuoto", () => choose({ kind: "none" }), "nessuno");
+    button("Solo testo", "Parola senza spazio per il simbolo", () => choose({ kind: "text" }), "soloTesto");
+    if (t.pick !== null) button("Automatico", "Torna alla scelta del motore", () => choose({ kind: "auto" }), "automatico");
     // Simbolo personale: si sceglie un'immagine, si ritaglia e diventa il simbolo della parola.
     const picker = el("input");
     picker.type = "file";
@@ -271,7 +273,7 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
         }
       });
     });
-    button("Simbolo personale…", "Importa un'immagine (PNG o JPG) come simbolo di questa parola", () => picker.click());
+    button("Simbolo personale…", "Importa un'immagine (PNG o JPG) come simbolo di questa parola", () => picker.click(), "immagine");
     if (t.lock) {
       button("Togli il blocco", `Le parole «${t.token.lemma}» tornano al simbolo automatico`, () => {
         removeLock(view, t.token.lemma, t.token.cat);
@@ -380,7 +382,7 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
     const school = client.shared;
     if (school) {
       const box = el("div", "pm-school");
-      const open = el("button", "pm-btn", "Simboli della scuola…");
+      const open = conIcona(el("button", "pm-btn", "Simboli della scuola…"), "scuola");
       open.type = "button";
       open.addEventListener("click", () => {
         open.disabled = true;

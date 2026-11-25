@@ -2,6 +2,7 @@
 // riferimento, cercarli e farne una copia da adattare.
 import type { CorrectionsClient, LibEntry, LibraryClient, LibScan, LibStatus } from "../engine/client";
 import { formatWhen } from "./panel-format";
+import { conIcona } from "../ui/icons";
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
@@ -133,10 +134,10 @@ export function showLibraryTab(body: HTMLElement, deps: LibraryTabDeps): void {
     const top = el("div", "lib-top");
     const state = el("span", scan.offline ? "lib-state off" : "lib-state on", scan.offline ? "Drive non raggiungibile: vedi l'ultima copia" : "Collegata al Drive");
     state.title = status.path ?? "";
-    const refresh = el("button", "", "Aggiorna");
+    const refresh = conIcona(el("button", "", "Aggiorna"), "aggiorna");
     refresh.type = "button";
     refresh.addEventListener("click", () => void list());
-    const change = el("button", "", "Cambia cartella");
+    const change = conIcona(el("button", "", "Cambia cartella"), "cartella");
     change.type = "button";
     change.addEventListener("click", () => void setup(status));
     top.append(state, el("span", "grow"), refresh, change);
@@ -196,7 +197,7 @@ export function showLibraryTab(body: HTMLElement, deps: LibraryTabDeps): void {
         c.title = "Un altro file ha lo stesso documento: chiedi all'autore quale tenere";
         info.append(c);
       }
-      const adapt = el("button", "primary", "Adatta");
+      const adapt = conIcona(el("button", "primary", "Adatta"), "adatta");
       adapt.type = "button";
       adapt.title = "Fai una tua copia da modificare";
       adapt.addEventListener("click", () => {
@@ -214,7 +215,7 @@ export function showLibraryTab(body: HTMLElement, deps: LibraryTabDeps): void {
       // Ritira: l'autore, o un amministratore (nomi utente di Windows nel config.json del tecnico).
       const canRetire = sameName(e.author, status.display_name) || status.admins.some((a) => sameName(a, status.user));
       if (canRetire) {
-        const retire = el("button", "", "Ritira");
+        const retire = conIcona(el("button", "", "Ritira"), "ritira");
         retire.type = "button";
         retire.title = "Il documento esce dalla biblioteca (resta nella cartella «archivio»)";
         retire.addEventListener("click", () => {
@@ -278,7 +279,7 @@ export function showLibraryTab(body: HTMLElement, deps: LibraryTabDeps): void {
         preview.textContent = ["forma · prima · dopo · lemma · categoria · simbolo scelto · proposto", ...lines.map((l) => l.split("\t").join(" · ")), ...more].join("\n");
       }, () => undefined);
     });
-    const send = el("button", "", "Invia correzioni");
+    const send = conIcona(el("button", "", "Invia correzioni"), "invia");
     send.type = "button";
     send.disabled = info.pending === 0 || offline;
     send.title = offline ? "Serve il Drive" : "Le copia nella cartella «correzioni» del Drive";
@@ -299,7 +300,7 @@ export function showLibraryTab(body: HTMLElement, deps: LibraryTabDeps): void {
         },
       );
     });
-    const discard = el("button", "", "Butta via");
+    const discard = conIcona(el("button", "", "Butta via"), "elimina");
     discard.type = "button";
     discard.disabled = info.pending === 0;
     discard.addEventListener("click", () => {

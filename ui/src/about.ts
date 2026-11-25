@@ -16,6 +16,7 @@ export const CREDITS: Array<[string, string]> = [
   ["Lessico delle forme (Morph-it!)", "Morph-it!, Università di Bologna (Baroni e Zanchetta), licenza CC BY-SA 2.0 / LGPL."],
   ["Disambiguazione (treebank ISDT)", "Italian Stanford Dependency Treebank (ISDT) di Universal Dependencies, licenza CC BY-NC-SA 3.0."],
   ["Caratteri", "Atkinson Hyperlegible (Braille Institute) e Lexend (Bonnie Shaver-Troup, Thomas Jockin, Santiago Orozco, Hector Gomez, Superunion): licenza SIL Open Font License 1.1."],
+  ["Icone", "Lucide (lucide.dev, Lucide Icons and Contributors): licenza ISC."],
   ["Uso", "Programma gratuito e non commerciale, senza pubblicità. Funziona senza collegamento a Internet: i documenti e le correzioni restano sul tuo computer finché non scegli di pubblicarli o inviarli."],
 ];
 

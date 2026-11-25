@@ -2,6 +2,7 @@
 // quadrato spostandola e ingrandendola, e si ottiene un'immagine WebP quadrata pronta da salvare.
 // Tutto avviene sul computer: niente va in rete.
 import { hooks } from "./editor/menuHooks";
+import { conIcona } from "./ui/icons";
 
 /** Lato dell'anteprima e dell'immagine finale (px). */
 const PREVIEW = 320;
@@ -57,7 +58,7 @@ export function cropImage(file: File, word: string, canShare = false): Promise<C
       const shareLabel = el("label", "crop-share");
       shareLabel.append(shareBox, " Condividi con tutta la scuola (lo vedranno e potranno usarlo tutti i docenti)");
       shareLabel.hidden = !canShare;
-      const ok = el("button", "pm-btn primary", "Usa questo simbolo");
+      const ok = conIcona(el("button", "pm-btn primary", "Usa questo simbolo"), "ok");
       ok.type = "button";
       const cancel = el("button", "pm-btn", "Annulla");
       cancel.type = "button";

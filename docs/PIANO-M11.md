@@ -49,6 +49,14 @@
 - **Difetto di M10 trovato e conservato** (stampa): la radice della pagina in stampa era grigia (#e8e8ec) e lascia una striscia chiara sopra il primo titolo o paragrafo. Con la tavolozza nuova sparirebbe; per la regola «la stampa non cambia» è conservato in `sheet.css` in attesa di decisione.
 - **Ombra del foglio** (`.sheet`): resta quella di prima (è nel foglio), non quella più morbida del piano.
 
+### M11-2 — fatto (in attesa del via libera)
+
+- **Icone** `ui/src/ui/icons.ts`: 29 disegni Lucide 1.80 (ISC, citata in Informazioni) scritti nel codice, generati da `scripts/icone.mjs` (Lucide non è una dipendenza). `conIcona()` mette l'icona davanti al testo (che resta il nome del pulsante), `soloIcona()` per Annulla e Ripeti (con `aria-label`), `etichetta()` cambia il testo senza togliere l'icona (Dividi/Riunisci).
+- **Dove**: Documenti, Nuovo, Annulla, Ripeti, Unisci, Dividi, Stampa…; Nessun simbolo, Solo testo, Automatico, Simbolo personale…, Simboli della scuola…, Dimentica, Dimentica tutto; Apri, Pubblica, Aggiorna in biblioteca, Elimina, Chiudi; Aggiorna, Cambia cartella, Adatta, Ritira, Invia correzioni, Butta via; Stampa (finestra), Usa questo simbolo. Indicatore della biblioteca con nuvola / nuvola barrata al posto di «● / ○». Niente icona su «Testo di esempio» e «Informazioni», che vanno nel menu «Altro» in M11-4 (e la barra a 1536 punti resta con margine: 36 px).
+- **Suggerimenti** `ui/src/ui/tooltip.ts`: un solo riquadro; 400 ms con il mouse, subito con il fuoco da tastiera, Esc chiude, mai fuori dallo schermo; `aria-describedby` e `aria-keyshortcuts`. Testo da `data-tip` (con scorciatoia) o dall'attributo `title`, che si toglie solo mentre il riquadro è aperto. Sui pulsanti spenti la spiegazione (K15): Unisci, Dividi, Annulla, Ripeti.
+- **Prove** `tests/e2e/icone.spec.ts` (7): nomi di tutti i pulsanti, icone accanto al testo, suggerimento da tastiera e da mouse, pulsanti spenti, `title` conservato, nessuna richiesta fuori da `localhost`.
+- Pulsanti, campi e selezioni allineati al centro della riga (con l'icona andavano un po' più in alto).
+
 ---
 
 ## 1. Diagnosi dell'interfaccia attuale

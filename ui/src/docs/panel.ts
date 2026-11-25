@@ -5,6 +5,7 @@ import { distinct } from "./library";
 import { showLibraryTab } from "./library";
 import { formatWhen } from "./panel-format";
 import type { Session } from "./session";
+import { conIcona } from "../ui/icons";
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
@@ -60,7 +61,7 @@ export function createDocsPanel(docs: DocClient, session: Session, confirmDelete
     mine.type = "button";
     const library = el("button", "docs-tab", "Biblioteca");
     library.type = "button";
-    const closeBtn = el("button", "docs-close", "Chiudi");
+    const closeBtn = conIcona(el("button", "docs-close", "Chiudi"), "chiudi");
     closeBtn.type = "button";
     tabs.append(mine, library, el("span", "grow"), closeBtn);
     const body = el("div", "docs-body");
@@ -176,7 +177,7 @@ export function createDocsPanel(docs: DocClient, session: Session, confirmDelete
       const tags = field("Etichette (separate da virgole)", "", undefined, "Etichette");
       const err = el("p", "docs-note warn");
       const actions = el("div", "lib-actions");
-      const go = el("button", "primary", "Pubblica");
+      const go = conIcona(el("button", "primary", "Pubblica"), "pubblica");
       go.type = "submit";
       const cancel = el("button", "", "Annulla");
       cancel.type = "button";
@@ -220,7 +221,7 @@ export function createDocsPanel(docs: DocClient, session: Session, confirmDelete
       info.append(el("strong", "", entry.title || entry.file), el("span", "docs-when", formatWhen(entry.modified)));
       if (entry.origin) info.append(el("span", "docs-tag", "copia"));
       if (entry.published_rev != null) info.append(el("span", "docs-tag pub", `in biblioteca (rev. ${entry.published_rev})`));
-      const openBtn = el("button", "", "Apri");
+      const openBtn = conIcona(el("button", "", "Apri"), "apri");
       openBtn.type = "button";
       openBtn.addEventListener("click", () => {
         openBtn.disabled = true;
@@ -232,7 +233,7 @@ export function createDocsPanel(docs: DocClient, session: Session, confirmDelete
           },
         );
       });
-      const delBtn = el("button", "", "Elimina");
+      const delBtn = conIcona(el("button", "", "Elimina"), "elimina");
       delBtn.type = "button";
       delBtn.addEventListener("click", () => {
         if (!confirmDelete(entry.title || entry.file)) return;
@@ -247,7 +248,7 @@ export function createDocsPanel(docs: DocClient, session: Session, confirmDelete
       li.append(info, openBtn);
       // Pubblica o aggiorna in biblioteca: solo con la biblioteca collegata (e raggiungibile per scrivere).
       if (lib?.configured) {
-        const pub = el("button", "", entry.published_rev != null ? "Aggiorna in biblioteca" : "Pubblica");
+        const pub = conIcona(el("button", "", entry.published_rev != null ? "Aggiorna in biblioteca" : "Pubblica"), entry.published_rev != null ? "aggiorna" : "pubblica");
         pub.type = "button";
         pub.disabled = !lib.reachable;
         pub.title = lib.reachable ? "" : "Il Drive non risponde: riprova quando è raggiungibile";

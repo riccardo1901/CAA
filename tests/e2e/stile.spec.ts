@@ -176,7 +176,8 @@ async function giroDiTab(page: Page, max = 120): Promise<string[]> {
     const f = await page.evaluate(() => {
       const e = document.activeElement as HTMLElement | null;
       if (!e || e === document.body) return null;
-      const id = e.outerHTML.slice(0, 120) + (e.getBoundingClientRect().top | 0);
+      const r = e.getBoundingClientRect();
+      const id = `${e.tagName}|${e.getAttribute("aria-label") ?? e.textContent?.trim().slice(0, 40)}|${r.top | 0}|${r.left | 0}`;
       if (e.closest(".sheet")) return { id, salta: true };
       const cs = getComputedStyle(e);
       const anello = cs.outlineStyle !== "none" ? parseFloat(cs.outlineWidth) : 0;

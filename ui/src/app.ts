@@ -21,6 +21,8 @@ import { setSymbols } from "./editor/symbols";
 import { createPanel } from "./panel";
 import { emptyDoc, fragmentsDoc, sampleDoc } from "./sample";
 import type { Node as PMNode } from "prosemirror-model";
+import { icona } from "./ui/icons";
+import { installaSuggerimenti } from "./ui/tooltip";
 
 let view: EditorView;
 let size = 68;
@@ -123,7 +125,8 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
     const showLib = (s: LibStatus | null): void => {
       bars.libStatus.hidden = !s || !s.configured;
       if (!s || !s.configured) return;
-      bars.libStatus.textContent = s.reachable ? "● Biblioteca" : "○ Biblioteca non raggiungibile";
+      // Icona e parola, mai solo colore: nuvola (collegata) o nuvola barrata (non raggiungibile).
+      bars.libStatus.replaceChildren(icona(s.reachable ? "biblioteca" : "bibliotecaOff"), s.reachable ? "Biblioteca" : "Biblioteca non raggiungibile");
       bars.libStatus.className = `lib-status ${s.reachable ? "on" : "off"}`;
       bars.libStatus.title = s.path ?? "";
     };
@@ -175,6 +178,7 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
 
 export function startApp(mount: HTMLElement): void {
   root = mount;
+  installaSuggerimenti();
   const layout = document.createElement("div");
   layout.className = "layout";
   const wrap = document.createElement("main");
