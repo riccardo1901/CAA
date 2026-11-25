@@ -27,6 +27,20 @@
 
 ---
 
+## Avanzamento
+
+### M11-0 — fatto (in attesa del via libera)
+
+- **CSS diviso**: `ui/src/css/sheet.css` contiene tutto il foglio e la stampa (importato per ultimo); `ui/src/style.css` solo l'interfaccia. Sul foglio sono scritti carattere, dimensione, interlinea, colore, spaziature e `box-sizing`, che prima ereditava dalla radice della pagina; una regola `@page` fissa fa lo stesso per il piè di pagina di stampa (prima ereditava spaziatura e maiuscole dalla radice: trovato dalle prove «ostili»). La regola `@page` generata da `print/print.ts` non è cambiata.
+- **Foglio congelato** (`tests/e2e/foglio.spec.ts`, 16 stati + 3 prove «ostili» con la radice della pagina stravolta): impronta dello stile calcolato di ogni elemento del foglio, sullo schermo e in stampa (`foglio-riferimento/impronta.json`, vale anche nella CI) e immagini al pixel del foglio e delle pagine del PDF (`foglio-riferimento/immagini-<sistema>-<impronta dei caratteri>/`, valgono solo sulla macchina che le ha fatte; altrove la parte delle immagini si salta e lo dice). Riferimenti fatti sul codice di M10, prima di dividere il CSS. Il foglio si fotografa sempre all'inizio di una «piastrella» di 256 px: spostato altrove, il browser sfuma i bordi arrotondati in modo leggermente diverso anche se il foglio è uguale.
+- **Matrice degli schermi** (`tests/e2e/schermi.spec.ts`): le 19 combinazioni risoluzione × scala della sezione 0 che danno almeno 1024×600 punti; 8 controlli per schermo. I fallimenti di partenza stanno in `ATTESI` (tutti per M11-4) e contano come «attesi». «Segoe UI» nelle prove diventa Atkinson Hyperlegible, per avere lo stesso risultato su ogni macchina (non sono le misure esatte di Windows). Il caso peggiore reale degli avvisi è lessico nuovo + originale aggiornato + versione nuova: l'avviso «salvato come copia» non si somma (sparisce aprendo un documento). Oggi gli avvisi stanno sotto un quarto dell'altezza su tutti gli schermi.
+- **Schermate prima/dopo** (`tests/e2e/aspetto.spec.ts`, 17 stati × 4 schermi; `scripts/confronto-ui.mjs`). Diverso dal piano: si attivano con `CAA_ASPETTO=<etichetta>` invece dell'etichetta `@aspetto`, e lo script distingue «identica», «solo rumore» (differenze di colore ≤ 2/255, che danno già due giri dello stesso codice) e «cambiata».
+- **Interfaccia di prova**: `caaProto.getPrefs/setPrefs/setAuthor` (per le prove; nessun effetto per il docente). Motore finto e `open()` spostati in `tests/e2e/fixtures.ts`.
+- **Esito**: 128 prove di prima + 19 del foglio + 152 della matrice verdi; confronto m10 → m11-0: 57 schermate identiche al pixel, 11 con solo rumore, 0 cambiate.
+- **Da decidere prima di M11-4**: la sezione 0 chiede «Adatta alla larghezza» e zoom del foglio, la 3.2 dice «niente zoom del foglio in M11»; la sezione 0 dice finestra all'85% dello schermo, la 3.2 «massimizzata».
+
+---
+
 ## 1. Diagnosi dell'interfaccia attuale
 
 ### 1.1 Cosa funziona già (e va tenuto)

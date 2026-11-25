@@ -1,5 +1,5 @@
 // Stampa (M10): le impostazioni si traducono in classi, variabili CSS e una regola `@page` generata; il foglio
-// dell'editor è lo stesso che si stampa (le regole `@media print` stanno in style.css). L'attribuzione ARASAAC nel
+// dell'editor è lo stesso che si stampa (le regole `@media print` stanno in css/sheet.css). L'attribuzione ARASAAC nel
 // piè di pagina c'è sempre e non dipende da nessuna impostazione.
 import type { PrintPrefs } from "../docs/prefs";
 

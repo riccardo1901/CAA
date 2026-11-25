@@ -1,0 +1,232 @@
+/* Il foglio e la stampa (M11-0). Tutto quello che si vede DENTRO il foglio (.sheet) e tutto quello che riguarda la
+   stampa sta qui, e solo qui. In M11 l'interfaccia attorno cambia; questo file no: le prove di tests/e2e/foglio.spec.ts
+   controllano che il foglio resti identico al pixel, sullo schermo e in stampa.
+
+   Il foglio non eredita niente dall'interfaccia: carattere, dimensione, interlinea e colore sono scritti qui sotto su
+   .sheet (sono gli stessi valori che il foglio prendeva prima dalla radice della pagina). Così cambiare il carattere o
+   la dimensione dell'interfaccia non sposta neanche una parola. Le misure del foglio sono in px e mm, mai in rem. */
+
+:root {
+  --sym: 68px;
+  --txt: 20px;
+}
+
+.sheet {
+  width: 794px; /* A4 a 96 dpi */
+  min-height: 1123px;
+  margin: 0 auto;
+  padding: var(--p-margin, 57px); /* 15 mm di partenza: gli a capo sullo schermo sono quelli della stampa */
+  background: #fff;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
+  /* Prima venivano dalla radice della pagina (:root e valori di partenza del browser): ora sono del foglio. */
+  font: 400 16px/normal "Segoe UI", system-ui, sans-serif;
+  color: #1c1c1c;
+  letter-spacing: normal;
+  word-spacing: normal;
+  text-align: start;
+  text-indent: 0;
+  text-transform: none;
+}
+/* Anche il modo di misurare le scatole è del foglio (prima veniva dalla regola * dell'interfaccia). */
+.sheet, .sheet * { box-sizing: border-box; }
+
+.ProseMirror {
+  outline: none;
+  font-size: var(--txt);
+  line-height: 1.25;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+.ProseMirror h1 { font-size: 1.6em; margin: 0.4em 0; }
+.ProseMirror h2 { font-size: 1.3em; margin: 0.4em 0; }
+.ProseMirror p { margin: 0.5em 0; }
+
+/* Resa A: ogni parola è un blocco in linea con il simbolo come ::before. */
+.w {
+  display: inline-block;
+  position: relative;
+  min-width: var(--sym);
+  padding-top: calc(var(--sym) + 4px);
+  text-align: center;
+}
+.w::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: var(--sym);
+  height: var(--sym);
+  margin-left: calc(var(--sym) / -2);
+  background: var(--img) center / contain no-repeat;
+}
+
+/* Resa B: il simbolo è un widget (ancora senza dimensioni) prima della parola. */
+.sw {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+.sw img {
+  position: absolute;
+  left: 0;
+  bottom: calc(var(--txt) * 1.05);
+  width: var(--sym);
+  height: var(--sym);
+}
+.wb {
+  display: inline-block;
+  min-width: var(--sym);
+  padding-top: calc(var(--sym) + 4px);
+}
+
+/* Pezzi successivi di una parola spezzata dalla formattazione (non dovrebbero esistere: la
+   formattazione si applica a parole intere, vedi wordMarks.ts): niente simbolo. */
+.w.wc,
+.wb.wc {
+  display: inline;
+  min-width: 0;
+  padding-top: 0;
+}
+.w.wc::before,
+.wb.wc::before {
+  content: "";
+  position: static;
+  display: inline;
+  width: auto;
+  height: auto;
+  margin: 0;
+  background: none;
+}
+
+/* ---- Simboli del motore (M8) ---- */
+/* Parola senza simbolo (parola funzionale per scelta, punteggiatura esclusa): stesso ingombro, nessuna immagine. */
+.w.ns::before { background: none; }
+/* Parola piena senza pittogramma: segnaposto tratteggiato (non si stampa). */
+.w.ph::before {
+  background: none;
+  border: 2px dashed #b4b4c0;
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+/* Simbolo ridotto (articoli nella politica "Completo"). */
+.w.red::before {
+  top: calc(var(--sym) * 0.4);
+  width: calc(var(--sym) * 0.6);
+  height: calc(var(--sym) * 0.6);
+  margin-left: calc(var(--sym) * -0.3);
+}
+.w.hid { opacity: 0.55; }
+/* Parola da controllare (confidenza bassa): sottolineatura ondulata arancione. */
+.w.dbt {
+  text-decoration: underline wavy #e0791f;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+/* Segni di plurale, passato e futuro: provvisori, in attesa della convenzione scelta con la scuola. */
+.w.mp::after,
+.w.mpast::after,
+.w.mfut::after {
+  position: absolute;
+  top: 0;
+  right: calc(50% - var(--sym) / 2);
+  padding: 0 calc(var(--sym) * 0.07);
+  min-width: calc(var(--sym) * 0.3);
+  height: calc(var(--sym) * 0.3);
+  line-height: calc(var(--sym) * 0.3);
+  border-radius: calc(var(--sym) * 0.15);
+  background: #1f3a6b;
+  color: #fff;
+  font-size: calc(var(--sym) * 0.22);
+  font-weight: 700;
+  text-align: center;
+  white-space: pre;
+}
+.w.mp::after { content: "+"; }
+.w.mpast::after { content: "\25C0"; }
+.w.mfut::after { content: "\25B6"; }
+.w.mp.mpast::after { content: "\25C0\20+"; }
+.w.mp.mfut::after { content: "+\20\25B6"; }
+.w.wc::after,
+.w.hid::after { content: none !important; } /* niente segni sopra il vuoto o sulle parti di una parola */
+
+/* ---- Solo testo (scelta del docente): la parola perde lo spazio del simbolo ---- */
+.w.txt {
+  display: inline;
+  min-width: 0;
+  padding-top: 0;
+}
+.w.txt::before,
+.w.txt::after { content: none !important; }
+.pk { text-decoration: none; }
+
+/* La parola di cui la barra laterale mostra le alternative (non si stampa: vedi @media print). */
+.cur { background: #fff3c4; box-shadow: 0 0 0 2px #e0b030; border-radius: 6px; }
+
+/* ---- Contorno: una "card" per ogni coppia simbolo-parola (impostazione dell'editor) ---- */
+.cards .w:not(.wc):not(.txt) {
+  box-sizing: border-box;
+  border: 2px solid #8a94a8;
+  border-radius: 12px;
+  margin: 3px 2px;
+  padding-left: 4px;
+  padding-right: 4px;
+  padding-bottom: 2px;
+}
+.cards .w.hid:not(.wc) { border-color: #c4c9d4; }
+
+/* ---- Stampa (M10) ---- */
+.pf-atkinson .ProseMirror { font-family: "Atkinson Hyperlegible", "Segoe UI", sans-serif; }
+.pf-lexend .ProseMirror { font-family: "Lexend", "Segoe UI", sans-serif; }
+.p-upper .ProseMirror { text-transform: uppercase; }
+/* Testo sopra il simbolo: il simbolo scende sotto la parola. */
+.p-above .w:not(.wc):not(.txt) { padding-top: 0; padding-bottom: calc(var(--sym) + 4px); }
+.p-above .w:not(.wc):not(.txt)::before { top: auto; bottom: 0; }
+.p-above .w.red::before { top: auto; bottom: 0; }
+.p-above .w.mp::after, .p-above .w.mpast::after, .p-above .w.mfut::after { top: auto; bottom: calc(var(--sym) * 0.7); }
+/* Bordo attorno a ogni simbolo. */
+.p-border .w:not(.wc):not(.txt):not(.ns):not(.ph)::before { border: 0.4mm solid #1c1c1c; border-radius: 1.5mm; }
+/* «Una frase per riga»: i segnaposto <br> esistono solo mentre si stampa. */
+.snl { display: none; }
+/* A schermo il testo scorre; gli a capo di «una frase per riga» si vedono solo nella stampa. */
+.print-attr-flow { display: none; }
+.p-landscape .sheet { width: 1123px; } /* A4 orizzontale a 96 dpi */
+
+/* Il piè di pagina della stampa (attribuzione ARASAAC, titolo, autore, pagina) sta nel margine della pagina: lo
+   scrive la regola @page generata da print/print.ts, con carattere e colore suoi. Il resto lo erediterebbe dalla
+   radice della pagina, cioè dall'interfaccia: qui lo si fissa ai valori di partenza, così la stampa non cambia se
+   l'interfaccia cambia spaziatura o maiuscole. Le regole @page si sommano: questa aggiunge, non sostituisce. */
+@page {
+  @bottom-center {
+    font-style: normal;
+    font-variant: normal;
+    letter-spacing: normal;
+    word-spacing: normal;
+    text-transform: none;
+    text-indent: 0;
+    line-height: normal;
+  }
+}
+
+@media print {
+  /* Gli sfondi (i simboli sono immagini di sfondo) escono anche con «Grafica di sfondo» spenta nel dialogo di stampa. */
+  html, body, body * , .w::before, .w::after { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { height: auto; overflow: visible; background: #fff; }
+  body > :not(#app) { display: none !important; }
+  .app, .app .layout, .layout, .sheet-wrap { display: block; height: auto; min-height: 0; overflow: visible; padding: 0; margin: 0; background: #fff; }
+  .app > :not(.layout), .layout > :not(.sheet-wrap), .panel { display: none !important; }
+  .sheet { width: auto; min-height: 0; margin: 0; padding: 0; box-shadow: none; background: #fff; }
+  .ProseMirror { color: #000; }
+  /* Quello che serve solo a chi scrive non si stampa. */
+  .w.ph::before { border: none; }
+  .w.dbt { text-decoration: none; }
+  .w.hid { opacity: 1; }
+  .w.dbt { background: none; border-bottom: 0; font-size: inherit; }
+  .p-oneper .snl { display: inline; }
+  .p-nofooter .print-attr-flow { display: block; margin-top: 8mm; font-size: 7.5pt; color: #666; text-align: center; }
+  .cur { background: none; box-shadow: none; }
+  /* Simbolo e parola non si separano mai tra righe o pagine. */
+  .w { break-inside: avoid; page-break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .w.ph:not(.txt)::before { background: none; }
+}

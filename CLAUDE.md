@@ -54,6 +54,13 @@ npx playwright test                  # resa A (quella scelta); in CI senza @perf
 npm run test:e2e:confronto           # resa A e B
 npx playwright test --grep @perf     # velocità (dipende dalla macchina)
 
+# M11 (interfaccia): il foglio e la stampa non devono cambiare di un pixel (tests/e2e/foglio.spec.ts; impronta dello
+# stile ovunque, immagini al pixel dove ci sono i riferimenti per la macchina). Rigenerare SOLO per un cambio voluto:
+CAA_FOGLIO_AGGIORNA=1 npx playwright test foglio
+CAA_SCHERMI_RAPPORTO=1 npx playwright test schermi   # matrice dei 19 schermi senza i «fallimenti attesi»
+CAA_ASPETTO=m11-0 npx playwright test aspetto        # schermate in aspetto/m11-0/ (fuori da git)
+node scripts/confronto-ui.mjs m10 m11-0              # pagina aspetto/confronto-m10-m11-0/index.html
+
 # App in sviluppo (richiede Rust, Node e, su Windows, WebView2). Cerca i dati in CAA_DATA, dati/ o data/build/
 npm run tauri dev
 cargo run --release -q -p caa-eval -- pacchetto /percorso/dati   # lessico + solo le immagini dei testi di prova (~30 MB)

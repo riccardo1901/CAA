@@ -22,3 +22,6 @@ Thumbs.db
 # Playwright
 test-results/
 playwright-report/
+
+# Schermate prima/dopo di M11 (tests/e2e/aspetto.spec.ts, scripts/confronto-ui.mjs)
+aspetto/

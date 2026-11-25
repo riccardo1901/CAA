@@ -76,6 +76,9 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
     () => (session ? void session.newDocument() : confirmReplace(emptyDoc)()),
     () => (session ? void session.newDocument(sampleDoc(1)) : confirmReplace(() => sampleDoc(1))()),
   );
+  // Per le prove automatiche: le preferenze del documento (stampa, contorno, dimensione) senza passare dai pulsanti,
+  // che in M11 cambiano posto. Nessun effetto per il docente.
+  Object.assign((window as unknown as { caaProto: object }).caaProto, { getPrefs: bars.getPrefs, setPrefs: bars.setPrefs, setAuthor: bars.setAuthor });
   // La riga dei documenti c'è solo se c'è l'archivio (nell'app); nelle prove senza archivio resta nascosta.
   bars.docbar.hidden = !docs;
   const lexBar = createLexBar((p) => client?.url(p) ?? "");
