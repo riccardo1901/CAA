@@ -158,6 +158,39 @@ impl CustomStore {
 
     /// Salva un'immagine WebP e la aggiunge alla raccolta.
     pub fn save(&self, bytes: &[u8], label: &str) -> Result<CustomSymbol, String> {
+        self.add(None, bytes, label)
+    }
+
+    /// Aggiunge alla raccolta un simbolo che arriva da un documento (con il suo `uuid`), se non c'è già.
+    /// Restituisce quello che c'è: l'id numerico vale solo su questo computer, l'`uuid` ovunque.
+    pub fn import_uuid(
+        &self,
+        uuid: &str,
+        bytes: &[u8],
+        label: &str,
+    ) -> Result<CustomSymbol, String> {
+        if uuid.is_empty()
+            || uuid.len() > 64
+            || !uuid
+                .bytes()
+                .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
+        {
+            return Err("identificativo del simbolo non valido".into());
+        }
+        self.add(Some(uuid), bytes, label)
+    }
+
+    /// L'immagine di un simbolo personale, dal suo `uuid` (per metterla in un documento).
+    pub fn bytes_of_uuid(&self, uuid: &str) -> Option<Vec<u8>> {
+        let mut state = self.lock();
+        if !state.symbols.iter().any(|s| s.uuid == uuid) {
+            self.refresh(&mut state);
+        }
+        let s = state.symbols.iter().find(|s| s.uuid == uuid)?;
+        std::fs::read(self.dir.join(format!("{}.webp", s.uuid))).ok()
+    }
+
+    fn add(&self, uuid: Option<&str>, bytes: &[u8], label: &str) -> Result<CustomSymbol, String> {
         if bytes.len() > MAX_BYTES {
             return Err(format!("immagine troppo grande ({} byte)", bytes.len()));
         }
@@ -166,6 +199,11 @@ impl CustomStore {
         }
         let mut state = self.lock();
         self.refresh(&mut state);
+        if let Some(u) = uuid {
+            if let Some(existing) = state.symbols.iter().find(|s| s.uuid == u) {
+                return Ok(existing.clone());
+            }
+        }
         if state.symbols.len() >= MAX_SYMBOLS {
             return Err("troppi simboli personali".into());
         }
@@ -173,7 +211,7 @@ impl CustomStore {
         let id = CUSTOM_BASE + state.next;
         let symbol = CustomSymbol {
             id,
-            uuid: new_uuid(state.next),
+            uuid: uuid.map_or_else(|| new_uuid(state.next), str::to_string),
             label: clean_label(label),
         };
         write_atomic(&self.dir.join(format!("{}.webp", symbol.uuid)), bytes)
@@ -318,6 +356,34 @@ mod tests {
         // Gli id gia' usati nei documenti non puntano a immagini nuove.
         assert!(third.id > second.id && third.id > first.id, "{third:?}");
         std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn un_simbolo_da_un_documento_si_importa_una_volta_sola() {
+        let (da, db) = (tmp("imp-a"), tmp("imp-b"));
+        let (a, b) = (CustomStore::open(da.clone()), CustomStore::open(db.clone()));
+        let made = a.save(&webp(60), "mamma").unwrap();
+        let bytes = a.bytes_of_uuid(&made.uuid).unwrap();
+        assert_eq!(bytes, webp(60));
+        // Sull'altro computer il simbolo arriva col suo uuid e un id suo; riportarlo di nuovo non lo duplica.
+        let here = b.save(&webp(10), "altro").unwrap();
+        let imported = b.import_uuid(&made.uuid, &bytes, "").unwrap();
+        assert_eq!(imported.uuid, made.uuid);
+        assert_ne!(imported.id, here.id);
+        assert_eq!(b.import_uuid(&made.uuid, &bytes, "x").unwrap(), imported);
+        assert_eq!(b.list().len(), 2);
+        assert_eq!(
+            std::fs::read(b.path_of(imported.id).unwrap()).unwrap(),
+            bytes
+        );
+        // Identificativi e immagini sbagliati si rifiutano.
+        for bad in ["", "../x", "a/b", "a b", &"x".repeat(65)] {
+            assert!(b.import_uuid(bad, &bytes, "").is_err(), "{bad:?}");
+        }
+        assert!(b.import_uuid("ok", b"no", "").is_err());
+        assert!(b.bytes_of_uuid("sconosciuto").is_none());
+        std::fs::remove_dir_all(&da).unwrap();
+        std::fs::remove_dir_all(&db).unwrap();
     }
 
     #[test]

@@ -3,6 +3,7 @@
 
 mod bridge;
 mod custom;
+mod docs;
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -14,6 +15,7 @@ use tauri::http::Response;
 use tauri::State;
 
 use custom::{custom_dir, is_custom, CustomStore, CustomSymbol};
+use docs::{docs_dir, DocEntry, DocStore, Opened, SavePayload};
 
 use bridge::{
     candidates_dto, check_choices, check_request, data_candidates, find_data_dir, image_path,
@@ -25,6 +27,8 @@ use bridge::{
 struct Backend {
     /// I simboli personali del docente (M8c-3), in una cartella locale.
     custom: CustomStore,
+    /// I documenti personali (M9a).
+    docs: DocStore,
     engine: Option<MappedEngine>,
     dir: Option<PathBuf>,
     error: Option<String>,
@@ -49,11 +53,18 @@ fn load_backend() -> Backend {
             .as_deref(),
         exe_dir.as_deref(),
     ));
+    let docs = DocStore::new(docs_dir(
+        std::env::var("CAA_DOCS").ok().as_deref(),
+        std::env::var("USERPROFILE").ok().as_deref(),
+        std::env::var("HOME").ok().as_deref(),
+        exe_dir.as_deref(),
+    ));
     let candidates = data_candidates(env.as_deref(), exe_dir.as_deref(), cwd.as_deref());
     let Some(dir) = find_data_dir(&candidates) else {
         let looked: Vec<String> = candidates.iter().map(|c| c.display().to_string()).collect();
         return Backend {
             custom,
+            docs,
             engine: None,
             dir: None,
             error: Some(format!(
@@ -65,12 +76,14 @@ fn load_backend() -> Backend {
     match open_engine(&dir) {
         Ok(engine) => Backend {
             custom,
+            docs,
             engine: Some(engine),
             dir: Some(dir),
             error: None,
         },
         Err(e) => Backend {
             custom,
+            docs,
             engine: None,
             dir: Some(dir),
             error: Some(e.to_string()),
@@ -85,6 +98,8 @@ struct EngineInfo {
     error: Option<String>,
     tagger: bool,
     expressions: bool,
+    /// Versione del lessico (serve a sapere se un documento è stato salvato con un lessico diverso).
+    lexicon: String,
 }
 
 #[tauri::command]
@@ -95,6 +110,11 @@ fn engine_info(state: State<'_, Arc<Backend>>) -> EngineInfo {
         error: state.error.clone(),
         tagger: state.engine.as_ref().is_some_and(|e| e.tagger().is_some()),
         expressions: state.engine.as_ref().is_some_and(|e| e.mwe().is_some()),
+        lexicon: state
+            .engine
+            .as_ref()
+            .map(|e| format!("{:016x}", e.morph().build_id()))
+            .unwrap_or_default(),
     }
 }
 
@@ -218,6 +238,53 @@ fn save_custom_symbol(
     state.custom.save(bytes, &label)
 }
 
+/// Chi scrive: il nome dell'utente del sistema (con M9b il nome scelto al primo avvio).
+fn author_name() -> String {
+    ["USERNAME", "USER"]
+        .iter()
+        .find_map(|k| std::env::var(k).ok().filter(|v| !v.is_empty()))
+        .unwrap_or_else(|| "docente".into())
+}
+
+#[derive(Serialize)]
+struct DocList {
+    entries: Vec<DocEntry>,
+    /// File `.caa` che non si leggono (rovinati o ancora in sincronizzazione).
+    broken: usize,
+    dir: String,
+}
+
+#[tauri::command]
+fn doc_list(state: State<'_, Arc<Backend>>) -> DocList {
+    let (entries, broken) = state.docs.list();
+    DocList {
+        entries,
+        broken,
+        dir: state.docs.dir().display().to_string(),
+    }
+}
+
+/// Salva un documento (anche il salvataggio automatico): atomico, nella cartella dei documenti personali.
+#[tauri::command(async)]
+fn doc_save(state: State<'_, Arc<Backend>>, payload: SavePayload) -> Result<DocEntry, String> {
+    state.docs.save(
+        payload,
+        &state.custom,
+        &author_name(),
+        env!("CARGO_PKG_VERSION"),
+    )
+}
+
+#[tauri::command(async)]
+fn doc_open(state: State<'_, Arc<Backend>>, file: String) -> Result<Opened, String> {
+    state.docs.open(&file, &state.custom)
+}
+
+#[tauri::command]
+fn doc_delete(state: State<'_, Arc<Backend>>, file: String) -> Result<(), String> {
+    state.docs.delete(&file)
+}
+
 #[tauri::command]
 fn list_custom_symbols(state: State<'_, Arc<Backend>>) -> Vec<CustomSymbol> {
     state.custom.list()
@@ -251,7 +318,11 @@ fn main() {
             alternatives,
             search_pictos,
             save_custom_symbol,
-            list_custom_symbols
+            list_custom_symbols,
+            doc_list,
+            doc_save,
+            doc_open,
+            doc_delete
         ])
         .run(tauri::generate_context!())
         .expect("errore durante l'avvio dell'applicazione");
