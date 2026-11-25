@@ -12,7 +12,7 @@ use caa_engine::engine::{DocPrefs, Request, UserMemory};
 use caa_store::{open_engine, MappedEngine};
 use serde::Serialize;
 use tauri::http::Response;
-use tauri::State;
+use tauri::{Emitter, Manager, State};
 
 use custom::{custom_dir, is_custom, CustomStore, CustomSymbol};
 use docs::{docs_dir, DocEntry, DocStore, Opened, SavePayload};
@@ -285,6 +285,12 @@ fn doc_delete(state: State<'_, Arc<Backend>>, file: String) -> Result<(), String
     state.docs.delete(&file)
 }
 
+/// Chiude il programma: la pagina lo chiede dopo aver salvato.
+#[tauri::command]
+fn exit_app(app: tauri::AppHandle) {
+    app.exit(0);
+}
+
 #[tauri::command]
 fn list_custom_symbols(state: State<'_, Arc<Backend>>) -> Vec<CustomSymbol> {
     state.custom.list()
@@ -295,6 +301,19 @@ fn main() {
     let for_protocol = Arc::clone(&backend);
     tauri::Builder::default()
         .manage(backend)
+        // Chiudere la finestra non chiude subito: la pagina salva il documento e poi chiede di uscire. Se la
+        // pagina non risponde (errore, blocco) il programma esce comunque dopo qualche secondo.
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                let _ = window.emit("caa-close-request", ());
+                let handle = window.app_handle().clone();
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_secs(4));
+                    handle.exit(0);
+                });
+            }
+        })
         // Le immagini dei pittogrammi: picto://localhost/<id> (su Windows http://picto.localhost/<id>).
         .register_uri_scheme_protocol("picto", move |_ctx, request| {
             let bytes = parse_picto_path(request.uri().path())
@@ -322,7 +341,8 @@ fn main() {
             doc_list,
             doc_save,
             doc_open,
-            doc_delete
+            doc_delete,
+            exit_app
         ])
         .run(tauri::generate_context!())
         .expect("errore durante l'avvio dell'applicazione");

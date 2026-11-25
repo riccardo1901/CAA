@@ -3,6 +3,7 @@
 import { redo, redoDepth, undo, undoDepth } from "prosemirror-history";
 import type { EditorView } from "prosemirror-view";
 import type { EngineInfo, Policy, PolicyTable, Rule } from "./engine/client";
+import { COMPLETE_TABLE, type DocPrefs, type Preset } from "./docs/prefs";
 import { engineStats, setPolicy, tokenAt } from "./editor/engineSymbols";
 import { canMerge, groupAction } from "./editor/groups";
 import { hooks } from "./editor/menuHooks";
@@ -31,8 +32,6 @@ const TABLE_ROWS: Array<{ key: keyof PolicyTable; label: string; options: Rule[]
   { key: "conj", label: "Congiunzioni", options: ["full", "text"] },
 ];
 
-/** La tabella di partenza è quella di «Completo». */
-const COMPLETE_TABLE: PolicyTable = { articles: "reduced", clitics: "full", che: "text", preps: "full", conj: "full" };
 
 /** Il valore da mandare al motore per una tabella. */
 export function tablePolicy(t: PolicyTable): Policy {
@@ -50,6 +49,8 @@ interface PolicyDialog {
   root: HTMLElement;
   show(): void;
   hide(): void;
+  /** Riporta i menu ai valori della tabella (dopo aver aperto un documento). */
+  sync(): void;
 }
 
 /** La tabella del preset «Personalizzato»: una riga per categoria, le modifiche valgono subito. */
@@ -60,6 +61,7 @@ function createPolicyDialog(table: PolicyTable, changed: () => void, closed: () 
   root.setAttribute("aria-label", "Parole funzionali personalizzate");
   root.append(el("h2", "", "Parole funzionali"));
   const grid = el("table");
+  const selects: Array<[keyof PolicyTable, HTMLSelectElement]> = [];
   for (const row of TABLE_ROWS) {
     const tr = el("tr");
     const select = el("select");
@@ -70,6 +72,7 @@ function createPolicyDialog(table: PolicyTable, changed: () => void, closed: () 
       select.append(o);
     }
     select.value = table[row.key];
+    selects.push([row.key, select]);
     select.addEventListener("change", () => {
       table[row.key] = select.value as Rule;
       changed();
@@ -91,14 +94,28 @@ function createPolicyDialog(table: PolicyTable, changed: () => void, closed: () 
     closed();
   });
   root.append(grid, note, close);
-  return { root, show: () => (root.hidden = false), hide };
+  const sync = (): void => {
+    for (const [key, select] of selects) select.value = table[key];
+  };
+  return { root, show: () => (root.hidden = false), hide, sync };
 }
 
 export interface Bars {
+  /** La riga dei documenti: «Documenti», il titolo, lo stato del salvataggio. */
+  docbar: HTMLElement;
+  docsButton: HTMLButtonElement;
+  titleInput: HTMLInputElement;
+  saveStatus: HTMLElement;
   toolbar: HTMLElement;
   statusbar: HTMLElement;
   banner: HTMLElement;
   refresh(): void;
+  /** Le preferenze del documento (politica, tabella, dimensione, contorno). */
+  getPrefs(): DocPrefs;
+  /** Le imposta (all'apertura di un documento): non conta come una modifica. */
+  setPrefs(p: Partial<DocPrefs>): void;
+  /** Chiamata quando il docente cambia una preferenza. */
+  onPrefsChange(cb: () => void): void;
 }
 
 export function createBars(
@@ -168,9 +185,12 @@ export function createBars(
   const editBtn = el("button", "", "Modifica…");
   editBtn.type = "button";
   editBtn.hidden = true;
+  const prefsListeners: Array<() => void> = [];
+  const notifyPrefs = (): void => prefsListeners.forEach((cb) => cb());
   const dialog = createPolicyDialog(table, () => {
     setPolicy(view, tablePolicy(table));
     refresh();
+    notifyPrefs();
   }, () => view.focus());
   const applyPolicy = (): void => {
     const custom = select.value === "custom";
@@ -183,6 +203,7 @@ export function createBars(
   let tableShown = false;
   select.addEventListener("change", () => {
     applyPolicy();
+    notifyPrefs();
     if (select.value === "custom" && !tableShown) {
       tableShown = true;
       dialog.show();
@@ -209,6 +230,7 @@ export function createBars(
   applyCards(saved);
   cards.addEventListener("change", () => {
     applyCards(cards.checked);
+    notifyPrefs();
     try {
       localStorage.setItem("caa.cards", cards.checked ? "1" : "0");
     } catch {
@@ -227,6 +249,7 @@ export function createBars(
     b.addEventListener("click", () => {
       setSize(px);
       refresh();
+      notifyPrefs();
       view.focus();
     });
     sizes.append(b, " ");
@@ -284,8 +307,38 @@ export function createBars(
     e.preventDefault();
     setSize(SIZES[i][1]);
     refresh();
+    notifyPrefs();
   });
 
   refresh();
-  return { toolbar, statusbar, banner, refresh };
+  // La riga dei documenti (M9a): la riempie la sessione del documento.
+  const docbar = el("div", "docbar");
+  const docsButton = el("button", "", "Documenti");
+  docsButton.type = "button";
+  docsButton.title = "I miei documenti";
+  const titleInput = el("input", "doc-title");
+  titleInput.type = "text";
+  titleInput.placeholder = "Senza titolo";
+  titleInput.maxLength = 120;
+  titleInput.setAttribute("aria-label", "Titolo del documento");
+  const saveStatus = el("span", "save-status");
+  docbar.append(docsButton, titleInput, el("span", "grow"), saveStatus);
+
+  const getPrefs = (): DocPrefs => ({ preset: select.value as Preset, table: { ...table }, size: getSize(), cards: cards.checked });
+  const setPrefs = (p: Partial<DocPrefs>): void => {
+    if (p.table) {
+      Object.assign(table, p.table);
+      dialog.sync();
+    }
+    if (p.preset) select.value = p.preset;
+    if (p.preset || p.table) applyPolicy();
+    if (p.size !== undefined) setSize(p.size);
+    if (p.cards !== undefined) {
+      cards.checked = p.cards;
+      applyCards(p.cards);
+    }
+    refresh();
+  };
+
+  return { docbar, docsButton, titleInput, saveStatus, toolbar, statusbar, banner, refresh, getPrefs, setPrefs, onPrefsChange: (cb) => prefsListeners.push(cb) };
 }

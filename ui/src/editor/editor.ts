@@ -9,6 +9,14 @@ import { engineKey, engineSymbolPlugin } from "./engineSymbols";
 import { focusWordPlugin, hooks, symbolClickPlugin } from "./menuHooks";
 import { symbolPlugin, symbolKey, type Mode } from "./symbolPlugin";
 
+/** Un documento di uno schema più recente del programma si apre in sola lettura. */
+const flags = { readOnly: false };
+
+export function setReadOnly(view: EditorView, readOnly: boolean): void {
+  flags.readOnly = readOnly;
+  view.setProps({ editable: () => !flags.readOnly });
+}
+
 export function createEditor(mount: HTMLElement, doc: PMNode, mode: Mode = "A"): EditorView {
   const state = normalizeState(EditorState.create({
     doc,
@@ -35,7 +43,7 @@ export function createEditor(mount: HTMLElement, doc: PMNode, mode: Mode = "A"):
     ],
   }));
   // Lingua italiana e correttore ortografico di sistema (prova 6 di M3).
-  return new EditorView(mount, { state, attributes: { lang: "it", spellcheck: "true" } });
+  return new EditorView(mount, { state, attributes: { lang: "it", spellcheck: "true" }, editable: () => !flags.readOnly });
 }
 
 export function currentMode(view: EditorView): Mode {

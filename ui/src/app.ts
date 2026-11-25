@@ -2,9 +2,13 @@
 import { TextSelection } from "prosemirror-state";
 import type { EditorView } from "prosemirror-view";
 import { benchmark, checkSymbolHits, checkWrap } from "./checks";
-import { createEditor, currentMode, replaceDoc } from "./editor/editor";
+import { createEditor, currentMode, replaceDoc, setReadOnly } from "./editor/editor";
 import { engineStats, onEngineUpdate, setEngine, setPolicy } from "./editor/engineSymbols";
+import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { engineInfo, inTauri, tauriClient, type EngineClient, type EngineInfo, type Policy } from "./engine/client";
+import { createDocsPanel } from "./docs/panel";
+import { createSession, type Session } from "./docs/session";
 import { createSidebar, installSidebar } from "./sidebar";
 import { createBars } from "./toolbar";
 import { symbolKey, type Mode } from "./editor/symbolPlugin";
@@ -18,6 +22,8 @@ let size = 68;
 let layoutEl: HTMLElement;
 let panelEl: HTMLElement;
 let sideEl: HTMLElement | null = null;
+/** La sessione del documento (salvataggio automatico, apertura): c'è solo con l'archivio dei documenti. */
+let session: Session | null = null;
 let root: HTMLElement;
 
 export function replaceDocument(doc: PMNode): void {
@@ -56,8 +62,48 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
     if (hasText && !window.confirm("Il documento aperto andrà perso. Continuare?")) return;
     replaceDocument(make());
   };
-  const bars = createBars(view, info, applySize, () => size, confirmReplace(emptyDoc), confirmReplace(() => sampleDoc(1)));
-  app.append(bars.banner, bars.toolbar, layoutEl, bars.statusbar);
+  const docs = client?.docs ?? null;
+  const bars = createBars(
+    view,
+    info,
+    applySize,
+    () => size,
+    () => (session ? void session.newDocument() : confirmReplace(emptyDoc)()),
+    () => (session ? void session.newDocument(sampleDoc(1)) : confirmReplace(() => sampleDoc(1))()),
+  );
+  // La riga dei documenti c'è solo se c'è l'archivio (nell'app); nelle prove senza archivio resta nascosta.
+  bars.docbar.hidden = !docs;
+  app.append(bars.banner, bars.docbar, bars.toolbar, layoutEl, bars.statusbar);
+  if (docs) {
+    const w = window as unknown as { __caaAutosaveMs?: number; __caaRetryMs?: number };
+    const baseBanner = (): void => {
+      bars.banner.hidden = !!info?.ok;
+      bars.banner.textContent = info && !info.ok ? `Il motore non è attivo: ${info.error ?? "errore sconosciuto"}` : "";
+    };
+    session = createSession({
+      view,
+      docs,
+      lexicon: info?.lexicon ?? "",
+      getPrefs: bars.getPrefs,
+      setPrefs: bars.setPrefs,
+      replaceDocument,
+      emptyDoc,
+      setReadOnly: (ro) => setReadOnly(view, ro),
+      banner: (message) => {
+        if (message === null) return baseBanner();
+        bars.banner.hidden = false;
+        bars.banner.textContent = message;
+      },
+      confirm: (m) => window.confirm(m),
+      titleInput: bars.titleInput,
+      saveStatus: bars.saveStatus,
+      delayMs: w.__caaAutosaveMs,
+      retryMs: w.__caaRetryMs,
+    });
+    bars.onPrefsChange(() => session?.touch());
+    const panel = createDocsPanel(docs, session, (title) => window.confirm(`Eliminare «${title}»? Non si può annullare.`));
+    bars.docsButton.addEventListener("click", () => panel.open());
+  }
   root.appendChild(app);
   onEngineUpdate(bars.refresh);
   // I simboli finti del prototipo si spengono sempre: col motore non servono e costano tempo a ogni battuta.
@@ -89,8 +135,21 @@ export function startApp(mount: HTMLElement): void {
 
   // Nell'app (Tauri) si passa subito al motore; nel browser restano il prototipo e le sue prove.
   if (inTauri()) {
+    // Alla chiusura della finestra il programma salva quello che c'è da salvare e poi esce (se non risponde,
+    // esce da solo dopo pochi secondi).
+    void listen("caa-close-request", async () => {
+      try {
+        await session?.flush();
+      } finally {
+        await invoke("exit_app");
+      }
+    });
     engineInfo().then(
-      (info) => enterEngineMode(info.ok ? tauriClient() : null, info),
+      (info) => {
+        enterEngineMode(info.ok ? tauriClient() : null, info);
+        // All'avvio un documento vuoto, pronto per scrivere.
+        session?.startFresh();
+      },
       (e: unknown) => enterEngineMode(null, { ok: false, dir: null, error: String(e), tagger: false, expressions: false }),
     );
   }

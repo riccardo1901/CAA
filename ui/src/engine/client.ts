@@ -72,12 +72,70 @@ export interface PolicyTable {
   conj: Rule;
 }
 
+/** Un documento personale nell'elenco (dal manifest del file `.caa`). */
+export interface DocEntry {
+  file: string;
+  id: string;
+  title: string;
+  modified: string;
+  rev: number;
+  author: string;
+  origin: { id: string; rev: number } | null;
+}
+
+export interface DocList {
+  entries: DocEntry[];
+  /** File `.caa` che non si leggono (rovinati o ancora in sincronizzazione). */
+  broken: number;
+  dir: string;
+}
+
+/** Quello che si manda per salvare un documento (vedi src-tauri/src/docs.rs). */
+export interface SavePayload {
+  file: string | null;
+  id: string | null;
+  rev: number | null;
+  title: string;
+  created: string | null;
+  origin: { id: string; rev: number } | null;
+  prefs: unknown;
+  sense_locks: unknown;
+  document: unknown;
+  render: unknown;
+  /** Gli `uuid` dei simboli personali usati. */
+  media: string[];
+  lexicon: string;
+}
+
+export interface OpenedDoc {
+  entry: DocEntry;
+  document: unknown;
+  render: unknown;
+  prefs: unknown;
+  sense_locks: unknown;
+  lexicon: string;
+  created: string;
+  read_only: boolean;
+  /** Per ogni simbolo personale del documento, l'id numerico che ha su questo computer. */
+  media: Array<{ uuid: string; id: number }>;
+}
+
+/** I documenti personali (`Documenti\CAA`): il salvataggio automatico scrive solo qui. */
+export interface DocClient {
+  list(): Promise<DocList>;
+  save(payload: SavePayload): Promise<DocEntry>;
+  open(file: string): Promise<OpenedDoc>;
+  remove(file: string): Promise<void>;
+}
+
 export interface EngineInfo {
   ok: boolean;
   dir: string | null;
   error: string | null;
   tagger: boolean;
   expressions: boolean;
+  /** Versione del lessico del programma. */
+  lexicon?: string;
 }
 
 /** Un simbolo personale importato dal docente (immagine salvata sul computer). */
@@ -96,6 +154,8 @@ export interface EngineClient {
   alternatives(para: ParaReq, policy: Policy, locks: LockReq[], s: number, e: number): Promise<CandidateDto[]>;
   /** Ricerca libera di un pittogramma. */
   search(query: string): Promise<CandidateDto[]>;
+  /** I documenti personali; assente nelle prove senza archivio. */
+  docs?: DocClient;
   /** I simboli personali già importati. */
   listCustom(): Promise<CustomSymbol[]>;
   /** Salva un simbolo personale (immagine WebP quadrata) per la parola indicata. */
@@ -113,6 +173,12 @@ export function tauriClient(): EngineClient {
     symbolize: (paras, policy, locks) => invoke<TokenDto[][]>("symbolize", { paras, policy, locks }),
     alternatives: (para, policy, locks, s, e) => invoke<CandidateDto[]>("alternatives", { para, policy, locks, s, e }),
     search: (query) => invoke<CandidateDto[]>("search_pictos", { query }),
+    docs: {
+      list: () => invoke<DocList>("doc_list"),
+      save: (payload) => invoke<DocEntry>("doc_save", { payload }),
+      open: (file) => invoke<OpenedDoc>("doc_open", { file }),
+      remove: (file) => invoke<void>("doc_delete", { file }),
+    },
     listCustom: () => invoke<CustomSymbol[]>("list_custom_symbols"),
     importCustom: async (image, label) =>
       invoke<CustomSymbol>("save_custom_symbol", new Uint8Array(await image.arrayBuffer()), {
