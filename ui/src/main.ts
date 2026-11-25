@@ -9,6 +9,7 @@ import "./css/bars.css";
 import "./css/side.css";
 import "./css/dialogs.css";
 import "./css/docs.css";
+import "./css/page.css";
 import "./css/sheet.css";
 import { startApp } from "./app";
 

@@ -95,6 +95,7 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
     () => (session ? void session.newDocument() : confirmReplace(emptyDoc)()),
     () => (session ? void session.newDocument(sampleDoc(1)) : confirmReplace(() => sampleDoc(1))()),
   );
+  bars.collegaPannello(pannello); // la scheda «Pagina» (M11-5): le impostazioni di stampa accanto al foglio
   // Per le prove automatiche: le preferenze del documento (stampa, contorno, dimensione) senza passare dai pulsanti,
   // che in M11 cambiano posto. Nessun effetto per il docente.
   Object.assign((window as unknown as { caaProto: object }).caaProto, { getPrefs: bars.getPrefs, setPrefs: bars.setPrefs, setAuthor: bars.setAuthor });

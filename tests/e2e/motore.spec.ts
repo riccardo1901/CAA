@@ -1,7 +1,7 @@
 // Prove di M8a: l'editor con i simboli del motore. Nel browser non c'è il motore vero: si usa un
 // motore finto (in pagina) che riconosce le parole con regole semplici e risponde dopo qualche
 // millisecondo. Le prove con il motore vero e con le immagini ARASAAC sono a mano (app Tauri).
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { casellaContorno, open, rispondiConferma, voceAltro } from "./fixtures";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -2101,10 +2101,16 @@ function darkPixels(file: string): number {
   return n;
 }
 
+/** Le impostazioni di stampa: da M11-5 la scheda «Pagina» del pannello laterale (prima una finestra). */
 async function openPrintDialog(page: Page) {
-  await page.getByRole("button", { name: "Stampa…" }).click();
-  return page.locator(".print-dialog");
+  await page.locator(".app-header").getByRole("button", { name: "Stampa…" }).click();
+  const d = page.locator(".page-panel");
+  await expect(d).toBeVisible();
+  return d;
 }
+
+/** Fuori dalla scheda «Pagina» (Esc), come prima con «Chiudi» della finestra. */
+const closePrint = (d: Locator) => d.press("Escape");
 
 test("stampa: A4 verticale, attribuzione su ogni pagina, nessuna parola spezzata fra le pagine", async ({ page }) => {
   await open(page, STORIES.repeat(3));
@@ -2146,7 +2152,7 @@ test("stampa: orizzontale, margini e interfaccia nascosta", async ({ page }) => 
   await d.getByLabel("Orientamento").selectOption("landscape");
   await d.getByLabel("Margini (mm)").fill("25");
   await d.getByLabel("Margini (mm)").dispatchEvent("change");
-  await d.getByRole("button", { name: "Chiudi" }).click();
+  await closePrint(d);
   await page.waitForFunction(() => (window as any).caaProto.engineStats().pending === 0);
   const file = await pdfOf(page);
   expect(pdfSize(file)).toEqual([842, 595]);
@@ -2164,7 +2170,7 @@ test("stampa: il piè di pagina facoltativo (titolo, autore, pagina); l'attribuz
   await page.getByLabel("Titolo del documento").fill("La mia storia");
   const d = await openPrintDialog(page);
   // Con tutto spento c'è solo l'attribuzione.
-  await d.getByRole("button", { name: "Chiudi" }).click();
+  await closePrint(d);
   let text = pdfPages(await pdfOf(page)).join("\n");
   expect(text).toContain(ATTR);
   expect(text).not.toContain("La mia storia");
@@ -2172,7 +2178,7 @@ test("stampa: il piè di pagina facoltativo (titolo, autore, pagina); l'attribuz
   const d2 = await openPrintDialog(page);
   await d2.getByLabel("il titolo").check();
   await d2.getByLabel("il numero di pagina").check();
-  await d2.getByRole("button", { name: "Chiudi" }).click();
+  await closePrint(d2);
   text = pdfPages(await pdfOf(page)).join("\n");
   expect(text).toContain("La mia storia");
   expect(text).toContain(ATTR);
@@ -2185,7 +2191,7 @@ test("stampa: un titolo con virgolette, barre e a capo non rompe il piè di pagi
   await page.getByLabel("Titolo del documento").fill('Storia "bella" \\ fine } @page { x');
   const d = await openPrintDialog(page);
   await d.getByLabel("il titolo").check();
-  await d.getByRole("button", { name: "Chiudi" }).click();
+  await closePrint(d);
   const text = pdfPages(await pdfOf(page)).join("\n");
   expect(text).toContain(ATTR);
   expect(text).toContain('Storia "bella"');
@@ -2201,7 +2207,7 @@ test("stampa: con un motore di pagine vecchio la finestra avvisa e l'attribuzion
   await page.evaluate(() => { delete (window as any).CSSMarginRule; });
   const d = await openPrintDialog(page);
   await expect(d).toContainText("Aggiorna WebView2");
-  await d.getByRole("button", { name: "Chiudi" }).click();
+  await closePrint(d);
   expect(await page.evaluate(() => document.documentElement.classList.contains("p-nofooter"))).toBe(true);
   const text = pdfPages(await pdfOf(page)).join("\n");
   expect(text).toContain(ATTR); // in fondo al testo, visibile solo in stampa
@@ -2213,7 +2219,7 @@ test("stampa: caratteri di controllo (form feed, a capo, NUL) nel titolo non can
   await open(page, STORIES, true);
   const d = await openPrintDialog(page);
   await d.getByLabel("il titolo").check();
-  await d.getByRole("button", { name: "Chiudi" }).click();
+  await closePrint(d);
   for (const bad of ["a\fb", "a\u000bb", "a\u0085b", "a\rb\nc", "a\u2028b", "x\\"]) {
     await page.emulateMedia({ media: "screen" });
     await page.getByLabel("Titolo del documento").fill(bad);
@@ -2230,7 +2236,7 @@ test("stampa: lo schermo segue i margini e l'orientamento scelti; un documento n
   await d.getByLabel("Orientamento").selectOption("landscape");
   await d.getByLabel("Margini (mm)").fill("25");
   await d.getByLabel("Margini (mm)").dispatchEvent("change");
-  await d.getByRole("button", { name: "Chiudi" }).click();
+  await closePrint(d);
   const box = await page.locator(".sheet").evaluate((e) => ({ w: e.getBoundingClientRect().width, pad: getComputedStyle(e).paddingLeft }));
   expect(Math.round(box.w)).toBe(1123); // A4 orizzontale a 96 dpi
   expect(parseFloat(box.pad)).toBeCloseTo((25 / 25.4) * 96, 0);
@@ -2272,7 +2278,7 @@ test("stampa: «una frase per riga» nel PDF: ogni frase comincia su una riga nu
   await page.emulateMedia({ media: "screen" });
   const dlg = await openPrintDialog(page);
   await dlg.getByLabel("Una frase per riga").check();
-  await dlg.getByRole("button", { name: "Chiudi" }).click();
+  await closePrint(dlg);
   text = pdfPages(await pdfOf(page)).join("\n");
   for (const w of firstWords) expect(startsLine(text, w)).toBe(true);
 });
@@ -2282,9 +2288,9 @@ test("stampa: testo sopra, bordo, maiuscolo e carattere si vedono subito e il te
   const d = await openPrintDialog(page);
   await d.getByLabel("Posizione del testo").selectOption("above");
   await d.getByLabel("Carattere").selectOption("lexend");
-  await d.getByLabel("Bordo attorno a ogni simbolo").check();
+  await d.getByLabel("Bordo attorno al solo simbolo").check();
   await d.getByLabel(/Tutto maiuscolo/).check();
-  await d.getByRole("button", { name: "Chiudi" }).click();
+  await closePrint(d);
   const cls = await page.evaluate(() => [...document.documentElement.classList]);
   for (const c of ["p-above", "pf-lexend", "p-border", "p-upper"]) expect(cls).toContain(c);
   expect(await page.locator(".ProseMirror").evaluate((e) => getComputedStyle(e).textTransform)).toBe("uppercase");
@@ -2301,7 +2307,7 @@ test("stampa: le impostazioni stanno nel documento (si salvano, si ritrovano, va
   await d.getByLabel("Orientamento").selectOption("landscape");
   await d.getByLabel("Carattere").selectOption("atkinson");
   await d.getByLabel(/Tutto maiuscolo/).check();
-  await d.getByRole("button", { name: "Chiudi" }).click();
+  await closePrint(d);
   await expect.poll(async () => (await mockSaves(page)).at(-1)?.prefs?.print?.orientation).toBe("landscape");
   expect((await mockSaves(page)).at(-1).prefs.print).toMatchObject({ orientation: "landscape", font: "atkinson", uppercase: true, margin: 15 });
   await page.getByRole("button", { name: "Nuovo" }).click();
@@ -2319,13 +2325,16 @@ test("stampa: le impostazioni stanno nel documento (si salvano, si ritrovano, va
   expect(await page.evaluate(() => document.documentElement.style.getPropertyValue("--p-margin"))).toBe("40mm"); // margine ricondotto al massimo
 });
 
-test("stampa: Ctrl+P apre la finestra con Stampa e Chiudi", async ({ page }) => {
+test("stampa: Ctrl+P apre la scheda Pagina con «Stampa…»; Esc torna al testo", async ({ page }) => {
   await open(page, "Marco mangia pane");
+  await page.locator(".ProseMirror").click();
   await page.keyboard.press("Control+p");
-  await expect(page.locator(".print-dialog")).toBeVisible();
-  await expect(page.locator(".print-dialog")).toContainText("Microsoft Print to PDF");
+  const d = page.locator(".page-panel");
+  await expect(d).toBeVisible();
+  await expect(d).toContainText("Microsoft Print to PDF");
+  await expect(d.getByRole("button", { name: "Stampa…" })).toBeFocused();
   await page.keyboard.press("Escape");
-  await expect(page.locator(".print-dialog")).toHaveCount(0);
+  await expect(page.locator(".ProseMirror")).toBeFocused();
 });
 
 test("Informazioni: attribuzioni obbligatorie (ARASAAC, Morph-it!, ISDT, caratteri) e versione; non si stampa", async ({ page }) => {

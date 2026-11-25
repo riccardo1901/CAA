@@ -147,7 +147,9 @@ const SITUAZIONI: Array<[string, (page: Page) => Promise<void>]> = [
   }],
   ["stampa", async (page) => {
     await apriCompleto(page);
-    await page.getByRole("button", { name: /^Stampa/ }).click();
+    // Da M11-5 la scheda «Pagina» del pannello laterale (prima la finestra Stampa).
+    await page.locator(".app-header").getByRole("button", { name: /^Stampa/ }).click();
+    await page.locator(".page-panel").waitFor();
   }],
   ["informazioni", async (page) => {
     await apriCompleto(page);

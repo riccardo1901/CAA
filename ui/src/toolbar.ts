@@ -11,7 +11,8 @@ import { hooks } from "./editor/menuHooks";
 import { DEFAULT_PRINT, type PrintPrefs } from "./docs/prefs";
 import { applyPrintPrefs as applyPrintStyle, printNow } from "./print/print";
 import { setOneLine } from "./editor/printLines";
-import { openPrintDialog } from "./print/dialog";
+import { creaSchedaPagina } from "./print/panel";
+import type { PannelloLaterale } from "./side/panel";
 import { openAbout } from "./about";
 import { conIcona, etichetta, soloIcona } from "./ui/icons";
 import { suggerimento } from "./ui/tooltip";
@@ -166,6 +167,8 @@ export interface Bars {
   onPrefsChange(cb: () => void): void;
   /** Il nome di chi scrive, per il piè di pagina facoltativo. */
   setAuthor(name: string): void;
+  /** Mette la scheda «Pagina» nel pannello laterale (M11-5): «Stampa…» e Ctrl+P la aprono. */
+  collegaPannello(pannello: PannelloLaterale): void;
 }
 
 /** Il segno del programma: un quadratino (il simbolo) sopra una riga (la parola). */
@@ -341,34 +344,29 @@ export function createBars(
   });
   policyLabel.append(select);
 
-  // Contorno: ogni coppia simbolo-parola in una "card" (impostazione dell'editor, ricordata sul computer).
-  // (In M11-5 va nella scheda «Pagina».)
-  const cardsLabel = el("label", "tb-check");
-  const cards = el("input");
-  cards.type = "checkbox";
-  cards.setAttribute("aria-label", "Contorna simbolo e parola");
-  let saved = false;
+  // Riquadro attorno a simbolo e parola: una "card" per ogni coppia (prima «Contorna simbolo e parola» nella barra
+  // degli strumenti; da M11-5 nella scheda «Pagina»). Vale per il documento; il computer ricorda l'ultima scelta per i
+  // documenti nuovi.
+  let cards = false;
   try {
-    saved = localStorage.getItem("caa.cards") === "1";
+    cards = localStorage.getItem("caa.cards") === "1";
   } catch {
     /* senza memoria del browser si parte senza contorno */
   }
   const applyCards = (on: boolean): void => {
+    cards = on;
     document.querySelector(".sheet")?.classList.toggle("cards", on);
   };
-  cards.checked = saved;
-  applyCards(saved);
-  cards.addEventListener("change", () => {
-    applyCards(cards.checked);
+  applyCards(cards);
+  const setCards = (on: boolean): void => {
+    applyCards(on);
     notifyPrefs();
     try {
-      localStorage.setItem("caa.cards", cards.checked ? "1" : "0");
+      localStorage.setItem("caa.cards", on ? "1" : "0");
     } catch {
       /* non è grave: la scelta vale finché l'app è aperta */
     }
-    view.focus();
-  });
-  cardsLabel.append(cards, "Contorna simbolo e parola");
+  };
 
   // Dimensione dei simboli: un gruppo a scelta unica.
   const sizes = el("div", "tb-sizes");
@@ -391,7 +389,8 @@ export function createBars(
   });
   sizes.append(segmented);
 
-  // Stampa (M10): le impostazioni della pagina stanno nel documento; Ctrl+P apre la finestra.
+  // Stampa (M10): le impostazioni della pagina stanno nel documento. Da M11-5 sono la scheda «Pagina» del pannello
+  // laterale: «Stampa…» qui in alto e Ctrl+P la aprono, con il fuoco sul suo «Stampa…» (un secondo Invio stampa).
   let printPrefs: PrintPrefs = { ...DEFAULT_PRINT };
   let author = "";
   // Applica le impostazioni alla pagina e accende (o spegne) gli a capo di «una frase per riga».
@@ -405,21 +404,49 @@ export function createBars(
   printBtn.type = "button";
   conIcona(printBtn, "stampa");
   suggerimento(printBtn, "Stampa o salva in PDF", { tasti: "Ctrl+P" });
+  let pannello: PannelloLaterale | null = null;
+  /** Dove era il fuoco prima di aprire la scheda: Esc ci torna. */
+  let apertoDa: HTMLElement | null = null;
+  const scheda = creaSchedaPagina({
+    get: () => printPrefs,
+    set: (p) => {
+      const giro = p.orientation !== printPrefs.orientation;
+      printPrefs = p;
+      applyPrintPrefs(printPrefs, printMeta());
+      notifyPrefs();
+      if (giro) restaAperta();
+    },
+    getRiquadro: () => cards,
+    setRiquadro: setCards,
+    print: () => {
+      applyPrintPrefs(printPrefs, printMeta());
+      printNow();
+    },
+    esci: () => {
+      if (pannello?.sopra()) pannello.chiudi();
+      const torna = apertoDa && apertoDa.isConnected && apertoDa.offsetParent !== null && !scheda.root.contains(apertoDa) ? apertoDa : null;
+      apertoDa = null;
+      if (torna) torna.focus();
+      else view.focus();
+    },
+  });
+  /** Cambiando l'orientamento il foglio si allarga o si stringe: se ora non sta accanto al pannello, il pannello si
+   *  richiuderebbe da solo mentre il docente lo sta usando. Resta aperto (sopra il foglio) e il fuoco resta dov'era. */
+  const restaAperta = (): void => {
+    if (!pannello) return;
+    const fuoco = document.activeElement as HTMLElement | null;
+    pannello.aggiorna();
+    if (!pannello.aperto()) pannello.mostraScheda("pagina");
+    if (fuoco && scheda.root.contains(fuoco) && document.activeElement !== fuoco) fuoco.focus();
+  };
   const openPrint = (): void => {
-    if (document.querySelector(".print-overlay")) return; // già aperta
+    if (!pannello) return;
+    const prima = document.activeElement as HTMLElement | null;
+    if (!prima || !scheda.root.contains(prima)) apertoDa = prima;
     applyPrintPrefs(printPrefs, printMeta());
-    openPrintDialog({
-      get: () => printPrefs,
-      set: (p) => {
-        printPrefs = p;
-        applyPrintPrefs(printPrefs, printMeta());
-        notifyPrefs();
-      },
-      print: () => {
-        applyPrintPrefs(printPrefs, printMeta());
-        printNow();
-      },
-    });
+    scheda.aggiorna();
+    pannello.mostraScheda("pagina");
+    scheda.stampa.focus();
   };
   printBtn.addEventListener("click", openPrint);
   document.addEventListener("keydown", (e) => {
@@ -440,14 +467,12 @@ export function createBars(
   const gParole = gruppo("tb-words", mergeBtn, splitBtn);
   const gSimboli = gruppo("tb-symbols", sizes);
   const gPolitica = gruppo("tb-policy", policyLabel, editBtn);
-  const gContorno = gruppo("tb-cards", cardsLabel);
   /** In ordine nella barra; `esce` dice chi esce per primo quando manca spazio (prima i meno usati). */
   const gruppi: Array<{ el: HTMLElement; esce: number }> = [
     { el: gStoria, esce: 0 },
     { el: gParole, esce: 4 },
     { el: gSimboli, esce: 3 },
     { el: gPolitica, esce: 2 },
-    { el: gContorno, esce: 1 },
   ];
   toolbar.append(...gruppi.map((g) => g.el), dialog.root);
   function adatta(): void {
@@ -556,7 +581,7 @@ export function createBars(
 
   refresh();
 
-  const getPrefs = (): DocPrefs => ({ preset: select.value as Preset, table: { ...table }, size: getSize(), cards: cards.checked, print: { ...printPrefs } });
+  const getPrefs = (): DocPrefs => ({ preset: select.value as Preset, table: { ...table }, size: getSize(), cards, print: { ...printPrefs } });
   const setPrefs = (p: Partial<DocPrefs>): void => {
     if (p.table) {
       Object.assign(table, p.table);
@@ -565,14 +590,12 @@ export function createBars(
     if (p.preset) select.value = p.preset;
     if (p.preset || p.table) applyPolicy();
     if (p.size !== undefined) setSize(p.size);
-    if (p.cards !== undefined) {
-      cards.checked = p.cards;
-      applyCards(p.cards);
-    }
+    if (p.cards !== undefined) applyCards(p.cards);
     if (p.print) {
       printPrefs = { ...p.print };
       applyPrintPrefs(printPrefs, printMeta());
     }
+    if (p.cards !== undefined || p.print) scheda.aggiorna();
     refresh();
   };
 
@@ -597,7 +620,12 @@ export function createBars(
     onPrefsChange: (cb) => prefsListeners.push(cb),
     setAuthor: (name) => {
       author = name;
+      scheda.setNome(name);
       applyPrintPrefs(printPrefs, printMeta());
+    },
+    collegaPannello: (p) => {
+      pannello = p;
+      p.aggiungiScheda("pagina", "Pagina", scheda.root);
     },
   };
 }

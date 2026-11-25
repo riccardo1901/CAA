@@ -225,9 +225,10 @@ export async function voceAltro(page: Page, nome: string | RegExp): Promise<void
   await page.getByRole("menuitem", { name: nome }).click();
 }
 
-/** «Contorna simbolo e parola»: nella barra degli strumenti o, se non ci sta, nel menu «Altro» (M11-4). */
+/** «Riquadro attorno a simbolo e parola» (fino a M11-4 «Contorna simbolo e parola», nella barra degli strumenti):
+ *  da M11-5 sta nella scheda «Pagina», che si apre con «Stampa…» dell'intestazione. */
 export async function casellaContorno(page: Page) {
-  const c = page.getByLabel("Contorna simbolo e parola");
-  if (!(await c.isVisible())) await page.getByRole("button", { name: "Altro", exact: true }).click();
+  const c = page.locator(".page-panel").getByLabel("Riquadro attorno a simbolo e parola");
+  if (!(await c.isVisible())) await page.locator(".app-header").getByRole("button", { name: "Stampa…" }).click();
   return c;
 }
