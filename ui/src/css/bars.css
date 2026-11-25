@@ -15,8 +15,8 @@
 .toolbar { position: relative; border-bottom: 1px solid var(--c-line); }
 /* Fino a M11-4 (nuova struttura, su una riga con il menu «Altro») la barra degli strumenti resta compatta come prima:
    testo a 14 px e spazi stretti, altrimenti sugli schermi larghi 1536-1700 punti andrebbe su due righe. */
-.toolbar { gap: var(--s-2) var(--s-3); font-size: 0.875rem; }
-.toolbar :where(button) { padding-inline: 0.625rem; }
+.toolbar { gap: var(--s-2); font-size: 0.875rem; }
+.toolbar :where(button) { padding-inline: var(--s-2); }
 .toolbar .grow, .statusbar .grow { flex: 1; }
 .toolbar label { white-space: normal; }
 .statusbar {
