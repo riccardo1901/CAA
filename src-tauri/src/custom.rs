@@ -221,7 +221,7 @@ impl CustomStore {
         write_atomic(&self.dir.join("index.json"), &json)
             .map_err(|e| format!("salvataggio non riuscito: {e}"))?;
         *state = next;
-        let _ = std::fs::remove_file(self.dir.join(format!("{uuid}.webp")));
+        // Il file `.webp` resta: i documenti aperti che usano il simbolo lo salvano ancora dentro il loro file.
         Ok(())
     }
 
@@ -231,8 +231,16 @@ impl CustomStore {
         if !state.symbols.iter().any(|s| s.uuid == uuid) {
             self.refresh(&mut state);
         }
-        let s = state.symbols.iter().find(|s| s.uuid == uuid)?;
-        std::fs::read(self.dir.join(format!("{}.webp", s.uuid))).ok()
+        // Anche un simbolo tolto dalla raccolta (ma con il file ancora lì) si può mettere in un documento.
+        let valid = !uuid.is_empty()
+            && uuid.len() <= 64
+            && uuid
+                .bytes()
+                .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_');
+        if !valid {
+            return None;
+        }
+        std::fs::read(self.dir.join(format!("{uuid}.webp"))).ok()
     }
 
     fn add(&self, uuid: Option<&str>, bytes: &[u8], label: &str) -> Result<CustomSymbol, String> {
@@ -346,7 +354,10 @@ mod tests {
         store.delete(&a.uuid).unwrap();
         assert_eq!(store.list().len(), 1);
         assert!(store.path_of(a.id).is_none());
-        assert!(!dir.join(format!("{}.webp", a.uuid)).exists());
+        // L'immagine resta sul disco: il documento aperto che la usa, salvando, la rimette dentro il suo file.
+        assert!(dir.join(format!("{}.webp", a.uuid)).exists());
+        assert!(store.bytes_of_uuid(&a.uuid).is_some());
+        assert!(store.bytes_of_uuid("../x").is_none());
         assert!(store.path_of(b.id).is_some());
         assert!(store.delete(&a.uuid).is_err());
         // Il prossimo simbolo ha un id nuovo, anche dopo aver riaperto la raccolta.

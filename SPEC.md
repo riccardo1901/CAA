@@ -541,7 +541,7 @@ Ogni correzione nell'editor viene registrata in locale (forma, contesto di due p
 
 ## Editor e interazione
 
-Un solo schermo: barra degli strumenti in alto, foglio al centro, nessun pannello fisso. Il docente scrive come in Word; i simboli compaiono sopra le parole mentre scrive.
+Un solo schermo: barra degli strumenti in alto, foglio al centro e **una barra laterale fissa a destra** che si riempie quando si agisce su un simbolo (decisione dopo le prove di M8b: è più comoda di un menu che compare sopra il testo, e lascia il foglio libero). Oltre ai pannelli a comparsa Documenti e Biblioteca non ci sono altri pannelli. Il docente scrive come in Word; i simboli compaiono sopra le parole mentre scrive.
 
 ### Modello del documento (ProseMirror)
 
@@ -575,7 +575,7 @@ Il comportamento del cursore con parole impilate sotto un'immagine è l'unico pu
 | Applicare a tutte le occorrenze | casella "usa per tutto il testo" nel menu (attiva per default) | — |
 | Dimensione simboli | 4 pulsanti in barra | Ctrl+1–4 |
 
-**Menu alternative**: griglia di 8 miniature grandi con la parola chiave sotto, la riga "perché" del motore, e le voci fisse "Solo testo", "Nessun simbolo", "Cerca…", "Simbolo personale…". Si apre in meno di 100 ms.
+**Barra laterale delle alternative** (al posto del menu a comparsa; si apre cliccando il simbolo, con Alt+Giù o con F8): ricerca in cima, poi griglia di 8 miniature grandi con la parola chiave sotto, la riga "perché" del motore, e le voci fisse "Solo testo", "Nessun simbolo", "Automatico", "Simbolo personale…", i simboli già importati («I miei simboli») e quelli della scuola, le caselle «usa per tutto il testo» e «ricorda per sempre», Unisci/Dividi. Si riempie in meno di 100 ms. I numeri 1–8 scelgono solo con il fuoco nella barra.
 
 **Barra di stato**: "4 parole da controllare" (sotto la soglia di confidenza), numero parole, politica parole funzionali attiva.
 
@@ -608,7 +608,7 @@ La scuola usa un **Drive condiviso** di Google Workspace per tutto l'istituto. I
   biblioteca\<uuid>.caa          documenti di riferimento
   biblioteca\<uuid>.lock         presente mentre l'autore aggiorna (indicativo)
   simboli\<uuid>.webp + .json    simboli personali condivisi dalla scuola
-  correzioni\<utente>-<data>.tsv registri anonimi delle correzioni
+  correzioni\<id-casuale>-<data>-<ora>.tsv registri anonimi delle correzioni (il file lo crea l'account Drive di chi invia)
   archivio\                      documenti ritirati
   aggiornamenti\version.json     ultima versione del programma
 ```
@@ -728,7 +728,7 @@ Dodici milestone in ordine di dipendenza. Ognuna si chiude solo quando il criter
 3. **M2 — Build del lessico.** `caa-lexicon-build` produce i file della sezione Strutture dati, con rapporto di copertura (senza `mwe.bin` e `tagger.bin`, che arrivano con M6 e M5).
     - *Accettazione*: caricamento < 300 ms; tutte le etichette mappate; rapporto delle chiavi ARASAAC senza lemma.
 4. **M3 — Prototipo editor.** ProseMirror con simboli finti (un'immagine fissa per parola) e le due soluzioni di resa A e B.
-    - *Accettazione*: tutte le prove della sezione Editor superate da una delle due soluzioni, su un PC Windows della scuola. *Esito*: superata dalla soluzione A su un PC Windows personale (Edge/WebView2 157); la prova su un PC della scuola entra nel pilota (M11).
+    - *Accettazione*: tutte le prove della sezione Editor superate da una delle due soluzioni, su un PC Windows della scuola. *Esito*: superata dalla soluzione A su un PC Windows personale (Edge/WebView2 157); la prova su un PC della scuola entra nel pilota (M12).
 5. **M4 — Motore, fasi 1–3 e 8.** Normalizzazione, tokenizzazione, letture (compresa la lettura da chiave ARASAAC per le parole sconosciute a Morph-it!), scelta del pittogramma senza contesto (prima lettura).
     - *Accettazione*: test dorati di tokenizzazione ed elisione verdi; ogni parola del lessico scolastico di base riceve un pittogramma. *Esito* (`docs/RAPPORTO-M4.md`): 48 test dorati su 48; il lessico di base (`lexicon/lessico_base.tsv`, 516 parole piene, definito in M4) ha il 96,7% di copertura (97,7% sulle parole piene) e le 17 eccezioni, lacune di ARASAAC, sono elencate; `caa-eval` minimo (test dorati, copertura, velocità) anticipato a M4.
 6. **M5 — Disambiguazione.** Statistiche del tagger dal treebank, Viterbi, forward-backward, regole di contesto, confidenza.
@@ -752,7 +752,9 @@ Dodici milestone in ordine di dipendenza. Ognuna si chiude solo quando il criter
     - *Accettazione*: prova con due PC sulla stessa cartella del Drive condiviso; interruzione a metà salvataggio e file incompleti senza documenti corrotti.
 11. **M10 — Stampa ed esportazione.** Impaginazione, preset, piè di pagina di attribuzione, PDF.
     - *Accettazione*: stampa di prova di 3 storie sulle stampanti della scuola, nessuna parola separata dal suo simbolo.
-12. **M11 — Pilota.** MSI, `config.json`, installazione su 3–5 PC, prova con 3–5 docenti per due settimane.
+12. **M11 — Miglioramento dell'interfaccia** (nuova, prima del pilota). Revisione dell'aspetto e dell'uso quotidiano con quello che le prove su Windows e la stampa hanno mostrato: gerarchia delle barre, barra laterale e pannelli, messaggi e avvisi, scorciatoie, accessibilità (contrasto, tastiera, dimensioni), testi in italiano semplice. Si decide il perimetro con le prove a mano fatte, non prima.
+    - *Accettazione*: le prove dell'editor restano verdi; un docente che non ha mai visto il programma scrive e stampa una storia senza aiuto.
+13. **M12 — Pilota.** Installazione su 3–5 PC (anche personali dei docenti, con un account Google in comune per Google Drive per computer; l'MSI e il `config.json` del tecnico restano per la scuola), prova con 3–5 docenti per due settimane.
     - *Accettazione*: metriche sul corpus misurate di nuovo; elenco dei problemi del pilota in ordine di priorità.
 
 **Regole di lavoro per Claude Code** (già riportate in `CLAUDE.md`):

@@ -592,3 +592,26 @@ fn due_docenti_con_lo_stesso_nome_da_mostrare_non_si_scambiano_i_documenti() {
     assert!(retire(&root, &file, "Altro nome", "mrossi", &[]).is_ok());
     std::fs::remove_dir_all(&root).unwrap();
 }
+
+#[test]
+fn un_documento_vecchio_prende_il_nome_utente_al_primo_aggiornamento_dell_autore() {
+    let root = tmp("vecchio");
+    let d = doc("Storia", "Maria Rossi"); // pubblicato prima di M9c-2: nessun nome utente nel file
+    publish(&root, &d, "Maria Rossi").unwrap();
+    assert_eq!(read(&root, &d.manifest.id).doc.manifest.author_user, None);
+    update_as(&root, &d, 1, "Maria Rossi", "MRossi", NOW).unwrap();
+    assert_eq!(
+        read(&root, &d.manifest.id)
+            .doc
+            .manifest
+            .author_user
+            .as_deref(),
+        Some("MRossi")
+    );
+    // Da ora un'omonima con un altro utente di Windows non è l'autrice.
+    assert!(matches!(
+        update_as(&root, &d, 2, "Maria Rossi", "altra", NOW),
+        Err(LibError::NotAuthor { .. })
+    ));
+    std::fs::remove_dir_all(&root).unwrap();
+}

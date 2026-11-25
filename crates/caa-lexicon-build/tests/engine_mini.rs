@@ -924,6 +924,23 @@ fn la_memoria_del_docente_vale_in_ogni_testo_e_cede_a_blocco_e_scelta() {
 }
 
 #[test]
+fn la_memoria_per_forma_vale_anche_per_le_parole_sconosciute() {
+    let mut memory = UserMemory::default();
+    memory.insert_form("blorpf", 116);
+    let t = engine("", "").symbolize(&request_with(
+        "il blorpf",
+        &[],
+        &SenseLocks::default(),
+        &DocPrefs::default(),
+        &memory,
+    ));
+    let w = t.iter().find(|x| x.surface == "blorpf").unwrap();
+    assert_eq!(w.picto.map(|p| p.id), Some(116));
+    assert_eq!(w.reason.picto, PictoReason::Memory);
+    assert_eq!(w.display, Display::Full);
+}
+
+#[test]
 fn la_memoria_per_forma_esatta_non_tocca_le_altre_forme() {
     let mut memory = UserMemory::default();
     memory.insert_form("pane", 116);

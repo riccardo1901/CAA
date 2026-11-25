@@ -101,18 +101,29 @@ pub fn share(
         author_user: os_user.trim().to_string(),
         at: now,
     };
-    match write_new(&d.join(format!("{uuid}.webp")), image) {
-        Ok(()) => {}
-        // L'immagine c'è già ma il suo `.json` no (un'altra copia sta scrivendo, o è rimasta a metà): non si tocca.
-        Err(LibError::Io(_)) if d.join(format!("{uuid}.webp")).exists() => {
-            return Err(LibError::Io(
-                "questo simbolo è già in corso di condivisione: riprova tra poco".into(),
-            ))
+    let img_path = d.join(format!("{uuid}.webp"));
+    let mut wrote_image = false;
+    match write_new(&img_path, image) {
+        Ok(()) => wrote_image = true,
+        // L'immagine c'è già senza il suo `.json` (un tentativo rimasto a metà): se è la stessa, si completa.
+        // Se è un'altra, o la sta scrivendo un altro computer proprio adesso, non si tocca.
+        Err(LibError::Io(_)) if img_path.exists() => {
+            if std::fs::read(&img_path).ok().as_deref() != Some(image) {
+                return Err(LibError::Io(
+                    "questo simbolo è già in corso di condivisione: riprova tra poco".into(),
+                ));
+            }
         }
         Err(e) => return Err(e),
     }
     let body = serde_json::to_vec_pretty(&meta).map_err(std::io::Error::other)?;
-    write_new(&d.join(format!("{uuid}.json")), &body)?;
+    if let Err(e) = write_new(&d.join(format!("{uuid}.json")), &body) {
+        // Senza il `.json` il simbolo non esiste: l'immagine appena scritta non deve restare a metà.
+        if wrote_image {
+            let _ = std::fs::remove_file(&img_path);
+        }
+        return Err(e);
+    }
     Ok(SharedSymbol {
         uuid: uuid.to_string(),
         label: meta.label,
@@ -274,6 +285,27 @@ mod tests {
             .unwrap()
             .flatten()
             .all(|e| !e.file_name().to_string_lossy().ends_with(".tmp")));
+        std::fs::remove_dir_all(&r).unwrap();
+    }
+
+    #[test]
+    fn una_condivisione_rimasta_a_meta_si_completa_o_si_ripulisce() {
+        let r = tmp("meta");
+        let d = r.join("simboli");
+        std::fs::create_dir_all(&d).unwrap();
+        // Rimasta a metà: c'è l'immagine ma non il json. Riprovando con la stessa immagine si completa.
+        std::fs::write(d.join("aaa.webp"), webp(100)).unwrap();
+        let s = share(&r, "aaa", &webp(100), "mela", "Maria", "m", 5).unwrap();
+        assert_eq!(s.label, "mela");
+        assert_eq!(list(&r).len(), 1);
+        // Un'immagine diversa con lo stesso nome non si tocca.
+        std::fs::write(d.join("bbb.webp"), webp(100)).unwrap();
+        assert!(share(&r, "bbb", &webp(200), "pane", "Maria", "m", 5).is_err());
+        assert_eq!(std::fs::read(d.join("bbb.webp")).unwrap().len(), 100);
+        // Se il json non si riesce a scrivere, l'immagine appena scritta si toglie (non resta un simbolo bloccato).
+        std::fs::create_dir(d.join("ccc.json")).unwrap();
+        assert!(share(&r, "ccc", &webp(100), "casa", "Maria", "m", 5).is_err());
+        assert!(!d.join("ccc.webp").exists());
         std::fs::remove_dir_all(&r).unwrap();
     }
 

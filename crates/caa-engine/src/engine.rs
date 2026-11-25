@@ -198,6 +198,11 @@ impl UserMemory {
             .copied()
     }
 
+    /// Solo per forma esatta (le parole che il motore non conosce non hanno lemma).
+    pub fn get_form(&self, form: &str) -> Option<u32> {
+        self.by_form.get(&normalize_key(form)).copied()
+    }
+
     pub fn is_empty(&self) -> bool {
         self.by_lemma.is_empty() && self.by_form.is_empty()
     }
@@ -588,7 +593,16 @@ fn apply_choices(
         if t.group.is_some_and(|g| g.kind == GroupKind::Multiword) {
             continue;
         }
-        let Some(a) = &t.analysis else { continue };
+        let Some(a) = &t.analysis else {
+            // Parola sconosciuta (nessuna analisi): la memoria per forma esatta vale anche per lei.
+            if let Some(id) = memory.get_form(&t.surface) {
+                t.confidence = 1.0;
+                t.picto = Some(PictoRef { id });
+                t.display = Display::Full;
+                t.reason.picto = PictoReason::Memory;
+            }
+            continue;
+        };
         if let Some(id) = locks.get(&a.lemma, a.cat) {
             // Il docente ha deciso il senso per tutto il testo: la parola non e' piu' da controllare.
             t.confidence = 1.0;

@@ -92,6 +92,16 @@ Ogni difetto confermato ha la prova scritta prima (sul codice vecchio falliva).
 - **Editor**: «Condividi con tutta la scuola» nel ritaglio (solo con la biblioteca; un errore non toglie il simbolo), «Simboli della scuola…» nella barra, × per eliminare/ritirare con conferma.
 - Non fatto (per scelta): cache offline dell'elenco della scuola (senza Drive l'elenco è vuoto, ma quelli già presi restano nella raccolta locale).
 
+# Revisione indipendente di M9c (Opus) e correzioni
+Ogni difetto confermato ha la prova scritta prima.
+- **Privacy**: un nome proprio a inizio frase (il motore lo legge come PROPN con lemma = la parola) finiva nel registro → ora le righe PROPN non si registrano. Il contesto accetta solo lettere e apostrofo (prima passava un indirizzo email in minuscolo). Il testo nella scheda ora dice la verità: il file lo crea l'account Google di chi invia e chi ha accesso alla cartella lo vede.
+- **Perdita di dati**: eliminare un simbolo personale lo toglieva dal documento aperto al salvataggio successivo → ora il file immagine resta (si toglie solo dalla raccolta) e le voci di memoria che lo usavano si tolgono.
+- **Motore**: «ricorda per sempre» non funzionava sulle parole sconosciute (la memoria per forma era dopo il controllo dell'analisi) → ora sì.
+- **Identità**: un documento pubblicato prima di M9c-2 prende il nome utente al primo aggiornamento dell'autore.
+- **Drive**: una condivisione rimasta a metà (immagine senza json) bloccava il simbolo per sempre → si completa se l'immagine è la stessa, si ripulisce se il json non si scrive.
+- **Registro**: «Invia» e «Butta via» non si sovrappongono più (un solo turno alla volta); l'anteprima dice quante righe in più partono; «Nessun simbolo» su una parola che non aveva simbolo non registra più una riga inutile.
+- **Non corretto, noto**: la scheda mostra «Ritira» dei documenti in base al nome da mostrare, mentre il permesso vero lo decide il programma con il nome utente (un omonimo vede il pulsante e riceve un errore); una voce ricordata mostra la parola anche dove la politica dice «solo testo»; `write_new` controlla l'esistenza e poi rinomina (con nomi casuali il rischio è minimo; l'alternativa dei collegamenti fisici non è sicura su un Drive virtuale).
+
 # M9c-3 — correzioni anonime
 
 **Stato**: codice e prove automatiche fatti; prova a mano su Windows da fare (`docs/PROVE-M9c3.md`).

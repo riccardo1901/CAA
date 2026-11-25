@@ -37,10 +37,11 @@ fn letters(w: &str) -> String {
 /// Una parola di contesto: minuscola; con maiuscole (nomi), numeri, o troppo lunga → `_`.
 fn context_word(w: &str) -> String {
     let w = letters(w);
+    // Solo lettere (e apostrofo): niente indirizzi, sigle con punti, percorsi, trattini di cognomi doppi.
     let bad = w.is_empty()
         || w.chars().count() > MAX_WORD
-        || w.chars().any(|c| c.is_ascii_digit())
         || w.chars().any(char::is_uppercase)
+        || !w.chars().all(|c| c.is_alphabetic() || c == '\'')
         || !w.chars().any(char::is_alphabetic);
     if bad {
         "_".into()
@@ -61,6 +62,10 @@ pub fn make(
     picto: u32,
     auto: u32,
 ) -> Option<Correction> {
+    // Il motore legge come nome proprio ogni parola maiuscola che non conosce, con lemma = la parola: mai.
+    if cat.trim().eq_ignore_ascii_case("PROPN") {
+        return None;
+    }
     if picto >= CUSTOM_BASE
         || auto >= CUSTOM_BASE
         || lemma.trim().is_empty()
@@ -287,6 +292,29 @@ mod tests {
         // Una parola di contesto con cifre o troppo lunga diventa «_».
         let c = make("a4 casa 3x", 3, 7, "casa", "NOUN", 2, 0).unwrap();
         assert_eq!((c.before.as_str(), c.after.as_str()), ("_", "_"));
+    }
+
+    #[test]
+    fn un_nome_proprio_a_inizio_frase_non_si_registra_e_il_contesto_ha_solo_lettere() {
+        // Il motore dà ai nomi sconosciuti la lettura PROPN con lemma = la parola, anche a inizio frase.
+        assert!(make("Luca mangia la mela.", 0, 4, "luca", "PROPN", 1234, 0).is_none());
+        assert!(make("Vedo. Anna-Maria corre", 6, 16, "anna-maria", "PROPN", 5, 0).is_none());
+        // Indirizzi e simili non passano come contesto: solo lettere e apostrofo.
+        let c = make(
+            "scrivi a mario.rossi@gmail.com subito",
+            7,
+            8,
+            "a",
+            "ADP",
+            7,
+            0,
+        )
+        .unwrap();
+        assert_eq!(c.after, "_");
+        let c = make("il cane/gatto dorme", 0, 2, "il", "DET", 7, 0).unwrap();
+        assert_eq!(c.after, "_");
+        let c = make("dell'albero grande", 5, 11, "albero", "NOUN", 7, 0);
+        assert!(c.is_some());
     }
 
     #[test]

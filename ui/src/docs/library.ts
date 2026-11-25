@@ -252,7 +252,7 @@ export function showLibraryTab(body: HTMLElement, deps: LibraryTabDeps): void {
       el(
         "p",
         "docs-note",
-        "Quando scegli un simbolo diverso da quello proposto, il programma ricorda solo la parola, una parola prima e una dopo (senza nomi propri né numeri) e il simbolo scelto. Mai il testo, mai il tuo nome. Parte solo se premi «Invia»: servono a migliorare i simboli per tutti.",
+        "Quando scegli un simbolo diverso da quello proposto, il programma ricorda solo la parola, una parola prima e una dopo (senza nomi propri né numeri) e il simbolo scelto. Mai il testo e mai il tuo nome dentro il file. Attenzione: il file lo crea il tuo account Google, quindi chi ha accesso alla cartella del Drive può vedere da quale account arriva. Parte solo se premi «Invia»: servono a migliorare i simboli per tutti.",
       ),
     );
     const on = el("input");
@@ -274,7 +274,8 @@ export function showLibraryTab(body: HTMLElement, deps: LibraryTabDeps): void {
     show.addEventListener("click", () => {
       c.preview().then((lines) => {
         preview.hidden = false;
-        preview.textContent = ["forma · prima · dopo · lemma · categoria · simbolo scelto · proposto", ...lines.map((l) => l.split("\t").join(" · "))].join("\n");
+        const more = info.pending > lines.length ? [`… e altre ${info.pending - lines.length}: partono tutte quando premi «Invia»`] : [];
+        preview.textContent = ["forma · prima · dopo · lemma · categoria · simbolo scelto · proposto", ...lines.map((l) => l.split("\t").join(" · ")), ...more].join("\n");
       }, () => undefined);
     });
     const send = el("button", "", "Invia correzioni");

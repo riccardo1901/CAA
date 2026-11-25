@@ -2222,7 +2222,8 @@ test("correzioni anonime: nella scheda Biblioteca si vedono, si spengono, si inv
   await page.locator(".docs-panel").getByRole("button", { name: "Biblioteca", exact: true }).click();
   const sec = page.locator(".lib-corrections");
   await expect(sec).toContainText("2 correzioni in attesa");
-  await expect(sec).toContainText("Mai il testo, mai il tuo nome");
+  await expect(sec).toContainText("Mai il testo e mai il tuo nome dentro il file");
+  await expect(sec).toContainText("il file lo crea il tuo account Google");
   await sec.getByRole("button", { name: "Vedi cosa parte" }).click();
   await expect(sec.locator("pre")).toContainText("pane");
   // Spengo la raccolta.

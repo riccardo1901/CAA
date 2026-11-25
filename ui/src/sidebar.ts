@@ -200,7 +200,7 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
       // migliorare il lessico per tutti; si può spegnere e si invia solo a mano.
       if (client.corrections && (choice.kind === "picto" || choice.kind === "none")) {
         const picto = choice.kind === "picto" ? choice.id : 0;
-        if (picto !== w.token.picto) {
+        if (picto !== (w.token.picto ?? 0)) {
           client.corrections
             .log({ text: w.para.text, s: w.token.s, e: w.token.e, lemma: w.token.lemma, cat: w.token.cat, picto, auto: w.token.picto ?? 0 })
             .catch(() => undefined);
@@ -364,6 +364,8 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
             del(c.uuid).then(
               () => {
                 customList = customList.filter((o) => o.uuid !== c.uuid);
+                // Le scelte «per sempre» che lo usavano sono state tolte: i paragrafi si rifanno.
+                setEngine(view, client);
                 show(target ?? t, false);
               },
               (e: unknown) => hooks.notice?.(`Non sono riuscito a eliminarlo: ${String(e)}`),

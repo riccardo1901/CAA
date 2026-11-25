@@ -348,7 +348,8 @@ fn update_full(
     let m = &mut lib_doc.manifest;
     m.rev = existing.rev + 1;
     m.author = existing.author; // l'autore resta quello del documento di biblioteca
-    m.author_user = existing.author_user;
+                                // Un documento pubblicato prima del nome utente lo prende al primo aggiornamento dell'autore.
+    m.author_user = existing.author_user.or_else(|| os_user.map(str::to_string));
     m.created = existing.created;
     m.modified = caa_doc::now_iso();
     m.published_rev = None;

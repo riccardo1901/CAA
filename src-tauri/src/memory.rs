@@ -176,6 +176,17 @@ impl MemoryStore {
         })
     }
 
+    /// Toglie le voci che puntano a un pittogramma (un simbolo personale eliminato non lascia voci appese).
+    pub fn forget_picto(&self, picto: u32) -> Result<(), String> {
+        if !self.list().iter().any(|e| e.picto == picto) {
+            return Ok(());
+        }
+        self.change(|v| {
+            v.retain(|e| e.picto != picto);
+            Ok(())
+        })
+    }
+
     pub fn clear(&self) -> Result<(), String> {
         self.change(|v| {
             v.clear();
@@ -229,6 +240,19 @@ mod tests {
         again.clear().unwrap();
         assert!(MemoryStore::open(&d).list().is_empty());
         assert_eq!(std::fs::read_dir(&d).unwrap().count(), 1, "nessun .tmp");
+        std::fs::remove_dir_all(&d).unwrap();
+    }
+
+    #[test]
+    fn un_simbolo_eliminato_non_lascia_voci_appese() {
+        let d = tmp("picto");
+        let s = MemoryStore::open(&d);
+        s.add(lemma("pane", "NOUN", 2_147_483_648)).unwrap();
+        s.add(lemma("casa", "NOUN", 7)).unwrap();
+        s.forget_picto(2_147_483_648).unwrap();
+        assert_eq!(s.list().len(), 1);
+        s.forget_picto(99).unwrap();
+        assert_eq!(MemoryStore::open(&d).list().len(), 1);
         std::fs::remove_dir_all(&d).unwrap();
     }
 

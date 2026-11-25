@@ -9,7 +9,7 @@ Programma desktop (Tauri 2) per docenti: scrivono un testo italiano e vedono sop
 
 ## Come lavoriamo
 
-- Si procede **una milestone alla volta** (M0–M11, sezione "Piano di sviluppo" di `SPEC.md`).
+- Si procede **una milestone alla volta** (M0–M12, sezione "Piano di sviluppo" di `SPEC.md`).
 - Prima di scrivere codice per una milestone: rileggi la sezione pertinente di `SPEC.md`, proponi un piano e **aspetta l'approvazione**.
 - Una milestone è chiusa solo quando il suo criterio di accettazione è verificato e mostrato.
 - Se la specifica e il codice divergono, o la specifica è ambigua, **segnalalo** invece di scegliere da solo.

@@ -11,6 +11,8 @@ use caa_lib::corrections::{Correction, MAX_LOCAL_LINES};
 pub struct CorrectionStore {
     dir: PathBuf,
     lock: Mutex<()>,
+    /// Tenuto per tutto un invio: due invii insieme (o un «Butta via» a metà) perderebbero righe.
+    sending: Mutex<()>,
 }
 
 impl CorrectionStore {
@@ -18,7 +20,15 @@ impl CorrectionStore {
         CorrectionStore {
             dir: dir.to_path_buf(),
             lock: Mutex::new(()),
+            sending: Mutex::new(()),
         }
+    }
+
+    /// Prende il turno per inviare o buttare via; se un altro invio è in corso, errore (si riprova).
+    pub fn begin_exclusive(&self) -> Result<std::sync::MutexGuard<'_, ()>, String> {
+        self.sending
+            .try_lock()
+            .map_err(|_| "un invio è già in corso: riprova tra poco".to_string())
     }
 
     fn path(&self) -> PathBuf {
@@ -136,6 +146,17 @@ mod tests {
             .unwrap()
             .flatten()
             .all(|e| !e.file_name().to_string_lossy().ends_with(".tmp")));
+        std::fs::remove_dir_all(&d).unwrap();
+    }
+
+    #[test]
+    fn un_solo_invio_alla_volta() {
+        let d = tmp("turno");
+        let s = CorrectionStore::new(&d);
+        let g = s.begin_exclusive().unwrap();
+        assert!(s.begin_exclusive().is_err());
+        drop(g);
+        assert!(s.begin_exclusive().is_ok());
         std::fs::remove_dir_all(&d).unwrap();
     }
 

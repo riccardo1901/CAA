@@ -331,6 +331,7 @@ fn corrections_set_enabled(state: State<'_, Arc<Backend>>, on: bool) -> Result<(
 /// Butta via le correzioni raccolte (senza inviarle).
 #[tauri::command]
 fn corrections_discard(state: State<'_, Arc<Backend>>) -> Result<(), String> {
+    let _turn = state.corrections.begin_exclusive()?;
     let n = state.corrections.pending().len();
     state.corrections.drop_first(n)
 }
@@ -338,6 +339,7 @@ fn corrections_discard(state: State<'_, Arc<Backend>>) -> Result<(), String> {
 /// Invia le correzioni al Drive; se riesce le toglie dal registro locale (restano quelle nuove).
 #[tauri::command(async)]
 fn corrections_send(state: State<'_, Arc<Backend>>) -> Result<usize, String> {
+    let _turn = state.corrections.begin_exclusive()?;
     let lines = state.corrections.pending();
     let id = state.corrections.anon_id()?;
     state.library.send_corrections(&lines, &id)?;
@@ -348,7 +350,18 @@ fn corrections_send(state: State<'_, Arc<Backend>>) -> Result<usize, String> {
 /// Simboli personali: cancellazione dalla raccolta di questo computer.
 #[tauri::command]
 fn custom_symbol_delete(state: State<'_, Arc<Backend>>, uuid: String) -> Result<(), String> {
-    state.custom.delete(&uuid)
+    let id = state
+        .custom
+        .list()
+        .into_iter()
+        .find(|s| s.uuid == uuid)
+        .map(|s| s.id);
+    state.custom.delete(&uuid)?;
+    // Le scelte «per sempre» che puntavano a quel simbolo non devono restare appese.
+    if let Some(id) = id {
+        state.memory.forget_picto(id)?;
+    }
+    Ok(())
 }
 
 /// Simboli della scuola (`simboli\` nel Drive): condividi, elenco, prendi, ritira.
