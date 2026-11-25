@@ -66,3 +66,28 @@ Rimandati o accettati:
 - Una parola nascosta dalla politica (articoli in "Essenziale") non ha menu.
 - Dopo un cambio di politica la barra può restare ferma finché non si sceglie un'altra parola.
 - L'impostazione delle card non è ancora in una finestra delle impostazioni, né nella stampa (M10).
+
+---
+
+# Rapporto M8c — Politica personalizzata, unisci e dividi, simboli personali
+
+**Stato**: scritto e provato con prove automatiche; **le prove a mano su Windows sono ancora da fare** (elenco in `docs/PROVE-DA-FARE.md`). Il rapporto si completa con l'esito delle prove e con la revisione indipendente.
+
+## M8c-1 — Politica «Personalizzato»
+- Motore: `FunctionRule` (simbolo, ridotto, solo testo, nascosto) e `PolicyTable` per cinque categorie (articoli, clitici non riflessivi, «che», preposizioni, congiunzioni); «Completo» ed «Essenziale» sono due tabelle e i risultati non cambiano (prove di equivalenza su sei frasi). Scelte senza senso (preposizioni nascoste, simbolo ridotto fuori dagli articoli) riportate alla più vicina.
+- Editor: opzione «Personalizzato» con tabella che vale subito, aperta da sola solo la prima volta, poi «Modifica…».
+- Una scelta del docente su una parola nascosta dalla politica la mostra (pittogramma o solo testo); i membri di un gruppo restano nascosti.
+
+## M8c-2 — Unisci e dividi
+- Motore: `ForcedPick::MERGE` e `::SPLIT`. Unione: la prima parola porta il simbolo della frase intera (se ARASAAC lo ha), le altre si nascondono; unioni impossibili (punteggiatura, una parola, gruppo che esce dall'intervallo) non fanno niente. Divisione: le espressioni che toccano l'intervallo non si formano. Alternative della testa di un gruppo: prima i simboli della frase.
+- Editor: mark `group` (merge/split, con `parseDOM`), Unisci (Ctrl+Maiusc+U), Dividi/Riunisci (Ctrl+Maiusc+D), pulsanti in barra, barra laterale con la frase intera, parola nascosta di un gruppo → testa, messaggio quando non si può unire. Scrivere dentro un'unione la scioglie.
+
+## M8c-3 — Simboli personali
+- Importazione e ritaglio nella pagina (scelta del file, spostamento e ingrandimento, quadrato → WebP 500 px); nota sulle foto di studenti (DPO); niente va in rete.
+- Salvataggio locale (`%APPDATA%\Editor CAA\simboli-personali`, `CAA_CUSTOM` per cambiarla): file `<uuid>.webp` più `index.json`, scritture atomiche, indice rovinato messo da parte e non sovrascritto, tetti su dimensione e numero.
+- Id numerici da 2^31 in su (mai in conflitto con ARASAAC, sotto i valori di unisci/dividi); il motore li tratta come pittogrammi; servono tramite `picto://`. Il mark `pick` porta l'`uuid` (che con M9 viaggerà nel documento).
+- Barra laterale: «Simbolo personale…», «I miei simboli» (riuso con un clic), il simbolo personale con l'etichetta della parola è la prima alternativa, la ricerca li trova per etichetta.
+- Non c'è ancora: cancellare un simbolo salvato, raccolta della scuola, memoria fra documenti (M9).
+
+## Metriche del motore
+Invariate in tutto M8c: dorati 48/48, strutture 20/20, corpus sviluppo 6,9 e prova 13,4 correzioni per 100 parole.

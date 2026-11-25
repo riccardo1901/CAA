@@ -62,11 +62,19 @@ const MOCK = `
     }
     return out;
   }
-  window.__mock = { calls, delay: 4, fail: 0, alts: [], searches: [], altDelay: 3 };
+  window.__mock = { calls, delay: 4, fail: 0, alts: [], searches: [], altDelay: 3, custom: [], imports: [] };
   return {
     symbolize: (paras, policy, locks) => { calls.push({ texts: paras.map((p) => p.text), paras, locks, policy }); return new Promise((r, rej) => setTimeout(() => { if (window.__mock.fail > 0) { window.__mock.fail--; rej(new Error('motore guasto')); } else r(paras.map((p) => tokens(p.text, policy, p.forced, locks))); }, window.__mock.delay)); },
     alternatives: (para, policy, locks, s, e) => { window.__mock.alts.push({ para, s, e }); return new Promise((r) => setTimeout(() => r([1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => ({ picto: 1000 + i, keyword: 'alt' + i, reason: 'altro senso', image: i !== 3 }))), window.__mock.altDelay)); },
     search: (q) => { window.__mock.searches.push(q); return new Promise((r) => setTimeout(() => r(q === 'zzz' ? [] : [{ picto: 9001, keyword: q + 'a', reason: 'cercato', image: true }, { picto: 9002, keyword: q + 'b', reason: 'cercato', image: true }]), 3)); },
+    listCustom: async () => window.__mock.custom.slice(),
+    importCustom: async (blob, label) => {
+      window.__mock.imports.push({ size: blob.size, type: blob.type, label });
+      const n = window.__mock.custom.length;
+      const sym = { id: 2147483648 + n, uuid: 'uuid-' + n, label };
+      window.__mock.custom.push(sym);
+      return sym;
+    },
     url: (id) => svg(id),
   };
 })()
@@ -603,7 +611,7 @@ test("impostazione «Contorna simbolo e parola»: una card per ogni coppia, rico
   expect(await page.evaluate(() => (window as any).caaProto.checkWrap().broken)).toBe(0);
   await page.reload();
   await page.waitForFunction(() => (window as any).caaProto);
-  await page.evaluate(() => { (window as any).caaProto.enterEngineMode({ symbolize: async () => [], alternatives: async () => [], search: async () => [], url: () => "" }); });
+  await page.evaluate(() => { (window as any).caaProto.enterEngineMode({ symbolize: async () => [], alternatives: async () => [], search: async () => [], listCustom: async () => [], importCustom: async () => ({ id: 0, uuid: '', label: '' }), url: () => "" }); });
   await expect(page.locator(".sheet.cards")).toHaveCount(1);
   await page.getByLabel("Contorna simbolo e parola").uncheck();
   await expect(page.locator(".sheet.cards")).toHaveCount(0);
@@ -851,4 +859,90 @@ test("scrivendo dentro un'unione, l'unione non vale più", async ({ page }) => {
   await page.evaluate(() => (window as any).caaProto.setCaret(1 + 12));
   await page.keyboard.type("x");
   await expect(page.locator(".w.hid")).toHaveCount(0);
+});
+
+// ---- M8c-3: simboli personali ----
+
+const PNG_1X1 = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=", "base64");
+const photo = { name: "foto.png", mimeType: "image/png", buffer: PNG_1X1 };
+
+test("simbolo personale: scelgo l'immagine, la ritaglio e diventa il simbolo della parola", async ({ page }) => {
+  await open(page, "Marco mangia pane");
+  await clickSymbol(page, "pane");
+  await expect(page.getByRole("button", { name: "Simbolo personale…" })).toBeVisible();
+  await expect(page.locator(".pm-custom")).toBeHidden(); // ancora nessun simbolo salvato
+  await page.locator(".side input[type=file]").setInputFiles(photo);
+  const dialog = page.locator(".crop-dialog");
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("«pane»");
+  await expect(dialog).toContainText("Non usare foto di studenti senza l'autorizzazione della scuola");
+  expect(await page.locator(".crop-canvas").evaluate((c: HTMLCanvasElement) => [c.width, c.height])).toEqual([320, 320]);
+  // Ingrandisco e sposto l'immagine: la finestra resta aperta e nulla è salvato finché non confermo.
+  await page.locator(".crop-dialog input[type=range]").fill("2");
+  const box = (await page.locator(".crop-canvas").boundingBox())!;
+  await page.mouse.move(box.x + 100, box.y + 100);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 140, box.y + 120);
+  await page.mouse.up();
+  expect(await page.evaluate(() => (window as any).__mock.imports.length)).toBe(0);
+  await dialog.getByRole("button", { name: "Usa questo simbolo" }).click();
+  await expect(dialog).toBeHidden();
+  // Il simbolo è salvato come WebP quadrata e diventa la scelta per la parola (con blocco: «per tutto il testo»).
+  const imports = await page.evaluate(() => (window as any).__mock.imports);
+  expect(imports).toHaveLength(1);
+  expect(imports[0]).toMatchObject({ type: "image/webp", label: "pane" });
+  expect(imports[0].size).toBeGreaterThan(20);
+  await expect.poll(async () => (await docPicks(page))[0]).toMatchObject({ picto: 2147483648, uuid: "uuid-0", word: "pane", lock: 1 });
+  await expect.poll(() => imgOf(page, "pane")).toContain(encodeURIComponent("hsl(" + (2147483648 % 360)));
+  // La barra mostra «I miei simboli» e, annullando, torna il simbolo di prima.
+  await expect(page.locator(".pm-custom .pm-mini")).toHaveCount(1);
+  await page.locator(".ProseMirror").click();
+  await page.keyboard.press("Control+z");
+  await expect.poll(async () => (await docPicks(page)).length).toBe(0);
+});
+
+test("simbolo personale: annullando non si salva niente", async ({ page }) => {
+  await open(page, "Marco mangia pane");
+  await clickSymbol(page, "pane");
+  await page.locator(".side input[type=file]").setInputFiles(photo);
+  await expect(page.locator(".crop-dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".crop-overlay")).toHaveCount(0);
+  await page.locator(".side input[type=file]").setInputFiles(photo);
+  await page.locator(".crop-dialog").getByRole("button", { name: "Annulla" }).click();
+  await expect(page.locator(".crop-overlay")).toHaveCount(0);
+  expect(await page.evaluate(() => (window as any).__mock.imports.length)).toBe(0);
+  expect(await docPicks(page)).toHaveLength(0);
+});
+
+test("un file che non è un'immagine non apre il ritaglio e avvisa", async ({ page }) => {
+  await open(page, "Marco mangia pane");
+  await clickSymbol(page, "pane");
+  await page.locator(".side input[type=file]").setInputFiles({ name: "rotto.png", mimeType: "image/png", buffer: Buffer.from("non sono un'immagine") });
+  await expect(page.locator(".statusbar")).toContainText("Non riesco a leggere questa immagine");
+  await expect(page.locator(".crop-overlay")).toHaveCount(0);
+});
+
+test("i miei simboli si riusano per un'altra parola, si trovano per etichetta e vengono per primi", async ({ page }) => {
+  await open(page, "Marco mangia pane e pane");
+  await clickSymbol(page, "pane", 0);
+  await page.locator(".pm-all input").uncheck();
+  await page.locator(".side input[type=file]").setInputFiles(photo);
+  await page.locator(".crop-dialog").getByRole("button", { name: "Usa questo simbolo" }).click();
+  await expect.poll(async () => (await docPicks(page)).length).toBe(1);
+  // Riuso su un'altra parola con un clic su «I miei simboli».
+  await clickSymbol(page, "mangia");
+  await expect(page.locator(".pm-custom .pm-mini")).toHaveCount(1);
+  await page.locator(".pm-all input").uncheck();
+  await page.locator(".pm-custom .pm-mini").click();
+  await expect.poll(async () => (await docPicks(page)).map((p) => p.word).sort()).toEqual(["mangia", "pane"]);
+  expect((await docPicks(page)).find((p) => p.word === "mangia")).toMatchObject({ picto: 2147483648, uuid: "uuid-0" });
+  // Per l'altra occorrenza di «pane» il simbolo personale con la stessa etichetta è la prima alternativa.
+  await clickSymbol(page, "pane", 1);
+  await expect(page.locator(".pm-cell").first().locator(".pm-kw")).toHaveText("pane");
+  await expect(page.locator(".pm-cell").first()).toHaveAttribute("title", "simbolo personale");
+  // La ricerca trova il simbolo personale per etichetta, prima dei pittogrammi.
+  await page.locator(".pm-search").fill("pan");
+  await expect(page.locator(".pm-cell").first()).toHaveAttribute("title", "simbolo personale");
+  await expect(page.locator(".pm-cell")).toHaveCount(3);
 });

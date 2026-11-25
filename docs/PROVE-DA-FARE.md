@@ -7,5 +7,6 @@ Elenco delle prove già pronte che aspettano un PC Windows. Si aggiorna a ogni b
 | M8b — barra laterale, ricerca, F8, card | `docs/PROVE-M8b.md` | fatto, "M8b ok" |
 | M8c-1 — politica Personalizzato (tabella, parole nascoste correggibili) | `docs/PROVE-M8c1.md` | **da fare** |
 | M8c-2 — unisci e dividi parole | `docs/PROVE-M8c2.md` | **da fare** (pacchetto dati nuovo: 1.706 immagini) |
+| M8c-3 — simboli personali (importa, ritaglia, riusa, cerca) | `docs/PROVE-M8c3.md` | **da fare** (servono 2-3 immagini tue, non di studenti) |
 
 Per ogni blocco serve `caa-app.exe` della CI dell'ultimo commit (artifact `caa-app`) e il pacchetto dati `caa-dati-prova.zip` più recente.

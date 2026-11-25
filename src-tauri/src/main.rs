@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod bridge;
+mod custom;
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -12,6 +13,8 @@ use serde::Serialize;
 use tauri::http::Response;
 use tauri::State;
 
+use custom::{custom_dir, is_custom, CustomStore, CustomSymbol};
+
 use bridge::{
     candidates_dto, check_choices, check_request, data_candidates, find_data_dir, image_path,
     parse_picto_path, parse_policy, to_dto, to_forced, to_locks, CandidateDto, LockDto, ParaDto,
@@ -20,6 +23,8 @@ use bridge::{
 
 /// Il motore e la cartella dei dati, caricati una volta all'avvio.
 struct Backend {
+    /// I simboli personali del docente (M8c-3), in una cartella locale.
+    custom: CustomStore,
     engine: Option<MappedEngine>,
     dir: Option<PathBuf>,
     error: Option<String>,
@@ -31,10 +36,24 @@ fn load_backend() -> Backend {
         .ok()
         .and_then(|p| p.parent().map(PathBuf::from));
     let cwd = std::env::current_dir().ok();
+    let custom = CustomStore::open(custom_dir(
+        std::env::var("CAA_CUSTOM").ok().as_deref(),
+        std::env::var("APPDATA").ok().as_deref(),
+        std::env::var("XDG_DATA_HOME")
+            .ok()
+            .or_else(|| {
+                std::env::var("HOME")
+                    .ok()
+                    .map(|h| format!("{h}/.local/share"))
+            })
+            .as_deref(),
+        exe_dir.as_deref(),
+    ));
     let candidates = data_candidates(env.as_deref(), exe_dir.as_deref(), cwd.as_deref());
     let Some(dir) = find_data_dir(&candidates) else {
         let looked: Vec<String> = candidates.iter().map(|c| c.display().to_string()).collect();
         return Backend {
+            custom,
             engine: None,
             dir: None,
             error: Some(format!(
@@ -45,11 +64,13 @@ fn load_backend() -> Backend {
     };
     match open_engine(&dir) {
         Ok(engine) => Backend {
+            custom,
             engine: Some(engine),
             dir: Some(dir),
             error: None,
         },
         Err(e) => Backend {
+            custom,
             engine: None,
             dir: Some(dir),
             error: Some(e.to_string()),
@@ -86,9 +107,17 @@ fn engine_of(state: &Backend) -> Result<&MappedEngine, String> {
     })
 }
 
-fn image_check(state: &Backend) -> impl Fn(u32) -> bool {
-    let dir = state.dir.clone();
-    move |id: u32| dir.as_ref().is_some_and(|d| image_path(d, id).is_file())
+/// Il file dell'immagine di un pittogramma ARASAAC o di un simbolo personale.
+fn resolve_image(state: &Backend, id: u32) -> Option<PathBuf> {
+    if is_custom(id) {
+        state.custom.path_of(id)
+    } else {
+        state.dir.as_ref().map(|d| image_path(d, id))
+    }
+}
+
+fn image_check(state: &Backend) -> impl Fn(u32) -> bool + '_ {
+    move |id: u32| resolve_image(state, id).is_some_and(|p| p.is_file())
 }
 
 /// Simbolizza più paragrafi in una chiamata sola. `async`: il comando gira su un thread a parte e non
@@ -170,6 +199,30 @@ fn search_pictos(
     Ok(candidates_dto(&found, &image_check(&state)))
 }
 
+/// Salva un simbolo personale: il corpo della richiesta è l'immagine WebP (già ritagliata e
+/// ridimensionata dalla pagina), l'intestazione `x-label` la parola per cui è stato importato.
+#[tauri::command]
+fn save_custom_symbol(
+    state: State<'_, Arc<Backend>>,
+    request: tauri::ipc::Request<'_>,
+) -> Result<CustomSymbol, String> {
+    let tauri::ipc::InvokeBody::Raw(bytes) = request.body() else {
+        return Err("immagine non ricevuta".into());
+    };
+    let label = request
+        .headers()
+        .get("x-label")
+        .and_then(|v| v.to_str().ok())
+        .map(bridge::percent_decode)
+        .unwrap_or_default();
+    state.custom.save(bytes, &label)
+}
+
+#[tauri::command]
+fn list_custom_symbols(state: State<'_, Arc<Backend>>) -> Vec<CustomSymbol> {
+    state.custom.list()
+}
+
 fn main() {
     let backend = Arc::new(load_backend());
     let for_protocol = Arc::clone(&backend);
@@ -178,8 +231,8 @@ fn main() {
         // Le immagini dei pittogrammi: picto://localhost/<id> (su Windows http://picto.localhost/<id>).
         .register_uri_scheme_protocol("picto", move |_ctx, request| {
             let bytes = parse_picto_path(request.uri().path())
-                .zip(for_protocol.dir.as_ref())
-                .and_then(|(id, dir)| std::fs::read(image_path(dir, id)).ok());
+                .and_then(|id| resolve_image(&for_protocol, id))
+                .and_then(|path| std::fs::read(path).ok());
             match bytes {
                 Some(b) => Response::builder()
                     .header("Content-Type", "image/webp")
@@ -196,7 +249,9 @@ fn main() {
             engine_info,
             symbolize,
             alternatives,
-            search_pictos
+            search_pictos,
+            save_custom_symbol,
+            list_custom_symbols
         ])
         .run(tauri::generate_context!())
         .expect("errore durante l'avvio dell'applicazione");

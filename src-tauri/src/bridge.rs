@@ -342,6 +342,30 @@ pub fn image_path(dir: &Path, id: u32) -> PathBuf {
     dir.join("arasaac/images").join(format!("{id}.webp"))
 }
 
+/// Decodifica una stringa con le sequenze `%XX` (UTF-8), come la manda la pagina nelle intestazioni;
+/// quello che non si capisce resta com'è.
+pub fn percent_decode(s: &str) -> String {
+    let bytes = s.as_bytes();
+    let mut out: Vec<u8> = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'%' && i + 2 < bytes.len() {
+            // Si legge sui byte: tagliare la stringa in mezzo a una lettera accentata andrebbe in panic.
+            let hex = std::str::from_utf8(&bytes[i + 1..i + 3])
+                .ok()
+                .and_then(|h| u8::from_str_radix(h, 16).ok());
+            if let Some(v) = hex {
+                out.push(v);
+                i += 3;
+                continue;
+            }
+        }
+        out.push(bytes[i]);
+        i += 1;
+    }
+    String::from_utf8_lossy(&out).into_owned()
+}
+
 /// Id di pittogramma da un percorso di richiesta ("/12345"); `None` se non è un numero.
 pub fn parse_picto_path(path: &str) -> Option<u32> {
     let p = path.trim_start_matches('/');
@@ -418,6 +442,19 @@ mod tests {
         );
         assert_eq!(find_data_dir(&[tmp.join("a")]), None);
         std::fs::remove_dir_all(&tmp).unwrap();
+    }
+
+    #[test]
+    fn intestazioni_con_percento() {
+        assert_eq!(percent_decode("mamma"), "mamma");
+        assert_eq!(percent_decode("il%20mio%20cane"), "il mio cane");
+        assert_eq!(percent_decode("perch%C3%A9"), "perché");
+        // Sequenze incomplete o sbagliate restano come sono; mai un panic.
+        assert_eq!(percent_decode("100%"), "100%");
+        assert_eq!(percent_decode("a%2"), "a%2");
+        assert_eq!(percent_decode("a%zzb"), "a%zzb");
+        assert_eq!(percent_decode("%aé"), "%aé"); // la lettera accentata sta a cavallo dei due byte
+        assert_eq!(percent_decode(""), "");
     }
 
     #[test]

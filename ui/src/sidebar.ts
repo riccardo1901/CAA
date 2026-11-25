@@ -4,7 +4,8 @@
 // Una scelta è un solo passo di annulla.
 import { TextSelection } from "prosemirror-state";
 import type { EditorView } from "prosemirror-view";
-import type { CandidateDto, EngineClient } from "./engine/client";
+import { cropImage } from "./customDialog";
+import type { CandidateDto, CustomSymbol, EngineClient } from "./engine/client";
 import { nextDoubtful, onEngineUpdate, tokenAt, type TokenAt } from "./editor/engineSymbols";
 import { focusWordRange, hooks, revealPos, setFocusWord } from "./editor/menuHooks";
 import { groupAction, mergeSelection } from "./editor/groups";
@@ -47,6 +48,20 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
   let candidates: CandidateDto[] = [];
   let results: CandidateDto[] = [];
   let searching = false;
+  // I simboli personali già importati (M8c-3): si riusano per altre parole e si cercano per etichetta.
+  let customList: CustomSymbol[] = [];
+  const loadCustom = (): void => {
+    client.listCustom().then(
+      (list) => {
+        customList = list;
+      },
+      () => {
+        customList = [];
+      },
+    );
+  };
+  loadCustom();
+  const asCandidate = (c: CustomSymbol): CandidateDto => ({ picto: c.id, keyword: c.label || "personale", reason: "simbolo personale", image: true });
   // Il ritardo della ricerca è unico: passando a un'altra parola quello vecchio si annulla.
   let searchTimer: ReturnType<typeof setTimeout> | null = null;
   // La casella «usa per tutto il testo» resta come l'ha messa il docente anche quando la barra si ridisegna.
@@ -147,6 +162,29 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
     button("Nessun simbolo", "Lascia lo spazio del simbolo vuoto", () => choose({ kind: "none" }));
     button("Solo testo", "Parola senza spazio per il simbolo", () => choose({ kind: "text" }));
     if (t.pick !== null) button("Automatico", "Torna alla scelta del motore", () => choose({ kind: "auto" }));
+    // Simbolo personale: si sceglie un'immagine, si ritaglia e diventa il simbolo della parola.
+    const picker = el("input");
+    picker.type = "file";
+    picker.accept = "image/png,image/jpeg";
+    picker.hidden = true;
+    picker.setAttribute("aria-label", "Immagine per il simbolo personale");
+    picker.addEventListener("change", () => {
+      const file = picker.files?.[0];
+      picker.value = "";
+      if (!file) return;
+      const label = shownWord.toLowerCase();
+      void cropImage(file, shownWord).then(async (blob) => {
+        if (!blob) return;
+        try {
+          const symbol = await client.importCustom(blob, label);
+          customList = [...customList, symbol];
+          choose({ kind: "picto", id: symbol.id, uuid: symbol.uuid });
+        } catch (e) {
+          hooks.notice?.(`Non sono riuscito a salvare il simbolo: ${String(e)}`);
+        }
+      });
+    });
+    button("Simbolo personale…", "Importa un'immagine (PNG o JPG) come simbolo di questa parola", () => picker.click());
     const act = groupAction(view, t);
     if (act) {
       button(act.label, act.label === "Dividi" ? "Una parola, un simbolo (Ctrl+Maiusc+D)" : "Torna a un simbolo solo (Ctrl+Maiusc+D)", () => {
@@ -177,10 +215,12 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
       client.search(q).then(
         (r) => {
           if (generation !== mine || search.value.trim() !== q) return;
-          results = r;
+          // I simboli personali con quell'etichetta vengono per primi.
+          const own = customList.filter((c) => c.label !== "" && c.label.includes(q.toLowerCase())).map(asCandidate);
+          results = [...own, ...r];
           resultsQuery = q;
-          status.textContent = r.length ? "" : "Nessun simbolo trovato";
-          render(r, false);
+          status.textContent = results.length ? "" : "Nessun simbolo trovato";
+          render(results, false);
         },
         () => {
           if (generation === mine) status.textContent = "Ricerca non riuscita";
@@ -205,16 +245,38 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
     });
 
     const keys = el("p", "pm-keys", "1–8 sceglie · Esc torna al testo · F8 prossima parola da controllare");
-    root.replaceChildren(search, head, status, grid, fixed, allLabel, keys);
+    // I miei simboli: le immagini già importate si riusano con un clic (le ultime per prime).
+    const saved = el("div", "pm-custom");
+    if (customList.length > 0) {
+      saved.append(el("span", "pm-custom-title", "I miei simboli"));
+      for (const c of [...customList].reverse().slice(0, 12)) {
+        const b = el("button", "pm-mini");
+        b.type = "button";
+        b.title = c.label || "simbolo personale";
+        const img = el("img");
+        img.src = client.url(c.id);
+        img.alt = c.label;
+        b.append(img);
+        b.addEventListener("click", () => choose({ kind: "picto", id: c.id, uuid: c.uuid }));
+        saved.append(b);
+      }
+    }
+    root.replaceChildren(search, head, status, grid, saved, fixed, picker, allLabel, keys);
     if (focusSide) root.focus();
 
     client.alternatives(t.para, t.policy, t.locks, t.token.s, t.token.e).then(
       (list) => {
         if (generation !== mine) return;
-        candidates = list; // si tengono anche se si sta cercando: servono quando si svuota la ricerca
+        // Un simbolo personale importato per questa parola (o per il suo lemma) viene per primo.
+        const w = shownWord.toLowerCase();
+        const lemma = t.token.lemma.toLowerCase();
+        const own = customList
+          .filter((c) => c.label !== "" && (c.label === w || c.label === lemma) && c.id !== t.token.picto)
+          .map(asCandidate);
+        candidates = [...own, ...list]; // si tengono anche se si sta cercando: servono quando si svuota la ricerca
         if (searching) return;
-        status.textContent = list.length ? "" : "Nessuna altra alternativa: puoi cercare un simbolo";
-        render(list, true);
+        status.textContent = candidates.length ? "" : "Nessuna altra alternativa: puoi cercare un simbolo";
+        render(candidates, true);
       },
       () => {
         if (generation === mine) status.textContent = "Non riesco a caricare le alternative";

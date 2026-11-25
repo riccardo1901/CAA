@@ -1100,3 +1100,29 @@ fn la_tabella_non_ammette_scelte_senza_senso() {
     let t = with_policy("nella porta", FunctionPolicy::Custom(weird));
     assert_eq!(t[0].display, Display::TextOnly);
 }
+
+#[test]
+fn un_simbolo_personale_passa_dal_motore_come_un_pittogramma() {
+    // Gli id dei simboli personali (da 2^31) arrivano dal documento come scelta del docente; restano
+    // sotto i valori speciali di "unisci" e "dividi" e il motore non li confonde con quelli.
+    let custom = 0x8000_0000 + 7;
+    assert!(custom < ForcedPick::MERGE);
+    let forced = [ForcedPick {
+        span_utf16: (0, 4),
+        picto: custom,
+    }];
+    let t = symbolize_with("pane", &forced, &SenseLocks::default());
+    assert_eq!(t[0].picto.map(|p| p.id), Some(custom));
+    assert_eq!(
+        (t[0].display, t[0].reason.picto),
+        (Display::Full, PictoReason::Teacher)
+    );
+    // Anche come blocco di senso per tutto il testo.
+    let mut locks = SenseLocks::default();
+    locks.insert("pane", Cat::Noun, custom);
+    let t = symbolize_with("pane e pane", &[], &locks);
+    assert!(t
+        .iter()
+        .filter(|x| x.surface == "pane")
+        .all(|x| x.picto.map(|p| p.id) == Some(custom)));
+}

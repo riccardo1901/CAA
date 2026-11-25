@@ -301,3 +301,46 @@ body { margin: 0; }
 .policy-dialog th { text-align: left; font-weight: 400; padding: 4px 8px 4px 0; }
 .policy-dialog td { text-align: right; padding: 4px 0; }
 .policy-dialog .note { color: #555; font-size: 12.5px; margin: 8px 0; }
+
+/* ---- Simboli personali (M8c-3) ---- */
+.pm-custom { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+.pm-custom:empty { display: none; }
+.pm-custom-title { width: 100%; color: #555; font-size: 12.5px; }
+.pm-mini { padding: 2px; border: 1px solid #c8c8d0; border-radius: 6px; background: #fff; cursor: pointer; }
+.pm-mini:hover, .pm-mini:focus-visible { border-color: #2a5db0; background: #eef3fb; }
+.pm-mini img { display: block; width: 44px; height: 44px; object-fit: contain; }
+.crop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+}
+.crop-dialog {
+  width: 380px;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+  padding: 14px 16px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  font: 14px system-ui, sans-serif;
+}
+.crop-dialog h2 { font-size: 16px; margin: 0 0 6px; }
+.crop-help, .crop-privacy { color: #555; font-size: 12.5px; margin: 6px 0; }
+.crop-privacy { color: #7a3d00; }
+.crop-canvas {
+  display: block;
+  width: 320px;
+  height: 320px;
+  margin: 8px auto;
+  border: 2px solid #8a94a8;
+  border-radius: 8px;
+  background: repeating-conic-gradient(#eee 0 25%, #fff 0 50%) 0 0 / 20px 20px;
+  cursor: grab;
+  touch-action: none;
+}
+.crop-dialog input[type="range"] { width: 100%; }

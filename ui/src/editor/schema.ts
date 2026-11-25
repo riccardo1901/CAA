@@ -39,6 +39,8 @@ export const schema = new Schema({
         lock: { default: 0 },
         lemma: { default: "" },
         cat: { default: "" },
+        // Simbolo personale (M8c-3): l'identificativo che viaggia nel documento (l'id numerico vale solo su questo computer).
+        uuid: { default: "" },
       },
       inclusive: false,
       // Gli attributi viaggiano nel DOM: copia, taglia e incolla (anche da un altro punto del testo) portano con sé le scelte.
@@ -51,6 +53,7 @@ export const schema = new Schema({
           "data-lock": String(mark.attrs.lock),
           "data-lemma": mark.attrs.lemma as string,
           "data-cat": mark.attrs.cat as string,
+          "data-uuid": mark.attrs.uuid as string,
         },
         0,
       ],
@@ -65,6 +68,7 @@ export const schema = new Schema({
               lock: e.dataset.lock === "1" ? 1 : 0,
               lemma: e.dataset.lemma ?? "",
               cat: e.dataset.cat ?? "",
+              uuid: e.dataset.uuid ?? "",
             };
           },
         },

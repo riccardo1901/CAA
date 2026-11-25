@@ -80,6 +80,15 @@ export interface EngineInfo {
   expressions: boolean;
 }
 
+/** Un simbolo personale importato dal docente (immagine salvata sul computer). */
+export interface CustomSymbol {
+  /** Numero che il motore tratta come un pittogramma (da 2^31 in su). */
+  id: number;
+  uuid: string;
+  /** La parola per cui è stato importato (minuscola). */
+  label: string;
+}
+
 /** Quello che serve all'editor per parlare con il motore. */
 export interface EngineClient {
   symbolize(paras: ParaReq[], policy: Policy, locks: LockReq[]): Promise<TokenDto[][]>;
@@ -87,6 +96,10 @@ export interface EngineClient {
   alternatives(para: ParaReq, policy: Policy, locks: LockReq[], s: number, e: number): Promise<CandidateDto[]>;
   /** Ricerca libera di un pittogramma. */
   search(query: string): Promise<CandidateDto[]>;
+  /** I simboli personali già importati. */
+  listCustom(): Promise<CustomSymbol[]>;
+  /** Salva un simbolo personale (immagine WebP quadrata) per la parola indicata. */
+  importCustom(image: Blob, label: string): Promise<CustomSymbol>;
   /** Indirizzo dell'immagine di un pittogramma. */
   url(picto: number): string;
 }
@@ -100,6 +113,11 @@ export function tauriClient(): EngineClient {
     symbolize: (paras, policy, locks) => invoke<TokenDto[][]>("symbolize", { paras, policy, locks }),
     alternatives: (para, policy, locks, s, e) => invoke<CandidateDto[]>("alternatives", { para, policy, locks, s, e }),
     search: (query) => invoke<CandidateDto[]>("search_pictos", { query }),
+    listCustom: () => invoke<CustomSymbol[]>("list_custom_symbols"),
+    importCustom: async (image, label) =>
+      invoke<CustomSymbol>("save_custom_symbol", new Uint8Array(await image.arrayBuffer()), {
+        headers: { "x-label": encodeURIComponent(label) },
+      }),
     url: (picto) => convertFileSrc(String(picto), "picto"),
   };
 }

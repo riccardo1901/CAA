@@ -110,7 +110,7 @@ export function collectLocks(doc: PMNode): Locks {
 }
 
 export type Choice =
-  | { kind: "picto"; id: number }
+  | { kind: "picto"; id: number; /** Simbolo personale: il suo identificativo stabile. */ uuid?: string }
   | { kind: "none" }
   | { kind: "text" }
   /** Toglie la scelta: torna quella automatica del motore. */
@@ -156,7 +156,8 @@ export function applyChoice(view: EditorView, w: WordRef, choice: Choice, all: b
         return false;
       });
     }
-    tr.addMark(from, to, type.create({ word, picto, lock: lock ? 1 : 0, lemma: w.lemma, cat: w.cat }));
+    const uuid = choice.kind === "picto" ? (choice.uuid ?? "") : "";
+    tr.addMark(from, to, type.create({ word, picto, lock: lock ? 1 : 0, lemma: w.lemma, cat: w.cat, uuid }));
   }
   view.dispatch(tr.scrollIntoView());
 }
