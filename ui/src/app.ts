@@ -86,6 +86,9 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
       bars.banner.hidden = !!info?.ok;
       bars.banner.textContent = info && !info.ok ? `Il motore non è attivo: ${info.error ?? "errore sconosciuto"}` : "";
     };
+    // Gli avvisi importanti stanno in alto finché non si clicca.
+    bars.banner.title = "Clicca per chiudere";
+    bars.banner.addEventListener("click", baseBanner);
     session = createSession({
       view,
       docs,

@@ -377,7 +377,7 @@ pub fn percent_decode(s: &str) -> String {
 /// Id di pittogramma da un percorso di richiesta ("/12345"); `None` se non è un numero.
 pub fn parse_picto_path(path: &str) -> Option<u32> {
     let p = path.trim_start_matches('/');
-    if p.is_empty() || p.len() > 9 || !p.bytes().all(|b| b.is_ascii_digit()) {
+    if p.is_empty() || p.len() > 10 || !p.bytes().all(|b| b.is_ascii_digit()) {
         return None;
     }
     p.parse().ok()
@@ -469,7 +469,19 @@ mod tests {
     fn percorsi_delle_immagini() {
         assert_eq!(parse_picto_path("/12345"), Some(12345));
         assert_eq!(parse_picto_path("12345"), Some(12345));
-        for bad in ["", "/", "/../x", "/12a", "/1234567890", "/-1", "/12/34"] {
+        // I simboli personali hanno id da 2^31 (10 cifre): devono arrivare fino all'immagine.
+        assert_eq!(parse_picto_path("/2147483648"), Some(2_147_483_648));
+        assert_eq!(parse_picto_path("/4294967295"), Some(u32::MAX));
+        for bad in [
+            "",
+            "/",
+            "/../x",
+            "/12a",
+            "/4294967296",
+            "/12345678901",
+            "/-1",
+            "/12/34",
+        ] {
             assert_eq!(parse_picto_path(bad), None, "{bad:?}");
         }
         assert_eq!(

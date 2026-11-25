@@ -1634,7 +1634,14 @@ test("se il file è stato cambiato da un'altra copia, il documento si salva come
   await expect.poll(async () => (await mockSaves(page)).length).toBe(1);
   await page.evaluate(() => { (window as any).__mock.conflictNext = true; });
   await page.keyboard.type(" lunga");
-  await expect(page.locator(".statusbar")).toContainText("un'altra copia del programma");
+  // L'avviso sta in alto e non sparisce da solo (prima durava 6 secondi in fondo e non lo vedeva nessuno).
+  const banner = page.locator(".banner");
+  await expect(banner).toBeVisible();
+  await expect(banner).toContainText("un'altra copia del programma");
+  await page.waitForTimeout(7000);
+  await expect(banner).toBeVisible();
+  await banner.click();
+  await expect(banner).toBeHidden();
 });
 
 test("un documento letto da un file: scelte non valide o con simboli che mancano si scartano", async ({ page }) => {
