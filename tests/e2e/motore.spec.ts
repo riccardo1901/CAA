@@ -1889,7 +1889,7 @@ test("«ricorda per sempre»: «Nessun simbolo» o «Solo testo» non si ricorda
   await expect(page.locator(".toasts")).toContainText("Non sono riuscito a ricordare"); // M11-3: i messaggi sono notifiche
 });
 
-test("«Cosa ricordo»: elenco nella barra vuota, Dimentica e Dimentica tutto", async ({ page }) => {
+test("«Cosa ricordo»: elenco nella scheda Memoria, Dimentica e Dimentica tutto", async ({ page }) => {
   await page.addInitScript(() => {
     (window as any).__memInit = [
       { lemma: "pane", cat: "NOUN", form: "", picto: 1003 },
@@ -1897,6 +1897,8 @@ test("«Cosa ricordo»: elenco nella barra vuota, Dimentica e Dimentica tutto", 
     ];
   });
   await open(page, "pane e casa");
+  // M11-7: «Cosa ricordo» sta nella scheda «Memoria» del pannello laterale.
+  await page.getByRole("tab", { name: "Memoria" }).click();
   const list = page.locator(".side-memory");
   await expect(list).toContainText("Cosa ricordo");
   await expect(list.locator("li")).toHaveCount(2);

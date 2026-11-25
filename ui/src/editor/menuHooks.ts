@@ -22,7 +22,9 @@ export const hooks: {
   apriBarra: (() => void) | null;
   /** Si torna al testo dalla barra (Esc): se la barra sta sopra il foglio si richiude (M11-4). */
   lasciaBarra: (() => void) | null;
-} = { openAtCursor: null, next: null, openAt: null, merge: null, split: null, notice: null, apriBarra: null, lasciaBarra: null };
+  /** Apre la scheda «Memoria» del pannello laterale, con il fuoco sulla linguetta (M11-7). */
+  apriMemoria: (() => void) | null;
+} = { openAtCursor: null, next: null, openAt: null, merge: null, split: null, notice: null, apriBarra: null, lasciaBarra: null, apriMemoria: null };
 
 /** Altezza (px) della zona del simbolo in una parola: il clic lì mostra le alternative, sul testo sposta il cursore. */
 function symbolHeight(view: EditorView): number {

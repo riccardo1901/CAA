@@ -1,26 +1,24 @@
-// Barra laterale dei simboli (M8b): fissa a destra, si riempie quando si agisce su una parola (clic sul
-// simbolo, Alt+↓, F8, clic sul contatore). Mostra la parola, il simbolo attuale, il perché del motore,
-// fino a 8 alternative, "Nessun simbolo", "Solo testo", "Automatico", "Cerca…" e "usa per tutto il testo".
-// Una scelta è un solo passo di annulla.
+// Barra laterale dei simboli (M8b), scheda «Simbolo» del pannello laterale (M11-4, M11-7): si riempie quando si
+// agisce su una parola (clic sul simbolo, Alt+↓, F8, clic sul contatore). Mostra la ricerca, la parola con il simbolo
+// attuale e il perché del motore, e poi le sezioni con un titolo (M11-7): le alternative (fino a 8, con i numeri),
+// le scelte rapide ("Nessun simbolo", "Solo testo", "Automatico", "Simbolo personale…"), I miei simboli, Simboli della
+// scuola, le opzioni ("usa per tutto il testo", "ricorda per sempre"). In fondo le scorciatoie scritte come tasti.
+// Una scelta è un solo passo di annulla. «Cosa ricordo» sta nella scheda «Memoria» (side/memory.ts).
 import { TextSelection } from "prosemirror-state";
 import type { EditorView } from "prosemirror-view";
 import { cropImage } from "./customDialog";
-import { conIcona, type NomeIcona } from "./ui/icons";
+import { conIcona, icona, type NomeIcona } from "./ui/icons";
+import { suggerimento } from "./ui/tooltip";
 import { conferma } from "./ui/confirm";
 import type { CandidateDto, CustomSymbol, EngineClient, MemoryEntry } from "./engine/client";
 import { nextDoubtful, onEngineUpdate, setEngine, tokenAt, type TokenAt } from "./editor/engineSymbols";
 import { focusWordRange, hooks, revealPos, setFocusWord } from "./editor/menuHooks";
 import { groupAction, mergeSelection } from "./editor/groups";
 import { applyChoice, removeLock, type Choice } from "./editor/picks";
+import { conTasti, el, governataDallaPolitica, sezione, SPIEGAZIONE_POLITICA } from "./side/common";
+import { aggiornaMemoria, installMemory } from "./side/memory";
 
 const GRID = 8;
-
-function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string): HTMLElementTagNameMap[K] {
-  const e = document.createElement(tag);
-  if (cls) e.className = cls;
-  if (text !== undefined) e.textContent = text;
-  return e;
-}
 
 /** Crea l'elemento della barra (vuoto: i suggerimenti). Va messo accanto al foglio. */
 export function createSidebar(): HTMLElement {
@@ -30,11 +28,10 @@ export function createSidebar(): HTMLElement {
   return root;
 }
 
-const EMPTY_HINT = [
-  "Clicca sul simbolo di una parola per vedere le alternative.",
-  "Alt+↓ sulla parola dove hai il cursore.",
-  "F8 (o il contatore in basso) porta alla prossima parola da controllare.",
-];
+/** Le scorciatoie della scheda vuota (PIANO-M11.md 3.5 punto 3), scritte come tasti. */
+const EMPTY_KEYS = ["[Alt]+[↓] il simbolo della parola dove hai il cursore", "[F8] la prossima parola da controllare (o il contatore in basso)"];
+/** La riga in fondo alla scheda con una parola (3.10). */
+const WORD_KEYS = "[1]–[8] scegli · [Esc] torna al testo · [F8] prossima parola da controllare";
 
 let unsubscribe: (() => void) | null = null;
 let removeF8: (() => void) | null = null;
@@ -73,7 +70,8 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
 
   const signature = (t: TokenAt): string => `${t.token.picto}|${t.token.display}|${t.pick}|${t.token.why}|${t.token.lemma}|${t.lock?.picto ?? ""}`;
 
-  // La memoria del docente («ricorda per sempre»): vale in tutti i documenti; si cambia e si dimentica da qui.
+  // La memoria del docente («ricorda per sempre»): vale in tutti i documenti; si guarda e si dimentica nella
+  // scheda «Memoria».
   const memory = client.memory;
   const remember = async (t: TokenAt, picto: number): Promise<void> => {
     if (!memory) return;
@@ -85,68 +83,43 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
       await memory.add(entry);
       // Il motore ora decide in un altro modo: i paragrafi si rifanno.
       setEngine(view, client);
+      aggiornaMemoria();
     } catch (e) {
       hooks.notice?.(`Non sono riuscito a ricordare la scelta: ${String(e)}`, "errore");
     }
   };
-  const memoryLabel = (m: MemoryEntry): string => (m.lemma !== "" ? m.lemma : m.form);
-  const fillMemory = (box: HTMLElement, mine: number): void => {
-    if (!memory) return;
-    memory.list().then(
+  // La scheda «Memoria» elimina un simbolo personale: la scheda Simbolo rilegge i suoi e si ridisegna.
+  installMemory(view, client, () => {
+    client.listCustom().then(
       (list) => {
-        if (generation !== mine || list.length === 0) return;
-        const wrap = el("div", "side-memory");
-        wrap.append(el("h3", "", "Cosa ricordo"));
-        const ul = el("ul", "side-memory-list");
-        for (const m of list) {
-          const li = el("li");
-          const img = el("img");
-          img.src = client.url(m.picto);
-          img.alt = "";
-          const forget = conIcona(el("button", "", "Dimentica"), "dimentica");
-          forget.type = "button";
-          forget.setAttribute("aria-label", `Dimentica ${memoryLabel(m)}`);
-          forget.addEventListener("click", () => {
-            memory.forget(m).then(() => {
-              setEngine(view, client);
-              showEmpty();
-            }, (e: unknown) => hooks.notice?.(`Non sono riuscito a dimenticare: ${String(e)}`, "errore"));
-          });
-          li.append(img, el("span", "", memoryLabel(m)), forget);
-          ul.append(li);
-        }
-        const clear = conIcona(el("button", "", "Dimentica tutto"), "elimina");
-        clear.type = "button";
-        clear.addEventListener("click", async () => {
-          const ok = await conferma({
-            domanda: "Dimenticare tutte le scelte «per sempre»?",
-            spiegazione: "Le parole torneranno ai simboli proposti dal programma. Non si può annullare.",
-            azione: "Dimentica tutto",
-            pericolo: true,
-          });
-          if (!ok) return;
-          memory.clear().then(() => {
-            setEngine(view, client);
-            showEmpty();
-          }, (e: unknown) => hooks.notice?.(`Non sono riuscito a dimenticare: ${String(e)}`, "errore"));
-        });
-        wrap.append(ul, clear);
-        box.append(wrap);
+        customList = list;
+        if (target) show(target, false);
       },
       () => undefined,
     );
-  };
+  });
 
   function showEmpty(): void {
-    const mine = ++generation;
+    ++generation;
     target = null;
     sig = "";
     root.replaceChildren();
+    // Stato vuoto (PIANO-M11.md 2.7, 3.5 punto 3): icona, una frase, le scorciatoie come tasti, un'azione.
     const box = el("div", "side-empty");
-    box.append(el("h2", "", "Simboli"));
-    for (const line of EMPTY_HINT) box.append(el("p", "", line));
+    const ico = el("span", "empty-ico");
+    ico.append(icona("puntatore"));
+    box.append(ico, el("h2", "", "Clicca il simbolo di una parola per cambiarlo"));
+    const ul = el("ul", "empty-keys");
+    for (const line of EMPTY_KEYS) ul.append(conTasti(el("li"), line));
+    box.append(ul);
+    if (memory) {
+      const vai = conIcona(el("button", "empty-action", "Vedi cosa ricordo"), "memoria");
+      vai.type = "button";
+      suggerimento(vai, "Le scelte «per sempre», nella scheda Memoria");
+      vai.addEventListener("click", () => hooks.apriMemoria?.());
+      box.append(vai);
+    }
     root.append(box);
-    fillMemory(box, mine);
   }
 
   function show(t: TokenAt, focusSide: boolean): void {
@@ -194,10 +167,23 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
     const always = el("input");
     always.type = "checkbox";
     always.checked = false;
-    always.disabled = !memory || inGroup;
+    // K4: per le parole che la politica delle parole funzionali governa (articoli, clitici, «che», preposizioni,
+    // congiunzioni) la memoria del motore vincerebbe sulla politica: «ricorda per sempre» resta spento e dice perché.
+    const byPolicy = !inGroup && governataDallaPolitica(t.token.lemma || shownWord, t.token.cat);
+    always.disabled = !memory || inGroup || byPolicy;
     const alwaysLabel = el("label", "pm-always");
     alwaysLabel.append(always, " ricorda per sempre");
-    alwaysLabel.title = inGroup ? "Per un gruppo di parole vale solo qui" : "Da ora, in tutti i documenti, questa parola prende questo simbolo";
+    let policyNote: HTMLElement | null = null;
+    if (byPolicy) {
+      alwaysLabel.classList.add("off");
+      suggerimento(alwaysLabel, SPIEGAZIONE_POLITICA);
+      // La stessa spiegazione, breve e sempre visibile (il controllo spento non riceve il fuoco da tastiera).
+      policyNote = el("p", "pm-note", "Qui decide la politica delle parole funzionali.");
+      policyNote.id = `pm-note-${mine}`;
+      always.setAttribute("aria-describedby", policyNote.id);
+    } else {
+      alwaysLabel.title = inGroup ? "Per un gruppo di parole vale solo qui" : "Da ora, in tutti i documenti, questa parola prende questo simbolo";
+    }
 
     const choose = (choice: Choice): void => {
       // La posizione della parola si legge adesso: il testo può essere cambiato da quando la barra l'ha mostrata.
@@ -219,6 +205,7 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
     };
 
     const render = (list: CandidateDto[], numbered: boolean): void => {
+      altTitle.textContent = numbered ? "Alternative" : "Risultati della ricerca";
       grid.replaceChildren();
       list.slice(0, numbered ? GRID : 24).forEach((c, i) => {
         const b = el("button", "pm-cell");
@@ -346,11 +333,13 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
       }
     });
 
-    const keys = el("p", "pm-keys", "1–8 sceglie · Esc torna al testo · F8 prossima parola da controllare");
+    const keys = conTasti(el("p", "pm-keys"), WORD_KEYS);
     // I miei simboli: le immagini già importate si riusano con un clic (le ultime per prime).
+    const savedSec = sezione("pm-sec-custom", "I miei simboli");
     const saved = el("div", "pm-custom");
+    savedSec.box.append(saved);
+    savedSec.box.hidden = customList.length === 0;
     if (customList.length > 0) {
-      saved.append(el("span", "pm-custom-title", "I miei simboli"));
       for (const c of [...customList].reverse().slice(0, 12)) {
         const b = el("button", "pm-mini");
         b.type = "button";
@@ -382,6 +371,7 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
                 // Le scelte «per sempre» che lo usavano sono state tolte: i paragrafi si rifanno.
                 setEngine(view, client);
                 show(target ?? t, false);
+                aggiornaMemoria();
               },
               (e: unknown) => hooks.notice?.(`Non sono riuscito a eliminarlo: ${String(e)}`, "errore"),
             );
@@ -391,12 +381,16 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
         saved.append(cell);
       }
     }
-    // I simboli della scuola: si aprono a richiesta (leggono il Drive).
+    // I simboli della scuola: si aprono a richiesta (leggono il Drive). K14: ogni simbolo è un'etichetta intera su
+    // una riga sua (il nome non si taglia), con la × di «Ritira» come pulsante a parte, con il suo nome.
     const school = client.shared;
+    const schoolSec = sezione("pm-sec-school", "Simboli della scuola");
+    schoolSec.box.hidden = !school;
     if (school) {
       const box = el("div", "pm-school");
-      const open = conIcona(el("button", "pm-btn", "Simboli della scuola…"), "scuola");
+      const open = conIcona(el("button", "pm-btn", "Mostra i simboli della scuola…"), "scuola");
       open.type = "button";
+      open.title = "Legge i simboli condivisi dai colleghi nella biblioteca della scuola";
       open.addEventListener("click", () => {
         open.disabled = true;
         box.replaceChildren(open, el("span", "pm-school-msg", "Carico…"));
@@ -405,13 +399,16 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
             open.disabled = false;
             const msg = !list.configured ? "La biblioteca non è collegata." : !list.reachable ? "Drive non raggiungibile." : list.symbols.length === 0 ? "Nessun simbolo condiviso." : "";
             box.replaceChildren(open);
-            if (msg) box.append(el("span", "pm-school-msg", msg));
+            if (msg) box.append(el("p", "pm-school-msg", msg));
+            const ul = el("ul", "pm-school-list");
             for (const s of list.symbols) {
-              const cell = el("span", "pm-mini-cell");
-              const b = el("button", "pm-mini");
+              const nome = s.label || "simbolo";
+              const cell = el("li", "pm-mini-cell pm-chip");
+              const b = el("button", "pm-mini pm-chip-main");
               b.type = "button";
-              b.title = `${s.label || "simbolo"} — ${s.author}`;
-              b.textContent = s.label || "simbolo";
+              b.title = `Usa «${nome}» per questa parola (condiviso da ${s.author})`;
+              b.append(el("span", "pm-chip-name", nome), el("span", "pm-chip-author", s.author));
+              b.setAttribute("aria-label", `${nome}, di ${s.author}`);
               b.addEventListener("click", () => {
                 school.take(s.uuid).then(
                   (sym) => {
@@ -423,13 +420,13 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
               });
               cell.append(b);
               if (s.can_retire) {
-                const x = el("button", "pm-mini-x", "×");
+                const x = el("button", "pm-chip-x", "×");
                 x.type = "button";
                 x.title = "Ritira dalla scuola (va in archivio, non si cancella)";
-                x.setAttribute("aria-label", `Ritira dalla scuola il simbolo ${s.label || "simbolo"}`);
+                x.setAttribute("aria-label", `Ritira dalla scuola il simbolo ${nome}`);
                 x.addEventListener("click", async () => {
                   const ok = await conferma({
-                    domanda: `Ritirare «${s.label || "simbolo"}» dalla scuola?`,
+                    domanda: `Ritirare «${nome}» dalla scuola?`,
                     spiegazione: "Lo vedranno sparire tutti i docenti. Va in archivio: non si cancella.",
                     azione: "Ritira",
                     pericolo: true,
@@ -442,19 +439,29 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
                 });
                 cell.append(x);
               }
-              box.append(cell);
+              ul.append(cell);
             }
+            if (list.symbols.length > 0) box.append(ul);
           },
           (e: unknown) => {
             open.disabled = false;
-            box.replaceChildren(open, el("span", "pm-school-msg", `Non riesco a leggere i simboli della scuola: ${String(e)}`));
+            box.replaceChildren(open, el("p", "pm-school-msg", `Non riesco a leggere i simboli della scuola: ${String(e)}`));
           },
         );
       });
       box.append(open);
-      saved.append(box);
+      schoolSec.box.append(box);
     }
-    root.replaceChildren(search, head, status, grid, saved, fixed, picker, allLabel, alwaysLabel, keys);
+    // Le sezioni con un titolo (M11-7), nell'ordine dello schermo (anche per il Tab). La ricerca resta in cima.
+    const altSec = sezione("pm-sec-alt", "Alternative");
+    const altTitle = altSec.title;
+    altSec.box.append(status, grid);
+    const quickSec = sezione("pm-sec-quick", "Scelte rapide");
+    quickSec.box.append(fixed, picker);
+    const optSec = sezione("pm-sec-opt", "Opzioni");
+    optSec.box.append(allLabel, alwaysLabel);
+    if (policyNote) optSec.box.append(policyNote);
+    root.replaceChildren(search, head, altSec.box, quickSec.box, savedSec.box, schoolSec.box, optSec.box, keys);
     if (focusSide) root.focus();
 
     client.alternatives(t.para, t.policy, t.locks, t.token.s, t.token.e).then(

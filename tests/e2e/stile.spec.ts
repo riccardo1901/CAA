@@ -157,6 +157,27 @@ const SITUAZIONI: Array<[string, (page: Page) => Promise<void>]> = [
     await page.getByRole("menuitem", { name: "Informazioni" }).click();
   }],
   ["avvisi", (page) => tuttiGliAvvisi(page)],
+  // M11-7: simboli della scuola come etichette (K14) e «ricorda per sempre» spento per un articolo (K4).
+  ["simboli della scuola", async (page) => {
+    await page.addInitScript(() => {
+      (window as any).__withSharedFlag = true;
+      (window as any).__sharedInit = { symbols: [{ uuid: "s1", label: "autobus", author: "Luca", can_retire: false }, { uuid: "s2", label: "palestra", author: "Maria", can_retire: true }] };
+    });
+    await apriCompleto(page);
+    await page.locator(".w", { hasText: /^il$/ }).first().click({ position: { x: 20, y: 8 } });
+    await page.getByRole("button", { name: "Simboli della scuola…" }).click();
+    await page.locator(".pm-school .pm-mini-cell").first().waitFor();
+  }],
+  // M11-7: la scheda «Memoria» (Cosa ricordo con l'etichetta della politica, I miei simboli).
+  ["memoria", async (page) => {
+    await page.addInitScript(() => {
+      (window as any).__memInit = [{ lemma: "pane", cat: "NOUN", form: "", picto: 1003 }, { lemma: "il", cat: "ART", form: "", picto: 1004 }];
+      (window as any).__customInit = [{ id: 2147483648, uuid: "u-mela", label: "mela" }];
+    });
+    await apriCompleto(page);
+    await page.getByRole("tab", { name: "Memoria" }).click();
+    await page.locator(".side-memory li").first().waitFor();
+  }],
 ];
 
 test.describe("contrasto vero dei testi dell'interfaccia", () => {

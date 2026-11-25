@@ -51,6 +51,8 @@ const ICONE = {
   apriPannello: "panel-right-open",
   chiudiPannello: "panel-right-close",
   bandierina: "flag",
+  puntatore: "mouse-pointer-click",
+  memoria: "bookmark-check",
 };
 
 const mancano = Object.entries(ICONE).filter(([, v]) => !nodi[v]);
