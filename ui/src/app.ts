@@ -6,9 +6,10 @@ import { createEditor, currentMode, replaceDoc, setReadOnly } from "./editor/edi
 import { engineStats, onEngineUpdate, setEngine, setPolicy } from "./editor/engineSymbols";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { engineInfo, inTauri, tauriClient, type EngineClient, type EngineInfo, type Policy } from "./engine/client";
+import { engineInfo, inTauri, tauriClient, type EngineClient, type EngineInfo, type LibStatus, type Policy } from "./engine/client";
 import { hooks } from "./editor/menuHooks";
 import { createDocsPanel } from "./docs/panel";
+import { firstRun } from "./docs/firstrun";
 import { createLexBar } from "./docs/lexbar";
 import { createSession, type Session } from "./docs/session";
 import { createSidebar, installSidebar } from "./sidebar";
@@ -78,7 +79,7 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
   const lexBar = createLexBar((p) => client?.url(p) ?? "");
   app.append(bars.banner, lexBar.root, bars.docbar, bars.toolbar, layoutEl, bars.statusbar);
   if (docs) {
-    const w = window as unknown as { __caaAutosaveMs?: number; __caaRetryMs?: number };
+    const w = window as unknown as { __caaAutosaveMs?: number; __caaRetryMs?: number; __caaLibPollMs?: number };
     const baseBanner = (): void => {
       bars.banner.hidden = !!info?.ok;
       bars.banner.textContent = info && !info.ok ? `Il motore non è attivo: ${info.error ?? "errore sconosciuto"}` : "";
@@ -106,8 +107,28 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
       retryMs: w.__caaRetryMs,
     });
     bars.onPrefsChange(() => session?.touch());
-    const panel = createDocsPanel(docs, session, (title) => window.confirm(`Eliminare «${title}»? Non si può annullare.`), () => view.focus());
+    // L'indicatore della biblioteca in alto: si controlla all'avvio e ogni 2 minuti (SPEC.md, "Online e offline").
+    const lib = client?.library;
+    const showLib = (s: LibStatus | null): void => {
+      bars.libStatus.hidden = !s || !s.configured;
+      if (!s || !s.configured) return;
+      bars.libStatus.textContent = s.reachable ? "● Biblioteca" : "○ Biblioteca non raggiungibile";
+      bars.libStatus.className = `lib-status ${s.reachable ? "on" : "off"}`;
+      bars.libStatus.title = s.path ?? "";
+    };
+    const panel = createDocsPanel(docs, session, (title) => window.confirm(`Eliminare «${title}»? Non si può annullare.`), {
+      library: lib,
+      libraryChanged: showLib,
+      onClose: () => view.focus(),
+    });
     bars.docsButton.addEventListener("click", () => panel.open());
+    bars.libStatus.addEventListener("click", () => panel.open("library"));
+    if (lib) {
+      const poll = (): void => void lib.status().then(showLib, () => showLib(null));
+      poll();
+      window.setInterval(poll, w.__caaLibPollMs ?? 120_000);
+      if (client?.settings) void firstRun({ settings: client.settings, library: lib, notice: (m) => hooks.notice?.(m), libraryStatus: showLib });
+    }
   }
   root.appendChild(app);
   onEngineUpdate(bars.refresh);

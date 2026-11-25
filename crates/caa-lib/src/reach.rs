@@ -8,7 +8,10 @@ use std::time::Duration;
 
 /// Esegue `f` su un thread a parte e aspetta al massimo `limit`. `None` se non finisce in tempo (il thread
 /// resta a finire da solo; il risultato si butta).
-pub fn with_timeout<T: Send + 'static>(limit: Duration, f: impl FnOnce() -> T + Send + 'static) -> Option<T> {
+pub fn with_timeout<T: Send + 'static>(
+    limit: Duration,
+    f: impl FnOnce() -> T + Send + 'static,
+) -> Option<T> {
     let (tx, rx) = mpsc::channel();
     std::thread::spawn(move || {
         let _ = tx.send(f());

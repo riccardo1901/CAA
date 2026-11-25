@@ -9,5 +9,6 @@ Elenco delle prove già pronte che aspettano un PC Windows. Si aggiorna a ogni b
 | M8c-2 — unisci e dividi parole | `docs/PROVE-M8c2.md` | **da fare** (pacchetto dati nuovo: 1.706 immagini) |
 | M8c-3 — simboli personali (importa, ritaglia, riusa, cerca) | `docs/PROVE-M8c3.md` | **da fare** (servono 2-3 immagini tue, non di studenti) |
 | M9a — documenti `.caa`, salvataggio automatico, Documenti, lessico nuovo | `docs/PROVE-M9a.md` | **da fare** (include la chiusura della finestra che salva prima di uscire) |
+| M9b-1 — biblioteca nel Drive condiviso (cartella, elenco, ricerca, Adatta, offline) | `docs/PROVE-M9b1.md` | **da fare** (serve Google Drive per computer e una cartella `CAA\biblioteca` nel Drive condiviso) |
 
 Per ogni blocco serve `caa-app.exe` della CI dell'ultimo commit (artifact `caa-app`) e il pacchetto dati `caa-dati-prova.zip` più recente.

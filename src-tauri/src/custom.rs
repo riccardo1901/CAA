@@ -40,6 +40,29 @@ pub struct CustomStore {
     state: Mutex<IndexFile>,
 }
 
+/// La cartella dei dati dell'app per questo utente (impostazioni, cache della biblioteca): la variabile
+/// `CAA_APPDATA`; altrimenti `%APPDATA%\Editor CAA` (Windows) o `~/.local/share/editor-caa`; come ultima
+/// possibilità accanto al programma.
+pub fn app_dir(
+    env: Option<&str>,
+    appdata: Option<&str>,
+    xdg_or_home: Option<&str>,
+    exe_dir: Option<&Path>,
+) -> PathBuf {
+    if let Some(e) = env.filter(|e| !e.is_empty()) {
+        return PathBuf::from(e);
+    }
+    if let Some(a) = appdata.filter(|a| !a.is_empty()) {
+        return Path::new(a).join("Editor CAA");
+    }
+    if let Some(h) = xdg_or_home.filter(|h| !h.is_empty()) {
+        return Path::new(h).join("editor-caa");
+    }
+    exe_dir
+        .unwrap_or_else(|| Path::new("."))
+        .join("dati-utente")
+}
+
 /// Cartella dei simboli personali: la variabile `CAA_CUSTOM`; altrimenti la cartella dati dell'utente
 /// (`%APPDATA%` su Windows, `~/.local/share` altrove); come ultima possibilità accanto al programma.
 pub fn custom_dir(

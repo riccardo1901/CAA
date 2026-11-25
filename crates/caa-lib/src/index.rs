@@ -34,7 +34,9 @@ pub fn is_doc_name(name: &str) -> bool {
     name.ends_with(".caa")
         && name.len() > ".caa".len()
         && !name.starts_with('.')
-        && !name.chars().any(|c| c.is_control() || "<>:\"/\\|?*".contains(c))
+        && !name
+            .chars()
+            .any(|c| c.is_control() || "<>:\"/\\|?*".contains(c))
 }
 
 struct Stamped {
@@ -108,7 +110,14 @@ pub fn scan(root: &Path, cache: &mut IndexCache) -> std::io::Result<Scan> {
                     size: len,
                     conflict: false,
                 };
-                cache.map.insert(name, Stamped { len, mtime, entry: entry.clone() });
+                cache.map.insert(
+                    name,
+                    Stamped {
+                        len,
+                        mtime,
+                        entry: entry.clone(),
+                    },
+                );
                 out.entries.push(entry);
             }
             Err(_) => {
@@ -123,12 +132,20 @@ pub fn scan(root: &Path, cache: &mut IndexCache) -> std::io::Result<Scan> {
     for e in &out.entries {
         *count.entry(e.id.as_str()).or_default() += 1;
     }
-    let dup: std::collections::HashSet<String> = count.into_iter().filter(|(_, n)| *n > 1).map(|(id, _)| id.to_string()).collect();
+    let dup: std::collections::HashSet<String> = count
+        .into_iter()
+        .filter(|(_, n)| *n > 1)
+        .map(|(id, _)| id.to_string())
+        .collect();
     for e in &mut out.entries {
         e.conflict = dup.contains(&e.id);
     }
-    out.entries
-        .sort_by(|a, b| b.modified.cmp(&a.modified).then_with(|| a.title.cmp(&b.title)).then_with(|| a.file.cmp(&b.file)));
+    out.entries.sort_by(|a, b| {
+        b.modified
+            .cmp(&a.modified)
+            .then_with(|| a.title.cmp(&b.title))
+            .then_with(|| a.file.cmp(&b.file))
+    });
     Ok(out)
 }
 
@@ -138,7 +155,10 @@ const INDEX_FILE: &str = "index.json";
 pub fn save_index(dir: &Path, entries: &[LibEntry]) -> std::io::Result<()> {
     std::fs::create_dir_all(dir)?;
     let tmp = dir.join(format!("{INDEX_FILE}.{}.tmp", std::process::id()));
-    std::fs::write(&tmp, serde_json::to_vec(entries).map_err(std::io::Error::other)?)?;
+    std::fs::write(
+        &tmp,
+        serde_json::to_vec(entries).map_err(std::io::Error::other)?,
+    )?;
     std::fs::rename(&tmp, dir.join(INDEX_FILE))
 }
 

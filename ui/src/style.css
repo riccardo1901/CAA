@@ -402,3 +402,26 @@ body { margin: 0; }
 .lex-thumb img { width: 44px; height: 44px; object-fit: contain; }
 .lex-none { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border: 2px dashed #b4b4c0; border-radius: 8px; box-sizing: border-box; }
 .lex-arrow { font-size: 20px; color: #7a5d00; }
+
+/* ---- Biblioteca (M9b-1) ---- */
+.lib-status { padding: 2px 10px; border: 1px solid transparent; border-radius: 12px; background: transparent; font: inherit; font-size: 13px; cursor: pointer; }
+.lib-status[hidden] { display: none; }
+.lib-status.on { color: #1f6b3a; }
+.lib-status.off { color: #b45a00; border-color: #e0b030; background: #fff4d6; }
+.lib-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.lib-top .grow { flex: 1; }
+.lib-top button, .lib-actions button, .lib-setup .docs-row button { padding: 4px 10px; border: 1px solid #9a9aa8; border-radius: 4px; background: #fff; font: inherit; cursor: pointer; }
+.lib-state.on { color: #1f6b3a; font-weight: 600; }
+.lib-state.off { color: #b45a00; font-weight: 600; }
+.lib-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.lib-search { flex: 1 1 260px; padding: 6px 8px; font: inherit; }
+.lib-filters select { padding: 5px 8px; font: inherit; }
+.lib-path { width: 100%; box-sizing: border-box; margin: 8px 0; padding: 6px 8px; font: inherit; }
+.lib-actions { display: flex; gap: 8px; }
+.docs-tag.conflict { background: #ffe3d0; color: #7a3300; }
+.first-overlay { position: fixed; inset: 0; z-index: 120; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.5); }
+.first-box { width: 420px; max-width: calc(100vw - 24px); padding: 18px 20px; background: #fff; border-radius: 10px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4); font: 14px system-ui, sans-serif; }
+.first-box h2 { font-size: 18px; margin: 0 0 8px; }
+.first-box input { width: 100%; box-sizing: border-box; margin: 8px 0; padding: 8px; font: inherit; }
+.first-box button { padding: 6px 16px; border: 1px solid #2a5db0; border-radius: 4px; background: #2a5db0; color: #fff; font: inherit; cursor: pointer; }
+.first-box button:disabled { opacity: 0.5; cursor: default; }

@@ -130,6 +130,54 @@ export interface DocClient {
   remove(file: string): Promise<void>;
 }
 
+/** Un documento della biblioteca nell'elenco (dal manifest del file nel Drive condiviso). */
+export interface LibEntry {
+  file: string;
+  id: string;
+  title: string;
+  author: string;
+  subject: string;
+  level: string;
+  tags: string[];
+  created: string;
+  modified: string;
+  rev: number;
+  size: number;
+  /** Un altro file ha lo stesso identificativo (Drive ha creato una copia «in conflitto»). */
+  conflict: boolean;
+}
+
+export interface LibStatus {
+  /** C'è una cartella scelta (o trovata) per la biblioteca. */
+  configured: boolean;
+  path: string | null;
+  /** Il Drive risponde adesso. */
+  reachable: boolean;
+  display_name: string;
+  /** Nomi utente che possono ritirare i documenti degli altri (dal `config.json` del tecnico). */
+  admins: string[];
+}
+
+export interface LibScan {
+  configured: boolean;
+  entries: LibEntry[];
+  /** File che non si leggono adesso (ancora in sincronizzazione). */
+  incomplete: number;
+  /** L'elenco viene dall'ultima copia locale, non dal Drive. */
+  offline: boolean;
+}
+
+/** La biblioteca nel Drive condiviso (cartella sincronizzata da Google Drive per computer). */
+export interface LibraryClient {
+  status(): Promise<LibStatus>;
+  /** Le cartelle `CAA` trovate nei Drive condivisi. */
+  find(): Promise<Array<{ path: string; drive: string }>>;
+  setFolder(path: string, create: boolean): Promise<LibStatus>;
+  scan(): Promise<LibScan>;
+  /** Fa una copia personale (in «I miei documenti») di un documento di biblioteca. */
+  adapt(file: string): Promise<DocEntry>;
+}
+
 export interface EngineInfo {
   ok: boolean;
   dir: string | null;
@@ -158,6 +206,9 @@ export interface EngineClient {
   search(query: string): Promise<CandidateDto[]>;
   /** I documenti personali; assente nelle prove senza archivio. */
   docs?: DocClient;
+  /** La biblioteca nel Drive condiviso e il nome da mostrare; assenti nelle prove senza archivio. */
+  library?: LibraryClient;
+  settings?: { getName(): Promise<string>; setName(name: string): Promise<string> };
   /** I simboli personali già importati. */
   listCustom(): Promise<CustomSymbol[]>;
   /** Salva un simbolo personale (immagine WebP quadrata) per la parola indicata. */
@@ -180,6 +231,17 @@ export function tauriClient(): EngineClient {
       save: (payload) => invoke<DocEntry>("doc_save", { payload }),
       open: (file) => invoke<OpenedDoc>("doc_open", { file }),
       remove: (file) => invoke<void>("doc_delete", { file }),
+    },
+    library: {
+      status: () => invoke<LibStatus>("library_status"),
+      find: () => invoke<Array<{ path: string; drive: string }>>("library_find"),
+      setFolder: (path, create) => invoke<LibStatus>("library_set_folder", { path, create }),
+      scan: () => invoke<LibScan>("library_scan"),
+      adapt: (file) => invoke<DocEntry>("library_adapt", { file }),
+    },
+    settings: {
+      getName: () => invoke<string>("settings_get"),
+      setName: (name) => invoke<string>("settings_set_name", { name }),
     },
     listCustom: () => invoke<CustomSymbol[]>("list_custom_symbols"),
     importCustom: async (image, label) =>

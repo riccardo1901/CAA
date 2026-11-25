@@ -29,7 +29,10 @@ pub fn sync_docs(root: &Path, entries: &[LibEntry], cache_dir: &Path) -> usize {
         let tmp = cache_dir.join(format!("{}.{}.tmp", e.file, std::process::id()));
         let from = root.join("biblioteca").join(&e.file);
         // Si copia solo se il file è completo e valido (può essere ancora in sincronizzazione).
-        if std::fs::copy(&from, &tmp).is_ok() && caa_doc::read_manifest(&tmp).is_ok() && std::fs::rename(&tmp, &dest).is_ok() {
+        if std::fs::copy(&from, &tmp).is_ok()
+            && caa_doc::read_manifest(&tmp).is_ok()
+            && std::fs::rename(&tmp, &dest).is_ok()
+        {
             copied += 1;
         } else {
             let _ = std::fs::remove_file(&tmp);
@@ -48,7 +51,12 @@ pub fn sync_docs(root: &Path, entries: &[LibEntry], cache_dir: &Path) -> usize {
 
 /// Legge un documento di biblioteca per adattarlo: dalla biblioteca (con un tempo massimo: un Drive in
 /// streaming o scollegato può bloccare la lettura) oppure, se non si riesce, dalla copia in cache.
-pub fn read_for_adapt(root: &Path, cache_dir: &Path, file: &str, limit: Duration) -> Result<Loaded, String> {
+pub fn read_for_adapt(
+    root: &Path,
+    cache_dir: &Path,
+    file: &str,
+    limit: Duration,
+) -> Result<Loaded, String> {
     if !is_doc_name(file) {
         return Err("nome di file non valido".into());
     }
@@ -57,5 +65,6 @@ pub fn read_for_adapt(root: &Path, cache_dir: &Path, file: &str, limit: Duration
     if let Some(l) = from_drive {
         return Ok(l);
     }
-    caa_doc::read(&cache_dir.join(file)).map_err(|e| format!("il documento non è disponibile (né nel Drive né in cache): {e}"))
+    caa_doc::read(&cache_dir.join(file))
+        .map_err(|e| format!("il documento non è disponibile (né nel Drive né in cache): {e}"))
 }

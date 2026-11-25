@@ -238,6 +238,7 @@ version = "0.1.0"
 dependencies = [
  "caa-doc",
  "caa-engine",
+ "caa-lib",
  "caa-store",
  "serde",
  "serde_json",

@@ -27,5 +27,16 @@ Limiti noti (accettati):
 - I simboli personali non si ritrovano se l'immagine manca nel file e nella raccolta locale: la scelta torna automatica.
 - Il salvataggio scarta in silenzio un simbolo personale la cui immagine non è sul computer.
 
+---
+
+# M9b-1 — La biblioteca nel Drive condiviso: trovarla, vederla, adattarla
+
+**Stato**: scritto e provato con prove automatiche; prove a mano su Windows da fare (`docs/PROVE-M9b1.md`). M9b-2 (Pubblica, Aggiorna, Ritira, blocco, «Originale aggiornato», `version.json`) deve ancora partire.
+
+## Cosa c'è
+- **`caa-lib`**: libreria senza interfaccia. `config.json` del tecnico (`ProgramData\CAA\config.json`: nome del Drive, cartella, amministratori; tutto facoltativo) e impostazioni dell'utente (`%APPDATA%\Editor CAA\settings.json`: nome da mostrare, cartella scelta, scritto in modo atomico). Ricerca della cartella nei Drive condivisi di ogni unità (`Drive condivisi` o `Shared drives`, cartella `CAA` con dentro `biblioteca`). Controllo di raggiungibilità con tempo massimo (un Drive che si blocca non blocca il programma). Indice dei manifest che rilegge solo i file cambiati; file ancora in sincronizzazione o rovinati saltati e ritrovati alla scansione dopo; copie in conflitto riconosciute dal doppio identificativo; cache dell'ultimo elenco e dei documenti, per consultare e adattare senza il Drive; copia da adattare (id nuovo, revisione 1, ricorda id e revisione dell'originale).
+- **App**: nome da mostrare al primo avvio (finestra che non si chiude senza un nome), indicatore «● Biblioteca» in alto (controllo all'avvio e ogni 2 minuti), scheda **Biblioteca** nel pannello Documenti (cartelle trovate con «Usa questa», percorso a mano, «Crea la biblioteca qui» per chi la imposta; elenco con autore, materia, livello, etichette, data, ricerca senza accenti, filtri, «copia in conflitto», avviso sui file in sincronizzazione, **Adatta**). La biblioteca non si scrive mai in questo blocco, tranne la creazione delle cartelle.
+- **Scelte confermate**: il nome da mostrare si chiede solo al primo avvio; le cartelle e il `config.json` si usano per nome (la lettera dell'unità cambia da PC a PC); la lettura del Drive ha sempre un tempo massimo e usa la copia locale se non risponde.
+
 ## Metriche del motore
 Invariate: il motore non è cambiato in M9.

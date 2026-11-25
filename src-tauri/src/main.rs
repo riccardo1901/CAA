@@ -4,6 +4,7 @@
 mod bridge;
 mod custom;
 mod docs;
+mod library;
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -14,8 +15,9 @@ use serde::Serialize;
 use tauri::http::Response;
 use tauri::{Emitter, Manager, State};
 
-use custom::{custom_dir, is_custom, CustomStore, CustomSymbol};
+use custom::{app_dir, custom_dir, is_custom, CustomStore, CustomSymbol};
 use docs::{docs_dir, DocEntry, DocStore, Opened, SavePayload};
+use library::{FolderDto, LibScan, LibStatus, LibraryState};
 
 use bridge::{
     candidates_dto, check_choices, check_request, data_candidates, find_data_dir, image_path,
@@ -29,6 +31,8 @@ struct Backend {
     custom: CustomStore,
     /// I documenti personali (M9a).
     docs: DocStore,
+    /// Impostazioni, biblioteca nel Drive condiviso e sua copia locale (M9b).
+    library: LibraryState,
     engine: Option<MappedEngine>,
     dir: Option<PathBuf>,
     error: Option<String>,
@@ -59,12 +63,31 @@ fn load_backend() -> Backend {
         std::env::var("HOME").ok().as_deref(),
         exe_dir.as_deref(),
     ));
+    let xdg_or_home = std::env::var("XDG_DATA_HOME").ok().or_else(|| {
+        std::env::var("HOME")
+            .ok()
+            .map(|h| format!("{h}/.local/share"))
+    });
+    let library = LibraryState::new(
+        app_dir(
+            std::env::var("CAA_APPDATA").ok().as_deref(),
+            std::env::var("APPDATA").ok().as_deref(),
+            xdg_or_home.as_deref(),
+            exe_dir.as_deref(),
+        ),
+        caa_lib::config::load_config(&caa_lib::config::config_path(
+            std::env::var("CAA_CONFIG").ok().as_deref(),
+            std::env::var("PROGRAMDATA").ok().as_deref(),
+        )),
+        caa_lib::detect::drive_roots(),
+    );
     let candidates = data_candidates(env.as_deref(), exe_dir.as_deref(), cwd.as_deref());
     let Some(dir) = find_data_dir(&candidates) else {
         let looked: Vec<String> = candidates.iter().map(|c| c.display().to_string()).collect();
         return Backend {
             custom,
             docs,
+            library,
             engine: None,
             dir: None,
             error: Some(format!(
@@ -77,6 +100,7 @@ fn load_backend() -> Backend {
         Ok(engine) => Backend {
             custom,
             docs,
+            library,
             engine: Some(engine),
             dir: Some(dir),
             error: None,
@@ -84,6 +108,7 @@ fn load_backend() -> Backend {
         Err(e) => Backend {
             custom,
             docs,
+            library,
             engine: None,
             dir: Some(dir),
             error: Some(e.to_string()),
@@ -239,7 +264,12 @@ fn save_custom_symbol(
 }
 
 /// Chi scrive: il nome dell'utente del sistema (con M9b il nome scelto al primo avvio).
-fn author_name() -> String {
+fn author_name(state: &Backend) -> String {
+    // Il nome scelto al primo avvio; senza, quello dell'utente del sistema.
+    let chosen = state.library.display_name();
+    if !chosen.is_empty() {
+        return chosen;
+    }
     ["USERNAME", "USER"]
         .iter()
         .find_map(|k| std::env::var(k).ok().filter(|v| !v.is_empty()))
@@ -270,7 +300,7 @@ fn doc_save(state: State<'_, Arc<Backend>>, payload: SavePayload) -> Result<DocE
     state.docs.save(
         payload,
         &state.custom,
-        &author_name(),
+        &author_name(&state),
         env!("CARGO_PKG_VERSION"),
     )
 }
@@ -300,6 +330,59 @@ fn must_force_exit(requested: u64, acked: u64) -> bool {
 fn close_ack() {
     use std::sync::atomic::Ordering;
     CLOSE_ACKED.store(CLOSE_REQUESTS.load(Ordering::SeqCst), Ordering::SeqCst);
+}
+
+/// Le impostazioni dell'utente: il nome da mostrare (vuoto finché non si sceglie al primo avvio).
+#[tauri::command]
+fn settings_get(state: State<'_, Arc<Backend>>) -> String {
+    state.library.display_name()
+}
+
+#[tauri::command]
+fn settings_set_name(state: State<'_, Arc<Backend>>, name: String) -> Result<String, String> {
+    state.library.set_display_name(&name)
+}
+
+/// La biblioteca: stato (cartella, raggiungibile), cartelle trovate, scelta, elenco, adattamento. I comandi che
+/// toccano il Drive sono `async`: girano su un thread a parte e hanno un tempo massimo.
+#[tauri::command(async)]
+fn library_status(state: State<'_, Arc<Backend>>) -> LibStatus {
+    state.library.status()
+}
+
+#[tauri::command(async)]
+fn library_find(state: State<'_, Arc<Backend>>) -> Vec<FolderDto> {
+    state
+        .library
+        .candidates()
+        .into_iter()
+        .map(|c| FolderDto {
+            path: c.path.to_string_lossy().to_string(),
+            drive: c.drive,
+        })
+        .collect()
+}
+
+#[tauri::command(async)]
+fn library_set_folder(
+    state: State<'_, Arc<Backend>>,
+    path: String,
+    create: bool,
+) -> Result<LibStatus, String> {
+    state.library.set_folder(&path, create)?;
+    Ok(state.library.status())
+}
+
+#[tauri::command(async)]
+fn library_scan(state: State<'_, Arc<Backend>>) -> LibScan {
+    state.library.scan()
+}
+
+#[tauri::command(async)]
+fn library_adapt(state: State<'_, Arc<Backend>>, file: String) -> Result<DocEntry, String> {
+    state
+        .library
+        .adapt(&file, &state.docs, &author_name(&state))
 }
 
 /// Chiude il programma: la pagina lo chiede dopo aver salvato.
@@ -364,6 +447,13 @@ fn main() {
             doc_open,
             doc_delete,
             close_ack,
+            settings_get,
+            settings_set_name,
+            library_status,
+            library_find,
+            library_set_folder,
+            library_scan,
+            library_adapt,
             exit_app
         ])
         .run(tauri::generate_context!())

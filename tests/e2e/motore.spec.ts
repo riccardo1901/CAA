@@ -62,7 +62,7 @@ const MOCK = `
     }
     return out;
   }
-  window.__mock = { calls, delay: 4, fail: 0, alts: [], searches: [], altDelay: 3, custom: [], imports: [], docsStore: new Map(), saves: [], saveFail: 0, saveDelay: 0, conflictNext: false, broken: 0, readOnly: {}, mediaMap: [] };
+  window.__mock = { calls, delay: 4, fail: 0, alts: [], searches: [], altDelay: 3, custom: [], imports: [], docsStore: new Map(), saves: [], saveFail: 0, saveDelay: 0, conflictNext: false, broken: 0, readOnly: {}, mediaMap: [], lib: Object.assign({ configured: false, path: null, reachable: true, name: 'Maria', candidates: [], entries: [], cached: [], incomplete: 0, setCalls: [], scans: 0, adapts: [], adaptFail: false, nameFail: false }, window.__libInit || {}) };
   return {
     symbolize: (paras, policy, locks) => { calls.push({ texts: paras.map((p) => p.text), paras, locks, policy }); return new Promise((r, rej) => setTimeout(() => { if (window.__mock.fail > 0) { window.__mock.fail--; rej(new Error('motore guasto')); } else r(paras.map((p) => tokens(p.text, policy, p.forced, locks))); }, window.__mock.delay)); },
     alternatives: (para, policy, locks, s, e) => { window.__mock.alts.push({ para, s, e }); return new Promise((r) => setTimeout(() => r([1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => ({ picto: 1000 + i, keyword: 'alt' + i, reason: 'altro senso', image: i !== 3 }))), window.__mock.altDelay)); },
@@ -89,6 +89,35 @@ const MOCK = `
       },
       remove: async (file) => { window.__mock.docsStore.delete(file); },
     } : undefined,
+    library: window.__withLibrary ? {
+      status: async () => { const l = window.__mock.lib; return { configured: l.configured, path: l.path, reachable: l.reachable, display_name: l.name, admins: [] }; },
+      find: async () => window.__mock.lib.candidates,
+      setFolder: async (path, create) => {
+        const l = window.__mock.lib;
+        l.setCalls.push({ path, create });
+        if (path.includes('sbagliato') && !create) throw new Error('questa cartella non contiene una «biblioteca»: scegli quella giusta, oppure creala qui');
+        l.configured = true; l.path = path;
+        return { configured: true, path, reachable: l.reachable, display_name: l.name, admins: [] };
+      },
+      scan: async () => {
+        const l = window.__mock.lib; l.scans++;
+        if (!l.configured) return { configured: false, entries: [], incomplete: 0, offline: false };
+        return { configured: true, entries: l.reachable ? l.entries : l.cached, incomplete: l.reachable ? l.incomplete : 0, offline: !l.reachable };
+      },
+      adapt: async (file) => {
+        const l = window.__mock.lib; l.adapts.push(file);
+        if (l.adaptFail) throw new Error('il documento non è disponibile');
+        const e = l.entries.concat(l.cached).find((x) => x.file === file);
+        const store = window.__mock.docsStore;
+        const entry = { file: e.title + '.caa', id: 'copy-' + store.size, title: e.title, modified: new Date().toISOString(), rev: 1, author: l.name, origin: { id: e.id, rev: e.rev } };
+        store.set(entry.file, { entry, payload: { document: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Copia di ' + e.title }] }] }, prefs: {}, render: [], sense_locks: [], lexicon: 'lex-new' } });
+        return entry;
+      },
+    } : undefined,
+    settings: window.__withLibrary ? {
+      getName: async () => window.__mock.lib.name,
+      setName: async (n) => { if (window.__mock.lib.nameFail) throw new Error('non riesco a salvare il nome'); window.__mock.lib.name = n.trim().replace(/\\s+/g, ' '); return window.__mock.lib.name; },
+    } : undefined,
     listCustom: async () => window.__mock.custom.slice(),
     importCustom: async (blob, label) => {
       window.__mock.imports.push({ size: blob.size, type: blob.type, label });
@@ -102,14 +131,17 @@ const MOCK = `
 })()
 `;
 
-async function open(page: Page, text?: string, docs = false): Promise<void> {
+async function open(page: Page, text?: string, docs = false, library: Record<string, unknown> | false = false): Promise<void> {
   page.on("dialog", (d) => void d.accept());
   await page.goto("/");
   await page.waitForFunction(() => (window as any).caaProto);
   await page.evaluate(
-    ([mock, txt, withDocs]) => {
+    ([mock, txt, withDocs, lib]) => {
       const p = (window as any).caaProto;
       (window as any).__withDocs = withDocs;
+      (window as any).__withLibrary = lib !== false;
+      (window as any).__libInit = lib || {};
+      (window as any).__caaLibPollMs = 300;
       (window as any).__caaAutosaveMs = 150;
       (window as any).__caaRetryMs = 300;
       p.setSize(68);
@@ -119,7 +151,7 @@ async function open(page: Page, text?: string, docs = false): Promise<void> {
       }
       p.enterEngineMode(eval(mock));
     },
-    [MOCK, text, docs] as const,
+    [MOCK, text, docs, library] as const,
   );
   // Un documento vuoto non ha simboli da aspettare: basta che l'interfaccia del motore sia su.
   if (text === "") await page.waitForSelector(".statusbar");
@@ -1608,4 +1640,152 @@ test("revisione del lessico: se si inserisce un paragrafo sopra, «Tieni il vecc
   await expect(page.locator(".lexbar")).toContainText("«mangia»");
   await page.locator(".lexbar").getByRole("button", { name: "Tieni il vecchio" }).click();
   await expect.poll(async () => (await docPicks(page)).map((p) => [p.word, p.picto])).toEqual([["mangia", 5001]]);
+});
+
+// ---- M9b-1: biblioteca nel Drive condiviso ----
+
+const LIB_ENTRIES = [
+  { file: "citta.caa", id: "id-1", title: "La città di Marco", author: "Maria Rossi", subject: "Italiano", level: "Primaria", tags: ["storia", "sociale"], created: "2026-11-01T10:00:00Z", modified: "2026-11-20T10:00:00Z", rev: 3, size: 1000, conflict: false },
+  { file: "frazioni.caa", id: "id-2", title: "Le frazioni", author: "Luca Bianchi", subject: "Matematica", level: "Secondaria", tags: ["numeri"], created: "2026-10-01T10:00:00Z", modified: "2026-10-05T10:00:00Z", rev: 1, size: 800, conflict: false },
+  { file: "regole.caa", id: "id-3", title: "Regole della classe", author: "Maria Rossi", subject: "italiano", level: "primaria", tags: [], created: "2026-09-01T10:00:00Z", modified: "2026-09-02T10:00:00Z", rev: 2, size: 900, conflict: true },
+];
+
+const tabLibrary = async (page: Page) => {
+  await page.getByRole("button", { name: "Documenti" }).click();
+  await page.locator(".docs-panel").getByRole("button", { name: "Biblioteca" }).click();
+};
+
+test("primo avvio: si chiede il nome una volta sola e non si prosegue senza", async ({ page }) => {
+  await open(page, "", true, { name: "" });
+  const box = page.locator(".first-box");
+  await expect(box).toBeVisible();
+  await expect(box.getByRole("button", { name: "Continua" })).toBeDisabled();
+  await box.getByLabel("Il tuo nome").fill("   ");
+  await expect(box.getByRole("button", { name: "Continua" })).toBeDisabled();
+  // Un nome non riuscito a salvare: resta aperta con il messaggio.
+  await page.evaluate(() => { (window as any).__mock.lib.nameFail = true; });
+  await box.getByLabel("Il tuo nome").fill("Maria   Rossi");
+  await box.getByRole("button", { name: "Continua" }).click();
+  await expect(box).toContainText("non riesco a salvare il nome");
+  await page.evaluate(() => { (window as any).__mock.lib.nameFail = false; });
+  await box.getByLabel("Il tuo nome").press("Enter");
+  await expect(box).toBeHidden();
+  expect(await page.evaluate(() => (window as any).__mock.lib.name)).toBe("Maria Rossi");
+});
+
+test("primo avvio: con più Drive condivisi lo dice; con un nome già scelto non chiede niente", async ({ page }) => {
+  await open(page, "", true, { name: "Maria", candidates: [{ path: "G:/A/CAA", drive: "A" }, { path: "G:/B/CAA", drive: "B" }] });
+  await expect(page.locator(".first-box")).toHaveCount(0);
+  await expect(page.locator(".statusbar")).toContainText("più Drive condivisi");
+  await expect(page.locator(".lib-status")).toBeHidden();
+});
+
+test("biblioteca non collegata: si sceglie la cartella trovata o si scrive il percorso", async ({ page }) => {
+  await open(page, "", true, { candidates: [{ path: "G:/Drive condivisi/CAA Istituto/CAA", drive: "CAA Istituto" }], entries: LIB_ENTRIES });
+  await tabLibrary(page);
+  const panel = page.locator(".docs-panel");
+  await expect(panel).toContainText("non è ancora collegata");
+  await expect(panel).toContainText("Ho trovato queste cartelle");
+  await expect(panel.locator(".docs-row")).toContainText("CAA Istituto");
+  // Un percorso sbagliato: l'errore compare e non si collega; «Crea la biblioteca qui» lo accetta.
+  await panel.getByLabel("Percorso della cartella della biblioteca").fill("X:/sbagliato");
+  await panel.getByRole("button", { name: "Usa questo percorso" }).click();
+  await expect(panel).toContainText("non contiene una «biblioteca»");
+  expect(await page.evaluate(() => (window as any).__mock.lib.configured)).toBe(false);
+  // La cartella trovata: si collega e compare l'elenco.
+  await panel.getByRole("button", { name: "Usa questa" }).click();
+  await expect(panel.locator(".lib-row")).toHaveCount(3);
+  await expect(page.locator(".lib-status")).toContainText("Biblioteca");
+  await expect(page.locator(".lib-status")).toHaveClass(/on/);
+  const calls = await page.evaluate(() => (window as any).__mock.lib.setCalls);
+  expect(calls).toEqual([{ path: "X:/sbagliato", create: false }, { path: "G:/Drive condivisi/CAA Istituto/CAA", create: false }]);
+});
+
+test("«Crea la biblioteca qui» per chi imposta la biblioteca", async ({ page }) => {
+  await open(page, "", true, { entries: [] });
+  await tabLibrary(page);
+  const panel = page.locator(".docs-panel");
+  await panel.getByLabel("Percorso della cartella della biblioteca").fill("X:/sbagliato");
+  await panel.getByRole("button", { name: "Crea la biblioteca qui" }).click();
+  await expect(panel).toContainText("La biblioteca è vuota");
+  const calls = await page.evaluate(() => (window as any).__mock.lib.setCalls);
+  expect(calls).toEqual([{ path: "X:/sbagliato", create: true }]);
+});
+
+test("elenco della biblioteca: ricerca senza accenti, filtri, conflitti, file in sincronizzazione", async ({ page }) => {
+  await open(page, "", true, { configured: true, path: "G:/CAA", entries: LIB_ENTRIES, incomplete: 2 });
+  await tabLibrary(page);
+  const panel = page.locator(".docs-panel");
+  await expect(panel.locator(".lib-row")).toHaveCount(3);
+  await expect(panel.locator(".lib-state")).toHaveText("Collegata al Drive");
+  await expect(panel).toContainText("2 documenti sono ancora in sincronizzazione");
+  // Titolo, autore, materia e livello si vedono; i più recenti per primi.
+  await expect(panel.locator(".lib-row").first()).toContainText("La città di Marco");
+  await expect(panel.locator(".lib-row").first()).toContainText("Maria Rossi · Italiano · Primaria");
+  await expect(panel.locator(".lib-row").first().locator(".docs-tag")).toHaveText(["storia", "sociale"]);
+  await expect(panel.locator(".docs-tag.conflict")).toHaveCount(1);
+  // «citta» trova «città»; l'autore, le etichette e più parole insieme.
+  const search = panel.getByLabel("Cerca nella biblioteca");
+  await search.fill("citta");
+  await expect(panel.locator(".lib-row")).toHaveCount(1);
+  await search.fill("bianchi");
+  await expect(panel.locator(".lib-row")).toHaveCount(1);
+  await expect(panel.locator(".lib-row")).toContainText("Le frazioni");
+  await search.fill("numeri frazioni");
+  await expect(panel.locator(".lib-row")).toHaveCount(1);
+  await search.fill("rossi");
+  await expect(panel.locator(".lib-row")).toHaveCount(2);
+  await search.fill("zzz");
+  await expect(panel).toContainText("Nessun documento corrisponde");
+  await search.fill("");
+  // I filtri hanno i valori senza doppioni per maiuscole («Italiano» e «italiano» sono la stessa materia).
+  await expect(panel.getByLabel("Materia").locator("option")).toHaveText(["Tutte le materie", "Italiano", "Matematica"]);
+  await expect(panel.getByLabel("Livello").locator("option")).toHaveText(["Tutti i livelli", "Primaria", "Secondaria"]);
+  await panel.getByLabel("Materia").selectOption("Italiano");
+  await expect(panel.locator(".lib-row")).toHaveCount(2);
+  await panel.getByLabel("Livello").selectOption("Secondaria");
+  await expect(panel).toContainText("Nessun documento corrisponde");
+  await panel.getByLabel("Materia").selectOption("");
+  await expect(panel.locator(".lib-row")).toHaveCount(1);
+});
+
+test("senza il Drive: ultima copia, indicatore arancione, poi di nuovo collegata", async ({ page }) => {
+  await open(page, "", true, { configured: true, path: "G:/CAA", reachable: false, cached: [LIB_ENTRIES[0]], entries: LIB_ENTRIES });
+  await expect(page.locator(".lib-status")).toContainText("non raggiungibile");
+  await expect(page.locator(".lib-status")).toHaveClass(/off/);
+  await tabLibrary(page);
+  const panel = page.locator(".docs-panel");
+  await expect(panel.locator(".lib-state")).toContainText("Drive non raggiungibile");
+  await expect(panel.locator(".lib-row")).toHaveCount(1);
+  // Il Drive torna: «Aggiorna» e l'indicatore (controllo ogni pochi secondi) lo mostrano.
+  await page.evaluate(() => { (window as any).__mock.lib.reachable = true; });
+  await panel.getByRole("button", { name: "Aggiorna" }).click();
+  await expect(panel.locator(".lib-row")).toHaveCount(3);
+  await expect(panel.locator(".lib-state")).toHaveText("Collegata al Drive");
+  await expect(page.locator(".lib-status")).toHaveClass(/on/, { timeout: 5000 });
+  // E se sparisce di nuovo, l'indicatore lo segnala da solo.
+  await page.evaluate(() => { (window as any).__mock.lib.reachable = false; });
+  await expect(page.locator(".lib-status")).toHaveClass(/off/, { timeout: 5000 });
+});
+
+test("Adatta: una copia personale che si apre subito; se non riesce, lo dice", async ({ page }) => {
+  await open(page, "", true, { configured: true, path: "G:/CAA", entries: LIB_ENTRIES });
+  await tabLibrary(page);
+  const panel = page.locator(".docs-panel");
+  await panel.locator(".lib-row", { hasText: "Le frazioni" }).getByRole("button", { name: "Adatta" }).click();
+  await expect(panel).toHaveCount(0);
+  // La copia è aperta nell'editor, col titolo dell'originale, e ricorda da dove viene.
+  await expect(page.locator(".doc-title")).toHaveValue("Le frazioni");
+  expect(await page.evaluate(() => (window as any).caaProto.view.state.doc.textContent)).toBe("Copia di Le frazioni");
+  const stored = await page.evaluate(() => [...(window as any).__mock.docsStore.values()].map((v: any) => v.entry));
+  expect(stored).toHaveLength(1);
+  expect(stored[0].origin).toEqual({ id: "id-2", rev: 1 });
+  expect(await page.evaluate(() => (window as any).__mock.lib.adapts)).toEqual(["frazioni.caa"]);
+  // Un errore: messaggio nel pannello, che resta aperto e il pulsante torna attivo.
+  await page.evaluate(() => { (window as any).__mock.lib.adaptFail = true; });
+  await tabLibrary(page);
+  const btn = page.locator(".docs-panel .lib-row", { hasText: "La città" }).getByRole("button", { name: "Adatta" });
+  await btn.click();
+  await expect(page.locator(".docs-panel")).toContainText("Non riesco a fare la copia di «La città di Marco»");
+  await expect(btn).toBeEnabled();
 });

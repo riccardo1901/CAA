@@ -1,6 +1,8 @@
 // Il pannello «Documenti» (M9a): due schede, «I miei documenti» (la cartella `Documenti\CAA`) e
 // «Biblioteca» (il Drive condiviso dell'istituto, in arrivo con M9b).
-import type { DocClient, DocEntry } from "../engine/client";
+import type { DocClient, DocEntry, LibraryClient, LibStatus } from "../engine/client";
+import { showLibraryTab } from "./library";
+import { formatWhen } from "./panel-format";
 import type { Session } from "./session";
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string): HTMLElementTagNameMap[K] {
@@ -10,19 +12,22 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: 
   return e;
 }
 
-/** Data e ora di un documento come le scrive il docente (il manifest ha la data in UTC). */
-export function formatWhen(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
-}
-
 export interface DocsPanel {
-  open(): void;
+  open(tab?: "mine" | "library"): void;
   close(): void;
 }
 
-export function createDocsPanel(docs: DocClient, session: Session, confirmDelete: (title: string) => boolean, onClose?: () => void): DocsPanel {
+export interface PanelOptions {
+  /** La biblioteca nel Drive condiviso (assente: la scheda dice che non c'è). */
+  library?: LibraryClient;
+  /** Lo stato della biblioteca è cambiato (cartella scelta). */
+  libraryChanged?: (status: LibStatus) => void;
+  /** Si chiude il pannello (il cursore torna nel testo). */
+  onClose?: () => void;
+}
+
+export function createDocsPanel(docs: DocClient, session: Session, confirmDelete: (title: string) => boolean, opts: PanelOptions = {}): DocsPanel {
+  const onClose = opts.onClose;
   let overlay: HTMLElement | null = null;
 
   const close = (): void => {
@@ -41,7 +46,7 @@ export function createDocsPanel(docs: DocClient, session: Session, confirmDelete
     }
   }
 
-  function open(): void {
+  function open(tab: "mine" | "library" = "mine"): void {
     close();
     overlay = el("div", "docs-overlay");
     const box = el("div", "docs-panel");
@@ -131,13 +136,23 @@ export function createDocsPanel(docs: DocClient, session: Session, confirmDelete
     const showLibrary = (): void => {
       library.classList.add("on");
       mine.classList.remove("on");
-      body.replaceChildren(
-        el("p", "docs-note", "La biblioteca dell'istituto (il Drive condiviso) arriva con la prossima versione del programma: qui compariranno i documenti di riferimento da adattare e quelli che pubblichi tu."),
-      );
+      if (!opts.library) {
+        body.replaceChildren(el("p", "docs-note", "La biblioteca dell'istituto non è disponibile in questa versione."));
+        return;
+      }
+      showLibraryTab(body, {
+        library: opts.library,
+        changed: (s) => opts.libraryChanged?.(s),
+        openCopy: async (file) => {
+          await session.openFile(file);
+          close();
+        },
+      });
     };
     mine.addEventListener("click", () => void showMine());
     library.addEventListener("click", showLibrary);
-    void showMine();
+    if (tab === "library") showLibrary();
+    else void showMine();
   }
 
   return { open, close };

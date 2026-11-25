@@ -106,6 +106,8 @@ export interface Bars {
   docsButton: HTMLButtonElement;
   titleInput: HTMLInputElement;
   saveStatus: HTMLElement;
+  /** Lo stato della biblioteca nel Drive condiviso (nascosto finché non c'è). */
+  libStatus: HTMLButtonElement;
   toolbar: HTMLElement;
   statusbar: HTMLElement;
   banner: HTMLElement;
@@ -322,7 +324,10 @@ export function createBars(
   titleInput.maxLength = 120;
   titleInput.setAttribute("aria-label", "Titolo del documento");
   const saveStatus = el("span", "save-status");
-  docbar.append(docsButton, titleInput, el("span", "grow"), saveStatus);
+  const libStatus = el("button", "lib-status");
+  libStatus.type = "button";
+  libStatus.hidden = true;
+  docbar.append(docsButton, titleInput, el("span", "grow"), libStatus, saveStatus);
 
   const getPrefs = (): DocPrefs => ({ preset: select.value as Preset, table: { ...table }, size: getSize(), cards: cards.checked });
   const setPrefs = (p: Partial<DocPrefs>): void => {
@@ -340,5 +345,5 @@ export function createBars(
     refresh();
   };
 
-  return { docbar, docsButton, titleInput, saveStatus, toolbar, statusbar, banner, refresh, getPrefs, setPrefs, onPrefsChange: (cb) => prefsListeners.push(cb) };
+  return { docbar, docsButton, titleInput, saveStatus, libStatus, toolbar, statusbar, banner, refresh, getPrefs, setPrefs, onPrefsChange: (cb) => prefsListeners.push(cb) };
 }

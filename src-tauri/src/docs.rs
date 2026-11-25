@@ -293,6 +293,14 @@ impl DocStore {
         Ok(entry)
     }
 
+    /// Scrive un documento intero (una copia da adattare) con un nome libero preso dal titolo.
+    pub fn write_document(&self, doc: &Document) -> Result<DocEntry, String> {
+        std::fs::create_dir_all(&self.dir).map_err(|e| format!("cartella non disponibile: {e}"))?;
+        let file = self.free_name(&doc.manifest.title);
+        caa_doc::write(&self.dir.join(&file), doc).map_err(|e| e.to_string())?;
+        Ok(entry_of(&file, &doc.manifest))
+    }
+
     pub fn open(&self, file: &str, custom: &CustomStore) -> Result<Opened, String> {
         let path = self.path(file)?;
         let loaded = caa_doc::read(&path).map_err(|e| e.to_string())?;

@@ -6,7 +6,13 @@ use std::path::{Path, PathBuf};
 use crate::config::SharedConfig;
 
 /// Le sottocartelle di una biblioteca.
-pub const SUBFOLDERS: [&str; 5] = ["biblioteca", "archivio", "simboli", "correzioni", "aggiornamenti"];
+pub const SUBFOLDERS: [&str; 5] = [
+    "biblioteca",
+    "archivio",
+    "simboli",
+    "correzioni",
+    "aggiornamenti",
+];
 
 const SHARED_NAMES: [&str; 2] = ["Drive condivisi", "Shared drives"];
 
@@ -27,7 +33,11 @@ pub fn is_library(path: &Path) -> bool {
 /// configurazione solo quel Drive; la cartella è `config.folder` (predefinita `CAA`). Non scende altrove e non
 /// legge i file: solo i nomi delle cartelle.
 pub fn find_candidates(roots: &[PathBuf], cfg: &SharedConfig) -> Vec<Candidate> {
-    let folder = cfg.folder.as_deref().filter(|f| !f.is_empty()).unwrap_or("CAA");
+    let folder = cfg
+        .folder
+        .as_deref()
+        .filter(|f| !f.is_empty())
+        .unwrap_or("CAA");
     let mut out = Vec::new();
     for root in roots {
         for shared in SHARED_NAMES {

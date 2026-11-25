@@ -56,7 +56,10 @@ pub fn save_settings(dir: &Path, s: &Settings) -> std::io::Result<()> {
     std::fs::create_dir_all(dir)?;
     let path = dir.join(SETTINGS_FILE);
     let tmp = dir.join(format!("{SETTINGS_FILE}.{}.tmp", std::process::id()));
-    std::fs::write(&tmp, serde_json::to_vec_pretty(s).map_err(std::io::Error::other)?)?;
+    std::fs::write(
+        &tmp,
+        serde_json::to_vec_pretty(s).map_err(std::io::Error::other)?,
+    )?;
     std::fs::rename(&tmp, &path)
 }
 
