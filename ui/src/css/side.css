@@ -33,7 +33,21 @@
   border-bottom: 1px solid var(--c-line);
 }
 .side-panel.closed .side-head { flex-direction: column; padding: var(--s-2) 0; border-bottom: 0; }
-.side-title { flex: 1; font-family: var(--f-title); font-weight: 700; color: var(--c-text-2); }
+/* Linguette delle schede: Simbolo, Pagina, Memoria. */
+.side-tabs { flex: 1; display: flex; gap: var(--s-1); min-width: 0; }
+.side-tab {
+  min-height: 1.75rem;
+  padding: 0 var(--s-3);
+  border-color: transparent;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--c-text-2);
+  font-family: var(--f-title);
+  font-weight: 700;
+}
+.side-tab.on { background: var(--c-selected); color: var(--c-accent-hover); }
+/* Le schede oltre «Simbolo» hanno lo stesso riquadro. */
+.side-pane:not(.side) { flex: 1; min-height: 0; overflow: auto; padding: var(--s-3) var(--s-4); background: var(--c-panel); outline: none; }
 .side-toggle { border-color: transparent; background: transparent; }
 .side {
   flex: 1;

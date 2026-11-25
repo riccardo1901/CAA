@@ -34,6 +34,9 @@ let sideEl: HTMLElement | null = null;
 /** La sessione del documento (salvataggio automatico, apertura): c'è solo con l'archivio dei documenti. */
 let session: Session | null = null;
 let root: HTMLElement;
+/** Il pannello laterale (M11-4): le parti del programma ci aggiungono le loro schede («Pagina», «Memoria»). */
+let pannelloLaterale: ReturnType<typeof creaPannelloLaterale> | null = null;
+export const pannelloLateraleAttuale = (): ReturnType<typeof creaPannelloLaterale> | null => pannelloLaterale;
 
 export function replaceDocument(doc: PMNode): void {
   replaceDoc(view, doc);
@@ -65,10 +68,12 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
   const pannello = creaPannelloLaterale(sideEl, layoutEl, layoutEl.querySelector<HTMLElement>(".sheet-wrap")!);
   layoutEl.appendChild(pannello.root);
   hooks.apriBarra = () => {
-    pannello.apri();
+    // Una parola da mostrare: la scheda «Simbolo».
+    pannello.mostraScheda("simbolo");
     // Dopo che la parola è evidenziata: se il pannello sta sopra il foglio, la parola non deve restare coperta.
     requestAnimationFrame(() => pannello.mostraParola());
   };
+  pannelloLaterale = pannello;
   hooks.lasciaBarra = () => {
     if (pannello.sopra()) pannello.chiudi();
   };

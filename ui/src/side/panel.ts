@@ -5,7 +5,8 @@
 //   - schermo stretto: il pannello parte chiuso (una striscia stretta con il pulsante per aprirlo); quando si apre
 //     (pulsante, clic sul simbolo, Alt+↓, F8) si appoggia SOPRA la scrivania, senza spostare il foglio, e si richiude
 //     con il pulsante o con Esc.
-// Le schede (Simbolo, Pagina, Memoria) arrivano in M11-5 e M11-7: per ora c'è la sola «Simbolo».
+// Schede: «Simbolo» (le alternative della parola) e quelle aggiunte con aggiungiScheda() («Pagina» in M11-5,
+// «Memoria» in M11-7). Le linguette si scorrono con ← → (Home, Fine); una sola scheda alla volta è visibile.
 import { icona } from "../ui/icons";
 import { suggerimento } from "../ui/tooltip";
 
@@ -20,6 +21,14 @@ export interface PannelloLaterale {
   aggiorna(): void;
   /** Con il pannello sopra il foglio: fa scorrere il foglio perché la parola scelta non resti coperta. */
   mostraParola(): void;
+  /** Aggiunge una scheda (dopo quelle che ci sono). Il contenuto diventa il suo riquadro. */
+  aggiungiScheda(id: string, nome: string, contenuto: HTMLElement): void;
+  /** Apre il pannello sulla scheda indicata (con fuoco: il fuoco va sulla linguetta). */
+  mostraScheda(id: string, fuoco?: boolean): void;
+  /** La scheda visibile adesso. */
+  schedaAttiva(): string;
+  /** Chiamata quando cambia la scheda visibile. */
+  onScheda(cb: (id: string) => void): void;
 }
 
 export function creaPannelloLaterale(contenuto: HTMLElement, layout: HTMLElement, wrap: HTMLElement): PannelloLaterale {
@@ -29,15 +38,55 @@ export function creaPannelloLaterale(contenuto: HTMLElement, layout: HTMLElement
   inner.className = "side-inner";
   const head = document.createElement("div");
   head.className = "side-head";
-  const titolo = document.createElement("span");
-  titolo.className = "side-title";
-  titolo.textContent = "Simbolo";
+  const linguette = document.createElement("div");
+  linguette.className = "side-tabs";
+  linguette.setAttribute("role", "tablist");
+  linguette.setAttribute("aria-label", "Pannello laterale");
   const toggle = document.createElement("button");
   toggle.type = "button";
   toggle.className = "side-toggle icon-only";
-  head.append(titolo, toggle);
-  inner.append(head, contenuto);
+  head.append(linguette, toggle);
+  inner.append(head);
   root.append(inner);
+
+  interface Scheda {
+    id: string;
+    tab: HTMLButtonElement;
+    pane: HTMLElement;
+  }
+  const schede: Scheda[] = [];
+  let attiva = "simbolo";
+  const ascoltatori: Array<(id: string) => void> = [];
+  function aggiungiScheda(id: string, nome: string, pane: HTMLElement): void {
+    const tab = document.createElement("button");
+    tab.type = "button";
+    tab.className = "side-tab";
+    tab.id = `scheda-${id}`;
+    tab.textContent = nome;
+    tab.setAttribute("role", "tab");
+    pane.id = pane.id || `riquadro-${id}`;
+    pane.setAttribute("role", "tabpanel");
+    pane.setAttribute("aria-labelledby", tab.id);
+    pane.classList.add("side-pane");
+    tab.setAttribute("aria-controls", pane.id);
+    tab.addEventListener("click", () => mostraScheda(id));
+    linguette.append(tab);
+    inner.append(pane);
+    schede.push({ id, tab, pane });
+    disegna();
+  }
+  // Frecce fra le linguette (come vuole il ruolo «tablist»).
+  linguette.addEventListener("keydown", (e) => {
+    const i = schede.findIndex((s) => s.id === attiva);
+    let j = -1;
+    if (e.key === "ArrowRight") j = (i + 1) % schede.length;
+    else if (e.key === "ArrowLeft") j = (i - 1 + schede.length) % schede.length;
+    else if (e.key === "Home") j = 0;
+    else if (e.key === "End") j = schede.length - 1;
+    if (j < 0) return;
+    e.preventDefault();
+    mostraScheda(schede[j].id, true);
+  });
 
   let chiusoDalDocente = false; // schermo largo: il docente l'ha chiuso
   let apertoSopra = false; // schermo stretto: aperto sopra la scrivania
@@ -64,8 +113,14 @@ export function creaPannelloLaterale(contenuto: HTMLElement, layout: HTMLElement
     root.classList.toggle("sopra", stretto && ap);
     // Con il pannello sopra, la scrivania si allarga a destra: il foglio può scorrere da sotto il pannello.
     layout.classList.toggle("con-pannello-sopra", stretto && ap);
-    contenuto.hidden = !ap;
-    titolo.hidden = !ap;
+    linguette.hidden = !ap;
+    for (const s of schede) {
+      const qui = s.id === attiva;
+      s.pane.hidden = !ap || !qui;
+      s.tab.setAttribute("aria-selected", String(qui));
+      s.tab.tabIndex = qui ? 0 : -1;
+      s.tab.classList.toggle("on", qui);
+    }
     toggle.replaceChildren(icona(ap ? "chiudiPannello" : "apriPannello"));
     const nome = ap ? "Chiudi il pannello dei simboli" : "Apri il pannello dei simboli";
     toggle.setAttribute("aria-label", nome);
@@ -95,9 +150,19 @@ export function creaPannelloLaterale(contenuto: HTMLElement, layout: HTMLElement
     if (aperto()) chiudi();
     else {
       apri();
-      contenuto.focus();
+      (schede.find((s) => s.id === attiva)?.pane ?? contenuto).focus();
     }
   });
+
+  function mostraScheda(id: string, fuoco = false): void {
+    if (!schede.some((s) => s.id === id)) return;
+    const cambia = id !== attiva;
+    attiva = id;
+    apri();
+    if (fuoco) schede.find((s) => s.id === id)?.tab.focus();
+    if (cambia) ascoltatori.forEach((cb) => cb(id));
+  }
+  aggiungiScheda("simbolo", "Simbolo", contenuto);
 
   // Il modo segue la finestra e il foglio (A4 verticale o orizzontale, margini).
   const ro = new ResizeObserver(() => aggiorna());
@@ -117,5 +182,17 @@ export function creaPannelloLaterale(contenuto: HTMLElement, layout: HTMLElement
     else if (r.left - margine < wrap.getBoundingClientRect().left) wrap.scrollLeft -= wrap.getBoundingClientRect().left - r.left + margine;
   }
 
-  return { root, apri, chiudi, aperto, sopra: () => stretto && aperto(), aggiorna, mostraParola };
+  return {
+    root,
+    apri,
+    chiudi,
+    aperto,
+    sopra: () => stretto && aperto(),
+    aggiorna,
+    mostraParola,
+    aggiungiScheda,
+    mostraScheda,
+    schedaAttiva: () => attiva,
+    onScheda: (cb) => ascoltatori.push(cb),
+  };
 }

@@ -174,7 +174,7 @@ for (const s of SCHERMI) {
     let base: Awaited<ReturnType<typeof misure>>;
 
     const nuovaPagina = async (browser: Browser) => {
-      context = await browser.newContext({ viewport: s.css, deviceScaleFactor: s.scala, baseURL: "http://localhost:1421" });
+      context = await browser.newContext({ viewport: s.css, deviceScaleFactor: s.scala, baseURL: `http://localhost:${process.env.CAA_PORTA ?? 1421}` });
       page = await context.newPage();
       await caratteriFissi(page);
     };
