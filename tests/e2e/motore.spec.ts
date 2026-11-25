@@ -2290,6 +2290,19 @@ const pdfSize = (file: string): [number, number] => {
 const pdfPages = (file: string): string[] => execFileSync("pdftotext", ["-layout", file, "-"]).toString().split("\f").filter((t) => t.trim() !== "");
 const ATTR = "Sergio Palao per ARASAAC";
 
+/** Quanti pixel non bianchi ha la prima pagina del PDF (a bassa risoluzione): serve a vedere se i simboli ci sono. */
+function darkPixels(file: string): number {
+  const out = file.replace(/\.pdf$/, "");
+  execFileSync("pdftoppm", ["-r", "40", "-gray", "-f", "1", "-l", "1", file, out]);
+  const pgm = readFileSync(`${out}-1.pgm`);
+  // Intestazione P5: tre righe di testo (formato, dimensioni, massimo) e poi i byte dei pixel.
+  let pos = 0;
+  for (let lines = 0; lines < 3; pos++) if (pgm[pos] === 0x0a) lines++;
+  let n = 0;
+  for (let i = pos; i < pgm.length; i++) if (pgm[i] < 240) n++;
+  return n;
+}
+
 async function openPrintDialog(page: Page) {
   await page.getByRole("button", { name: "Stampa…" }).click();
   return page.locator(".print-dialog");
@@ -2311,6 +2324,22 @@ test("stampa: A4 verticale, attribuzione su ogni pagina, nessuna parola spezzata
   // Simbolo e parola sono un'unica unità che non si divide.
   const style = await page.locator(".w").first().evaluate((e) => ({ d: getComputedStyle(e).display, b: getComputedStyle(e).breakInside }));
   expect(style).toEqual({ d: "inline-block", b: "avoid" });
+});
+
+test("stampa: i simboli escono anche con «Grafica di sfondo» spenta nel dialogo di stampa", async ({ page }) => {
+  await open(page, "Marco mangia pane");
+  await page.keyboard.press("Control+3"); // grande: i simboli pesano molto più del testo
+  await page.waitForFunction(() => (window as any).caaProto.engineStats().pending === 0);
+  await page.emulateMedia({ media: "print" });
+  const dir = mkdtempSync(join(tmpdir(), "caa-bg-"));
+  const withBg = join(dir, "con.pdf");
+  const noBg = join(dir, "senza.pdf");
+  writeFileSync(withBg, await page.pdf({ preferCSSPageSize: true, printBackground: true }));
+  writeFileSync(noBg, await page.pdf({ preferCSSPageSize: true, printBackground: false }));
+  const a = darkPixels(withBg);
+  const b = darkPixels(noBg);
+  expect(a).toBeGreaterThan(1500); // ci sono i simboli (il solo testo ne ha molti meno)
+  expect(Math.abs(a - b)).toBeLessThan(a * 0.02); // senza «sfondi» stampano uguale
 });
 
 test("stampa: orizzontale, margini e interfaccia nascosta", async ({ page }) => {

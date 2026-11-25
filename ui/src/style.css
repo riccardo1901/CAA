@@ -491,6 +491,8 @@ body { margin: 0; }
 .print-actions button:first-child { background: #2a5db0; border-color: #2a5db0; color: #fff; }
 
 @media print {
+  /* Gli sfondi (i simboli sono immagini di sfondo) escono anche con «Grafica di sfondo» spenta nel dialogo di stampa. */
+  html, body, body * , .w::before, .w::after { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   html, body { height: auto; overflow: visible; background: #fff; }
   body > :not(#app) { display: none !important; }
   .app, .app .layout, .layout, .sheet-wrap { display: block; height: auto; min-height: 0; overflow: visible; padding: 0; margin: 0; background: #fff; }
