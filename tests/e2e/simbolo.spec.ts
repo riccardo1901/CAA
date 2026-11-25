@@ -173,17 +173,25 @@ test("scheda Memoria: i miei simboli si eliminano (con conferma) e spariscono an
   await expect(page.locator(".pm-custom .pm-mini")).toHaveCount(1);
 });
 
-test("← → fra le linguette Simbolo e Memoria", async ({ page }) => {
+test("← → fra le linguette Simbolo, Pagina e Memoria (in quest'ordine), Home e Fine", async ({ page }) => {
   await open(page, "Marco mangia pane");
   await scheda(page, "Simbolo").focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(scheda(page, "Pagina")).toBeFocused();
   await page.keyboard.press("ArrowRight");
   await expect(scheda(page, "Memoria")).toBeFocused();
   await expect(scheda(page, "Memoria")).toHaveAttribute("aria-selected", "true");
   await expect(memoria(page)).toBeVisible();
   await page.keyboard.press("ArrowLeft");
+  await expect(scheda(page, "Pagina")).toBeFocused();
+  await page.keyboard.press("Home");
   await expect(scheda(page, "Simbolo")).toBeFocused();
   await expect(page.locator(".side")).toBeVisible();
   await expect(memoria(page)).toBeHidden();
+  await page.keyboard.press("End");
+  await expect(scheda(page, "Memoria")).toBeFocused();
+  await page.keyboard.press("ArrowRight");
+  await expect(scheda(page, "Simbolo")).toBeFocused(); // gira in tondo
 });
 
 test("un clic sul simbolo di una parola riporta alla scheda Simbolo; Esc nella Memoria torna al testo", async ({ page }) => {

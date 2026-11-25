@@ -68,7 +68,6 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
   sideEl = createSidebar();
   const pannello = creaPannelloLaterale(sideEl, layoutEl, layoutEl.querySelector<HTMLElement>(".sheet-wrap")!);
   layoutEl.appendChild(pannello.root);
-  attachMemoryTab(pannello); // M11-7: la scheda «Memoria» (Cosa ricordo, I miei simboli)
   hooks.apriBarra = () => {
     // Una parola da mostrare: la scheda «Simbolo».
     pannello.mostraScheda("simbolo");
@@ -98,6 +97,7 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
     () => (session ? void session.newDocument(sampleDoc(1)) : confirmReplace(() => sampleDoc(1))()),
   );
   bars.collegaPannello(pannello); // la scheda «Pagina» (M11-5): le impostazioni di stampa accanto al foglio
+  attachMemoryTab(pannello); // M11-7: la scheda «Memoria» (Cosa ricordo, I miei simboli), dopo «Pagina»
   // Per le prove automatiche: le preferenze del documento (stampa, contorno, dimensione) senza passare dai pulsanti,
   // che in M11 cambiano posto. Nessun effetto per il docente.
   Object.assign((window as unknown as { caaProto: object }).caaProto, { getPrefs: bars.getPrefs, setPrefs: bars.setPrefs, setAuthor: bars.setAuthor });
