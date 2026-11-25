@@ -23,6 +23,7 @@ import { emptyDoc, fragmentsDoc, sampleDoc } from "./sample";
 import type { Node as PMNode } from "prosemirror-model";
 import { icona } from "./ui/icons";
 import { installaSuggerimenti } from "./ui/tooltip";
+import { conferma } from "./ui/confirm";
 
 let view: EditorView;
 let size = 68;
@@ -64,9 +65,9 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
   app.className = "app";
   // "Nuovo" e "Testo di esempio" buttano via il documento aperto (il salvataggio arriva con M9): si chiede conferma
   // se c'è del testo.
-  const confirmReplace = (make: () => PMNode) => () => {
+  const confirmReplace = (make: () => PMNode) => async () => {
     const hasText = view.state.doc.textContent.trim().length > 0;
-    if (hasText && !window.confirm("Il documento aperto andrà perso. Continuare?")) return;
+    if (hasText && !(await conferma({ domanda: "Il documento aperto andrà perso. Continuare?", azione: "Continua", pericolo: true }))) return;
     replaceDocument(make());
   };
   const docs = client?.docs ?? null;
@@ -109,7 +110,7 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
         bars.banner.hidden = false;
         bars.banner.textContent = message;
       },
-      confirm: (m) => window.confirm(m),
+      confirm: conferma,
       notice: (m) => hooks.notice?.(m),
       titleInput: bars.titleInput,
       saveStatus: bars.saveStatus,
@@ -130,7 +131,7 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
       bars.libStatus.className = `lib-status ${s.reachable ? "on" : "off"}`;
       bars.libStatus.title = s.path ?? "";
     };
-    const panel = createDocsPanel(docs, session, (title) => window.confirm(`Eliminare «${title}»? Non si può annullare.`), {
+    const panel = createDocsPanel(docs, session, (title) => conferma({ domanda: `Eliminare «${title}»?`, spiegazione: "Il documento si cancella da questo computer. Non si può annullare.", azione: "Elimina", pericolo: true }), {
       library: lib,
       libraryChanged: showLib,
       corrections: client?.corrections,

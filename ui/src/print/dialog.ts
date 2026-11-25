@@ -2,6 +2,7 @@
 import type { PrintPrefs } from "../docs/prefs";
 import { footerSupported } from "./print";
 import { conIcona } from "../ui/icons";
+import { finestra } from "../ui/dialog";
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
@@ -98,27 +99,13 @@ export function openPrintDialog(deps: PrintDialogDeps): () => void {
   overlay.append(dialog);
   document.body.append(overlay);
 
-  const finish = (): void => {
-    document.removeEventListener("keydown", onKey, true);
-    overlay.remove();
-  };
-  const onKey = (e: KeyboardEvent): void => {
-    if (e.key === "Escape") {
-      e.preventDefault();
-      e.stopPropagation();
-      finish();
-    }
-  };
-  document.addEventListener("keydown", onKey, true);
+  // Comportamento unico delle finestre (M11-3).
+  const finish = finestra({ overlay, box: dialog, fuoco: go });
   go.addEventListener("click", () => {
     // La finestra non deve comparire nella stampa: si toglie prima.
     finish();
     deps.print();
   });
   close.addEventListener("click", finish);
-  overlay.addEventListener("mousedown", (e) => {
-    if (e.target === overlay) finish();
-  });
-  go.focus();
   return finish;
 }

@@ -17,7 +17,8 @@ export const hooks: {
   /** Divide l'unione o l'espressione della parola al cursore, o riunisce una divisione (Ctrl+Maiusc+D). */
   split: (() => boolean) | null;
   /** Un messaggio breve per il docente (barra di stato). */
-  notice: ((message: string) => void) | null;
+  /** Un messaggio per il docente: diventa una notifica (M11-3). Di partenza «avviso» (resta finché non si chiude). */
+  notice: ((message: string, tipo?: "info" | "ok" | "avviso" | "errore") => void) | null;
 } = { openAtCursor: null, next: null, openAt: null, merge: null, split: null, notice: null };
 
 /** Altezza (px) della zona del simbolo in una parola: il clic lì mostra le alternative, sul testo sposta il cursore. */

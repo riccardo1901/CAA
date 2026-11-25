@@ -6,6 +6,7 @@ import { TextSelection } from "prosemirror-state";
 import type { EditorView } from "prosemirror-view";
 import { cropImage } from "./customDialog";
 import { conIcona, type NomeIcona } from "./ui/icons";
+import { conferma } from "./ui/confirm";
 import type { CandidateDto, CustomSymbol, EngineClient, MemoryEntry } from "./engine/client";
 import { nextDoubtful, onEngineUpdate, setEngine, tokenAt, type TokenAt } from "./editor/engineSymbols";
 import { focusWordRange, hooks, revealPos, setFocusWord } from "./editor/menuHooks";
@@ -85,7 +86,7 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
       // Il motore ora decide in un altro modo: i paragrafi si rifanno.
       setEngine(view, client);
     } catch (e) {
-      hooks.notice?.(`Non sono riuscito a ricordare la scelta: ${String(e)}`);
+      hooks.notice?.(`Non sono riuscito a ricordare la scelta: ${String(e)}`, "errore");
     }
   };
   const memoryLabel = (m: MemoryEntry): string => (m.lemma !== "" ? m.lemma : m.form);
@@ -109,19 +110,25 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
             memory.forget(m).then(() => {
               setEngine(view, client);
               showEmpty();
-            }, (e: unknown) => hooks.notice?.(`Non sono riuscito a dimenticare: ${String(e)}`));
+            }, (e: unknown) => hooks.notice?.(`Non sono riuscito a dimenticare: ${String(e)}`, "errore"));
           });
           li.append(img, el("span", "", memoryLabel(m)), forget);
           ul.append(li);
         }
         const clear = conIcona(el("button", "", "Dimentica tutto"), "elimina");
         clear.type = "button";
-        clear.addEventListener("click", () => {
-          if (!window.confirm("Dimenticare tutte le scelte «per sempre»?")) return;
+        clear.addEventListener("click", async () => {
+          const ok = await conferma({
+            domanda: "Dimenticare tutte le scelte «per sempre»?",
+            spiegazione: "Le parole torneranno ai simboli proposti dal programma. Non si può annullare.",
+            azione: "Dimentica tutto",
+            pericolo: true,
+          });
+          if (!ok) return;
           memory.clear().then(() => {
             setEngine(view, client);
             showEmpty();
-          }, (e: unknown) => hooks.notice?.(`Non sono riuscito a dimenticare: ${String(e)}`));
+          }, (e: unknown) => hooks.notice?.(`Non sono riuscito a dimenticare: ${String(e)}`, "errore"));
         });
         wrap.append(ul, clear);
         box.append(wrap);
@@ -264,12 +271,12 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
           if (cropped.share && client.shared) {
             // Il simbolo si usa comunque: se il Drive non risponde, si può condividere più tardi.
             client.shared.share(symbol.uuid).then(
-              () => hooks.notice?.("Simbolo condiviso con la scuola."),
-              (e: unknown) => hooks.notice?.(`Simbolo salvato per te, ma non condiviso: ${String(e)}`),
+              () => hooks.notice?.("Simbolo condiviso con la scuola.", "ok"),
+              (e: unknown) => hooks.notice?.(`Simbolo salvato per te, ma non condiviso: ${String(e)}`, "avviso"),
             );
           }
         } catch (e) {
-          hooks.notice?.(`Non sono riuscito a salvare il simbolo: ${String(e)}`);
+          hooks.notice?.(`Non sono riuscito a salvare il simbolo: ${String(e)}`, "errore");
         }
       });
     });
@@ -361,8 +368,14 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
           x.type = "button";
           x.title = "Elimina questo simbolo dal computer (i documenti che lo usano lo tengono)";
           x.setAttribute("aria-label", `Elimina il simbolo ${c.label || "personale"}`);
-          x.addEventListener("click", () => {
-            if (!window.confirm(`Eliminare il simbolo «${c.label || "personale"}» da questo computer? I documenti che lo usano lo conservano.`)) return;
+          x.addEventListener("click", async () => {
+            const ok = await conferma({
+              domanda: `Eliminare il simbolo «${c.label || "personale"}» da questo computer?`,
+              spiegazione: "I documenti che lo usano lo conservano. Non si può annullare.",
+              azione: "Elimina",
+              pericolo: true,
+            });
+            if (!ok) return;
             del(c.uuid).then(
               () => {
                 customList = customList.filter((o) => o.uuid !== c.uuid);
@@ -370,7 +383,7 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
                 setEngine(view, client);
                 show(target ?? t, false);
               },
-              (e: unknown) => hooks.notice?.(`Non sono riuscito a eliminarlo: ${String(e)}`),
+              (e: unknown) => hooks.notice?.(`Non sono riuscito a eliminarlo: ${String(e)}`, "errore"),
             );
           });
           cell.append(x);
@@ -405,7 +418,7 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
                     customList = customList.some((o) => o.uuid === sym.uuid) ? customList : [...customList, sym];
                     choose({ kind: "picto", id: sym.id, uuid: sym.uuid });
                   },
-                  (e: unknown) => hooks.notice?.(`Non riesco a prendere il simbolo: ${String(e)}`),
+                  (e: unknown) => hooks.notice?.(`Non riesco a prendere il simbolo: ${String(e)}`, "errore"),
                 );
               });
               cell.append(b);
@@ -414,11 +427,17 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
                 x.type = "button";
                 x.title = "Ritira dalla scuola (va in archivio, non si cancella)";
                 x.setAttribute("aria-label", `Ritira dalla scuola il simbolo ${s.label || "simbolo"}`);
-                x.addEventListener("click", () => {
-                  if (!window.confirm(`Ritirare «${s.label || "simbolo"}» dalla scuola? Lo vedranno sparire tutti i docenti.`)) return;
+                x.addEventListener("click", async () => {
+                  const ok = await conferma({
+                    domanda: `Ritirare «${s.label || "simbolo"}» dalla scuola?`,
+                    spiegazione: "Lo vedranno sparire tutti i docenti. Va in archivio: non si cancella.",
+                    azione: "Ritira",
+                    pericolo: true,
+                  });
+                  if (!ok) return;
                   school.retire(s.uuid).then(
                     () => open.click(),
-                    (e: unknown) => hooks.notice?.(`Non sono riuscito a ritirarlo: ${String(e)}`),
+                    (e: unknown) => hooks.notice?.(`Non sono riuscito a ritirarlo: ${String(e)}`, "errore"),
                   );
                 });
                 cell.append(x);

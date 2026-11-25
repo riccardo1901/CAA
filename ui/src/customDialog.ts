@@ -3,6 +3,7 @@
 // Tutto avviene sul computer: niente va in rete.
 import { hooks } from "./editor/menuHooks";
 import { conIcona } from "./ui/icons";
+import { finestra } from "./ui/dialog";
 
 /** Lato dell'anteprima e dell'immagine finale (px). */
 const PREVIEW = 320;
@@ -30,7 +31,7 @@ export function cropImage(file: File, word: string, canShare = false): Promise<C
     const img = new Image();
     img.onerror = () => {
       URL.revokeObjectURL(url);
-      hooks.notice?.("Non riesco a leggere questa immagine: prova con un file PNG o JPG.");
+      hooks.notice?.("Non riesco a leggere questa immagine: prova con un file PNG o JPG.", "errore");
       resolve(null);
     };
     img.onload = () => {
@@ -125,24 +126,22 @@ export function cropImage(file: File, word: string, canShare = false): Promise<C
       canvas.addEventListener("pointerup", end);
       canvas.addEventListener("pointercancel", end);
 
-      const close = (blob: Cropped | null) => {
-        document.removeEventListener("keydown", onKey, true);
-        overlay.remove();
-        URL.revokeObjectURL(url);
-        resolve(blob);
-      };
-      const onKey = (e: KeyboardEvent) => {
-        if (e.key === "Escape") {
-          e.preventDefault();
-          e.stopPropagation();
-          close(null);
-        }
-      };
-      document.addEventListener("keydown", onKey, true);
-      cancel.addEventListener("click", () => close(null));
-      overlay.addEventListener("mousedown", (e) => {
-        if (e.target === overlay) close(null);
+      // Comportamento unico delle finestre (M11-3): Esc o un clic fuori annullano.
+      let risultato: Cropped | null = null;
+      const chiudi = finestra({
+        overlay,
+        box: dialog,
+        fuoco: ok,
+        onChiudi: () => {
+          URL.revokeObjectURL(url);
+          resolve(risultato);
+        },
       });
+      const close = (blob: Cropped | null) => {
+        risultato = blob;
+        chiudi();
+      };
+      cancel.addEventListener("click", () => close(null));
       ok.addEventListener("click", () => {
         const out = el("canvas");
         out.width = OUTPUT;
@@ -151,7 +150,7 @@ export function cropImage(file: File, word: string, canShare = false): Promise<C
         out.toBlob(
           (blob) => {
             if (!blob || blob.type !== "image/webp") {
-              hooks.notice?.("Non riesco a preparare l'immagine.");
+              hooks.notice?.("Non riesco a preparare l'immagine.", "errore");
               close(null);
               return;
             }
@@ -161,7 +160,6 @@ export function cropImage(file: File, word: string, canShare = false): Promise<C
           0.9,
         );
       });
-      ok.focus();
     };
     img.src = url;
   });

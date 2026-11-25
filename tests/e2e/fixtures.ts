@@ -195,6 +195,9 @@ export async function open(page: Page, text?: string, docs = false, library: Rec
       (window as any).__caaLibPollMs = 300;
       (window as any).__caaAutosaveMs = 150;
       (window as any).__caaRetryMs = 300;
+      // Le conferme del programma (M11-3) dicono «sì» da sole, come prima la conferma del browser accettata qui sopra.
+      // Le prove delle finestre (finestre.spec.ts) tolgono questa risposta e usano la finestra vera.
+      (window as any).__caaConferma = () => true;
       p.setSize(68);
       if (txt !== undefined) {
         const doc = p.view.state.schema.nodes.doc.create(null, txt.split("\n").map((t: string) => p.view.state.schema.nodes.paragraph.create(null, t ? p.view.state.schema.text(t) : undefined)));
@@ -207,4 +210,11 @@ export async function open(page: Page, text?: string, docs = false, library: Rec
   // Un documento vuoto non ha simboli da aspettare: basta che l'interfaccia del motore sia su.
   if (text === "") await page.waitForSelector(".statusbar");
   else await page.waitForSelector(".w[style*='--img']");
+}
+
+/** La risposta automatica alle conferme del programma, da qui in avanti (true = l'azione, false = Annulla). */
+export async function rispondiConferma(page: Page, si: boolean): Promise<void> {
+  await page.evaluate((r) => {
+    (window as any).__caaConferma = () => r;
+  }, si);
 }

@@ -3,6 +3,7 @@
 import type { CorrectionsClient, LibEntry, LibraryClient, LibScan, LibStatus } from "../engine/client";
 import { formatWhen } from "./panel-format";
 import { conIcona } from "../ui/icons";
+import type { Conferma } from "../ui/confirm";
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
@@ -43,7 +44,8 @@ export interface LibraryTabDeps {
   openCopy(file: string): Promise<void>;
   /** Lo stato della biblioteca è cambiato (cartella scelta): aggiorna l'indicatore in alto. */
   changed(status: LibStatus): void;
-  confirm(message: string): boolean;
+  /** Chiede conferma al docente (finestra del programma). */
+  confirm(c: Conferma): Promise<boolean>;
   /** Le correzioni anonime (M9c-3): se c'è, in fondo alla scheda c'è la sezione per vederle e inviarle. */
   corrections?: CorrectionsClient;
 }
@@ -218,8 +220,14 @@ export function showLibraryTab(body: HTMLElement, deps: LibraryTabDeps): void {
         const retire = conIcona(el("button", "", "Ritira"), "ritira");
         retire.type = "button";
         retire.title = "Il documento esce dalla biblioteca (resta nella cartella «archivio»)";
-        retire.addEventListener("click", () => {
-          if (!deps.confirm(`Ritirare «${e.title}» dalla biblioteca? Esce dall'elenco ma resta nella cartella «archivio» del Drive.`)) return;
+        retire.addEventListener("click", async () => {
+          const ok = await deps.confirm({
+            domanda: `Ritirare «${e.title}» dalla biblioteca?`,
+            spiegazione: "Esce dall'elenco ma resta nella cartella «archivio» del Drive.",
+            azione: "Ritira",
+            pericolo: true,
+          });
+          if (!ok) return;
           retire.disabled = true;
           library.retire(e.file).then(
             () => void list(),
@@ -303,8 +311,14 @@ export function showLibraryTab(body: HTMLElement, deps: LibraryTabDeps): void {
     const discard = conIcona(el("button", "", "Butta via"), "elimina");
     discard.type = "button";
     discard.disabled = info.pending === 0;
-    discard.addEventListener("click", () => {
-      if (!deps.confirm("Buttare via le correzioni raccolte senza inviarle?")) return;
+    discard.addEventListener("click", async () => {
+      const ok = await deps.confirm({
+        domanda: "Buttare via le correzioni raccolte senza inviarle?",
+        spiegazione: "Non si può annullare.",
+        azione: "Butta via",
+        pericolo: true,
+      });
+      if (!ok) return;
       c.discard().then(() => {
         count.textContent = "Nessuna correzione in attesa.";
         show.disabled = send.disabled = discard.disabled = true;

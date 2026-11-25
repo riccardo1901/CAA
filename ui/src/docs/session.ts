@@ -1,5 +1,6 @@
 // La sessione del documento (M9a): quale file è aperto, titolo, salvataggio automatico, apertura e
 // documento nuovo. Il salvataggio automatico scrive solo nei documenti personali locali, mai nel Drive.
+import type { Conferma } from "../ui/confirm";
 import type { Node as PMNode } from "prosemirror-model";
 import type { EditorView } from "prosemirror-view";
 import { clearLegacy, dropLegacyToken, legacyDiff, onEngineUpdate, renderSnapshot, setLegacy, type LexChange } from "../editor/engineSymbols";
@@ -10,6 +11,14 @@ import type { DocClient, DocEntry, LibEntry, LibraryClient, OpenedDoc, SavePaylo
 import type { OriginalBar } from "./originalbar";
 import type { LexBar } from "./lexbar";
 import { COMPLETE_TABLE, DEFAULT_PRINT, sanitizePrefs, type DocPrefs } from "./prefs";
+
+/** Si sta per lasciare un documento che non si è salvato. */
+const PERSO: Conferma = {
+  domanda: "Il documento non si è salvato. Continuare?",
+  spiegazione: "Il documento aperto non si è salvato e andrà perso.",
+  azione: "Continua senza salvare",
+  pericolo: true,
+};
 
 export interface SessionDeps {
   view: EditorView;
@@ -23,7 +32,8 @@ export interface SessionDeps {
   setReadOnly(readOnly: boolean): void;
   /** Un avviso fisso in alto (`null` lo toglie). */
   banner(message: string | null): void;
-  confirm(message: string): boolean;
+  /** Chiede conferma al docente (M11-3: finestra del programma, si aspetta la risposta). */
+  confirm(c: Conferma): Promise<boolean>;
   /** Un messaggio breve per il docente. */
   notice(message: string): void;
   titleInput: HTMLInputElement;
@@ -320,7 +330,13 @@ export function createSession(deps: SessionDeps): Session {
 
   async function prepareClose(): Promise<boolean> {
     if (await flush()) return true;
-    return deps.confirm("Il documento aperto non si è salvato e le ultime modifiche andranno perse. Uscire comunque?");
+    return deps.confirm({
+      domanda: "Il documento non si è salvato. Uscire comunque?",
+      spiegazione: "Il documento aperto non si è salvato e le ultime modifiche andranno perse.",
+      azione: "Esci senza salvare",
+      annulla: "Resta nel programma",
+      pericolo: true,
+    });
   }
 
   const endLegacy = (save: boolean): void => {
@@ -431,7 +447,7 @@ export function createSession(deps: SessionDeps): Session {
   };
 
   async function newDocument(doc?: PMNode): Promise<void> {
-    if (!(await flush()) && !deps.confirm("Il documento aperto non si è salvato e andrà perso. Continuare?")) return;
+    if (!(await flush()) && !(await deps.confirm(PERSO))) return;
     startFresh(doc);
   }
 
@@ -479,7 +495,7 @@ export function createSession(deps: SessionDeps): Session {
   }
 
   async function openFile(file: string): Promise<void> {
-    if (!(await flush()) && !deps.confirm("Il documento aperto non si è salvato e andrà perso. Continuare?")) return;
+    if (!(await flush()) && !(await deps.confirm(PERSO))) return;
     const o: OpenedDoc = await deps.docs.open(file);
     present(o, false);
     void recheckOriginal();
@@ -487,7 +503,7 @@ export function createSession(deps: SessionDeps): Session {
 
   async function openOriginal(file: string): Promise<void> {
     if (!deps.library) return;
-    if (!(await flush()) && !deps.confirm("Il documento aperto non si è salvato e andrà perso. Continuare?")) return;
+    if (!(await flush()) && !(await deps.confirm(PERSO))) return;
     const o = await deps.library.open(file);
     present(o, true);
   }

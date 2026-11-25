@@ -1,6 +1,7 @@
 // «Informazioni» (M10): crediti e licenze. L'attribuzione ARASAAC è obbligatoria (licenza CC BY-NC-SA); lo stesso vale per
 // i dati linguistici e per i caratteri inclusi nel programma.
 import { ATTRIBUTION } from "./print/print";
+import { finestra } from "./ui/dialog";
 
 declare const __APP_VERSION__: string;
 
@@ -37,22 +38,8 @@ export function openAbout(): () => void {
   dialog.append(dl, close);
   overlay.append(dialog);
   document.body.append(overlay);
-  const finish = (): void => {
-    document.removeEventListener("keydown", onKey, true);
-    overlay.remove();
-  };
-  const onKey = (e: KeyboardEvent): void => {
-    if (e.key === "Escape") {
-      e.preventDefault();
-      e.stopPropagation();
-      finish();
-    }
-  };
-  document.addEventListener("keydown", onKey, true);
+  // Comportamento unico delle finestre (M11-3): Tab dentro, Esc e clic fuori chiudono, il fuoco torna a chi l'ha aperta.
+  const finish = finestra({ overlay, box: dialog, fuoco: close });
   close.addEventListener("click", finish);
-  overlay.addEventListener("mousedown", (e) => {
-    if (e.target === overlay) finish();
-  });
-  close.focus();
   return finish;
 }

@@ -83,10 +83,13 @@ const STATI: Array<[string, (page: Page) => Promise<void>]> = [
     await apriCompleto(page);
     // «Unisci» con la virgola in mezzo: il programma spiega perché non si può.
     await page.evaluate(() => {
+      // Posizioni del documento (non del testo semplice: titoli e paragrafi contano anche loro).
       const p = (window as any).caaProto;
-      const t = p.view.state.doc.textContent as string;
-      const i = t.indexOf("città, perché");
-      p.setCaret(i + 1, i + 12);
+      let da = -1;
+      p.view.state.doc.descendants((n: any, pos: number) => {
+        if (da < 0 && n.isText && n.text.includes("città, perché")) da = pos + n.text.indexOf("città, perché");
+      });
+      p.setCaret(da, da + "città, perché".length);
     });
     await page.keyboard.press("Control+Shift+u");
     await page.waitForTimeout(100);
@@ -129,6 +132,22 @@ const STATI: Array<[string, (page: Page) => Promise<void>]> = [
       p.setPrefs({ size: 151, print: { ...p.getPrefs().print, orientation: "landscape" } });
     });
     await attendi(page);
+  }],
+  ["15-conferma", async (page) => {
+    await apriCompleto(page);
+    await documentiSalvati(page);
+    await page.evaluate(() => {
+      delete (window as any).__caaConferma; // la finestra vera
+    });
+    await page.getByRole("button", { name: "Documenti" }).click();
+    await page.locator(".docs-row", { hasText: "In mensa" }).getByRole("button", { name: "Elimina" }).click();
+    await page.getByRole("alertdialog").waitFor();
+  }],
+  ["16-notifica-errore", async (page) => {
+    await apriCompleto(page);
+    await clicSimbolo(page, "mamma");
+    await page.locator(".side input[type=file]").setInputFiles({ name: "rotto.png", mimeType: "image/png", buffer: Buffer.from("non sono un'immagine") });
+    await page.locator(".toast").waitFor();
   }],
 ];
 

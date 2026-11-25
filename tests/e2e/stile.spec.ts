@@ -168,7 +168,7 @@ test.describe("contrasto vero dei testi dell'interfaccia", () => {
 });
 
 /** Avanti con Tab fino a tornare al punto di partenza; per ogni controllo raggiunto: com'è l'anello di fuoco. */
-async function giroDiTab(page: Page, max = 120): Promise<string[]> {
+async function giroDiTab(page: Page, minimo = 4, max = 120): Promise<string[]> {
   const male: string[] = [];
   const visti = new Set<string>();
   for (let i = 0; i < max; i++) {
@@ -192,7 +192,7 @@ async function giroDiTab(page: Page, max = 120): Promise<string[]> {
     if (!f.visibile) male.push(`${f.nome}: il fuoco da tastiera non è «visibile»`);
     else if ((f.anello ?? 0) < 2 && !f.ombra) male.push(`${f.nome}: anello di ${f.anello} px`);
   }
-  expect(visti.size, "il giro con Tab deve toccare dei controlli").toBeGreaterThan(3);
+  expect(visti.size, "il giro con Tab deve toccare dei controlli").toBeGreaterThanOrEqual(minimo);
   return male;
 }
 
@@ -232,7 +232,8 @@ test.describe("fuoco da tastiera: anello di almeno 2 px su ogni controllo", () =
   for (const [nome, prepara] of SITUAZIONI.filter(([n]) => ["foglio", "documenti", "biblioteca", "stampa", "informazioni", "avvisi"].includes(n))) {
     test(`${nome}: giro con Tab`, async ({ page }) => {
       await prepara(page);
-      expect(await giroDiTab(page)).toEqual([]);
+      // Dentro una finestra (M11-3) Tab gira solo fra i suoi controlli: «Informazioni» ne ha uno.
+      expect(await giroDiTab(page, nome === "informazioni" ? 1 : 4)).toEqual([]);
     });
   }
 });

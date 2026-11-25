@@ -57,6 +57,14 @@
 - **Prove** `tests/e2e/icone.spec.ts` (7): nomi di tutti i pulsanti, icone accanto al testo, suggerimento da tastiera e da mouse, pulsanti spenti, `title` conservato, nessuna richiesta fuori da `localhost`.
 - Pulsanti, campi e selezioni allineati al centro della riga (con l'icona andavano un po' più in alto).
 
+### M11-3 — fatto (in attesa del via libera)
+
+- **Finestre** `ui/src/ui/dialog.ts`: un solo comportamento per Informazioni, Stampa, Documenti, ritaglio, primo avvio e conferme. Tab e Maiusc+Tab girano dentro; il resto della pagina è `inert` finché la finestra è aperta; Esc e clic sul velo chiudono (non al primo avvio, che chiede il nome); il fuoco torna al pulsante che l'ha aperta. Da Documenti, aprendo un documento il cursore va nel testo.
+- **Conferme** `ui/src/ui/confirm.ts` (K7): tutte le 15 `window.confirm` sostituite da una finestra del programma (`role="alertdialog"`) con domanda, spiegazione, «Annulla» e il verbo («Elimina», «Ritira», «Dimentica tutto», «Butta via», «Esci senza salvare», «Continua senza salvare»), rosso (`.danger`) se l'azione non si annulla; il fuoco parte da «Annulla», Esc = Annulla. La chiusura del programma con il salvataggio fallito aspetta la risposta (la pagina risponde subito a Tauri come prima).
+- **Notifiche** `ui/src/ui/toast.ts` (K5, D3, D4): in basso a destra sopra il foglio, con icona; informazioni e riuscite spariscono dopo 6 s (non con il mouse sopra), avvisi ed errori restano finché si chiudono; `role="status"` / `role="alert"`. `hooks.notice(messaggio, tipo)` le usa tutte; il messaggio in fondo alla barra di stato non c'è più (il testo «Il motore non risponde» resta lì fino a M11-4).
+- **Prove**: `tests/e2e/finestre.spec.ts` (12) con le finestre vere; nelle altre prove le conferme dicono «sì» da sole tramite `window.__caaConferma` (come prima la conferma del browser), `rispondiConferma(page, false)` per «Annulla». Prove esistenti aggiornate solo nei selettori (`.toasts` al posto di `.statusbar` per i messaggi), nessuna tolta.
+- **Schermate**: nuovi stati «15-conferma» e «16-notifica-errore»; lo stato «09-messaggio» non selezionava le parole giuste da M11-0 (rifatto anche il «prima» sul codice di M11-2).
+
 ---
 
 ## 1. Diagnosi dell'interfaccia attuale

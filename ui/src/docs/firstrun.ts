@@ -1,6 +1,7 @@
 // Il primo avvio (M9b-1): si chiede solo il nome da mostrare (l'autore dei documenti che pubblicherai) e si
 // guarda se la biblioteca del Drive condiviso si trova da sola. Poi un documento vuoto, pronto per scrivere.
 import type { LibraryClient, LibStatus } from "../engine/client";
+import { finestra } from "../ui/dialog";
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
@@ -34,7 +35,8 @@ function askName(save: (name: string) => Promise<string>): Promise<string> {
     );
     overlay.append(box);
     document.body.append(overlay);
-    input.focus();
+    // Comportamento unico delle finestre (M11-3), ma il nome serve: niente Esc né clic fuori per chiudere.
+    const chiudi = finestra({ overlay, box, esc: false, clicFuori: false, fuoco: input });
     input.addEventListener("input", () => {
       ok.disabled = input.value.trim() === "";
     });
@@ -43,7 +45,7 @@ function askName(save: (name: string) => Promise<string>): Promise<string> {
       ok.disabled = true;
       save(input.value).then(
         (name) => {
-          overlay.remove();
+          chiudi();
           resolve(name);
         },
         (e: unknown) => {

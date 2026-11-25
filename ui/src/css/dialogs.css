@@ -1,7 +1,7 @@
 /* Finestre (M11-1): ritaglio del simbolo personale, primo avvio, Stampa, Informazioni. Stesso velo, stessi raggi,
    stessa ombra, titoli in Lexend. Mai più alte o più larghe dello schermo: scorrono dentro. (Il comportamento unico
-   da tastiera arriva in M11-3; la finestra Stampa diventa la scheda Pagina in M11-5.) */
-.crop-overlay, .first-overlay, .print-overlay, .about-overlay, .docs-overlay {
+   da tastiera sta in ui/dialog.ts (M11-3); la finestra Stampa diventa la scheda Pagina in M11-5.) */
+.crop-overlay, .first-overlay, .print-overlay, .about-overlay, .docs-overlay, .dialog-overlay {
   position: fixed;
   inset: 0;
   display: flex;
@@ -14,8 +14,9 @@
 .print-overlay, .about-overlay { z-index: 95; }
 .crop-overlay { z-index: 100; }
 .first-overlay { z-index: 120; }
+.dialog-overlay { z-index: 130; } /* le conferme stanno sopra le altre finestre */
 
-.crop-dialog, .first-box, .print-dialog, .about-dialog {
+.crop-dialog, .first-box, .print-dialog, .about-dialog, .dialog {
   max-width: 100%;
   max-height: 100%;
   overflow: auto;
@@ -28,7 +29,7 @@
 .first-box { width: 27rem; }
 .print-dialog { width: 29rem; }
 .about-dialog { width: 35rem; }
-.crop-dialog h2, .first-box h2, .print-dialog h2, .about-dialog h2 {
+.crop-dialog h2, .first-box h2, .print-dialog h2, .about-dialog h2, .dialog h2 {
   margin: 0 0 var(--s-2);
   font-family: var(--f-title);
   font-size: var(--fs-xl);
@@ -74,3 +75,8 @@
 .about-dialog dt { font-weight: 600; margin-top: var(--s-3); }
 .about-dialog dd { margin: 2px 0 0; color: var(--c-text-2); }
 .about-dialog button { margin-top: var(--s-4); }
+
+/* Conferma (M11-3): domanda, una riga di spiegazione, Annulla e il verbo (rosso se non si annulla). */
+.confirm-dialog { width: 28rem; }
+.dialog-text { color: var(--c-text-2); margin: 0 0 var(--s-2); }
+.dialog-actions { display: flex; gap: var(--s-3); justify-content: flex-end; margin-top: var(--s-6); }

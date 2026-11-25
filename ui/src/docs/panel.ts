@@ -6,6 +6,8 @@ import { showLibraryTab } from "./library";
 import { formatWhen } from "./panel-format";
 import type { Session } from "./session";
 import { conIcona } from "../ui/icons";
+import { conferma } from "../ui/confirm";
+import { finestra } from "../ui/dialog";
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
@@ -30,25 +32,22 @@ export interface PanelOptions {
   corrections?: CorrectionsClient;
 }
 
-export function createDocsPanel(docs: DocClient, session: Session, confirmDelete: (title: string) => boolean, opts: PanelOptions = {}): DocsPanel {
+export function createDocsPanel(docs: DocClient, session: Session, confirmDelete: (title: string) => Promise<boolean>, opts: PanelOptions = {}): DocsPanel {
   const onClose = opts.onClose;
   let overlay: HTMLElement | null = null;
+  let chiudiFinestra: (() => void) | null = null;
+  /** Il pannello si chiude per aprire un documento: il cursore va nel testo. */
+  let versoIlTesto = false;
 
+  // Chiudendo con Esc, «Chiudi» o un clic fuori, il fuoco torna al pulsante che ha aperto il pannello (M11-3);
+  // aprendo un documento, invece, il cursore va nel testo.
   const close = (): void => {
-    document.removeEventListener("keydown", onKey, true);
-    const was = overlay;
-    overlay?.remove();
-    overlay = null;
-    // Chiudendo il pannello il cursore torna nel testo.
-    if (was) onClose?.();
+    chiudiFinestra?.();
   };
-  function onKey(e: KeyboardEvent): void {
-    if (e.key === "Escape") {
-      e.preventDefault();
-      e.stopPropagation();
-      close();
-    }
-  }
+  const closeToText = (): void => {
+    versoIlTesto = true;
+    close();
+  };
 
   function open(tab: "mine" | "library" = "mine"): void {
     close();
@@ -68,14 +67,19 @@ export function createDocsPanel(docs: DocClient, session: Session, confirmDelete
     box.append(tabs, body);
     overlay.append(box);
     document.body.append(overlay);
-    // Il fuoco entra nel pannello (la tastiera funziona lì e Esc lo chiude).
-    box.tabIndex = -1;
-    box.focus();
-    document.addEventListener("keydown", onKey, true);
-    closeBtn.addEventListener("click", close);
-    overlay.addEventListener("mousedown", (e) => {
-      if (e.target === overlay) close();
+    // Comportamento unico delle finestre (M11-3): il fuoco entra nel pannello, Tab resta dentro, Esc lo chiude.
+    versoIlTesto = false;
+    chiudiFinestra = finestra({
+      overlay,
+      box,
+      fuoco: box,
+      onChiudi: () => {
+        overlay = null;
+        chiudiFinestra = null;
+        if (versoIlTesto) onClose?.();
+      },
     });
+    closeBtn.addEventListener("click", close);
 
     const showMine = async (message?: { text: string; ok: boolean }): Promise<void> => {
       mine.classList.add("on");
@@ -226,7 +230,7 @@ export function createDocsPanel(docs: DocClient, session: Session, confirmDelete
       openBtn.addEventListener("click", () => {
         openBtn.disabled = true;
         session.openFile(entry.file).then(
-          () => close(),
+          () => closeToText(),
           (e: unknown) => {
             openBtn.disabled = false;
             body.prepend(el("p", "docs-note warn", `Non riesco ad aprire «${entry.title}»: ${String(e)}`));
@@ -235,8 +239,8 @@ export function createDocsPanel(docs: DocClient, session: Session, confirmDelete
       });
       const delBtn = conIcona(el("button", "", "Elimina"), "elimina");
       delBtn.type = "button";
-      delBtn.addEventListener("click", () => {
-        if (!confirmDelete(entry.title || entry.file)) return;
+      delBtn.addEventListener("click", async () => {
+        if (!(await confirmDelete(entry.title || entry.file))) return;
         docs.remove(entry.file).then(
           () => {
             if (entry.file === session.state().file) session.forget();
@@ -269,11 +273,11 @@ export function createDocsPanel(docs: DocClient, session: Session, confirmDelete
       showLibraryTab(body, {
         library: opts.library,
         changed: (s) => opts.libraryChanged?.(s),
-        confirm: (m) => window.confirm(m),
+        confirm: conferma,
         corrections: opts.corrections,
         openCopy: async (file) => {
           await session.openFile(file);
-          close();
+          closeToText();
         },
       });
     };

@@ -14,6 +14,7 @@ import { openPrintDialog } from "./print/dialog";
 import { openAbout } from "./about";
 import { conIcona, etichetta, soloIcona } from "./ui/icons";
 import { suggerimento } from "./ui/tooltip";
+import { notifica } from "./ui/toast";
 
 const SIZES: Array<[string, number]> = [
   ["Piccolo", 45],
@@ -335,16 +336,10 @@ export function createBars(
   const policyInfo = el("span");
   const engineInfoEl = el("span");
   const errorInfo = el("span");
-  const noticeInfo = el("span", "warn");
-  let noticeTimer: ReturnType<typeof setTimeout> | null = null;
-  hooks.notice = (message) => {
-    noticeInfo.textContent = message;
-    if (noticeTimer) clearTimeout(noticeTimer);
-    noticeTimer = setTimeout(() => {
-      noticeInfo.textContent = "";
-    }, 6000);
-  };
-  statusbar.append(doubtInfo, wordsInfo, errorInfo, noticeInfo, el("span", "grow"), policyInfo, engineInfoEl);
+  // I messaggi per il docente sono notifiche (M11-3): prima erano un testo piccolo qui in basso che spariva da solo
+  // dopo 6 secondi, anche quando era un errore.
+  hooks.notice = (message, tipo = "avviso") => void notifica(message, { tipo });
+  statusbar.append(doubtInfo, wordsInfo, errorInfo, el("span", "grow"), policyInfo, engineInfoEl);
 
   function refresh(): void {
     undoBtn.disabled = undoDepth(view.state) === 0;

@@ -54,6 +54,10 @@ body {
 }
 .primary:hover:not(:disabled) { background: var(--c-accent-hover); border-color: var(--c-accent-hover); color: var(--n-0); }
 .primary:active:not(:disabled) { background: var(--c-accent-press); border-color: var(--c-accent-press); }
+/* Il verbo di un'azione che non si annulla (Elimina, Ritira, Dimentica tutto): solo dentro le conferme. */
+.danger { background: var(--err-fg); border-color: var(--err-fg); color: var(--n-0); font-weight: 600; }
+.danger:hover:not(:disabled) { background: #8f1c13; border-color: #8f1c13; color: var(--n-0); }
+.danger:active:not(:disabled) { background: #6e150e; border-color: #6e150e; }
 .primary:disabled { background: var(--c-bar); border-color: var(--c-line); color: var(--c-text-off); font-weight: 400; }
 
 /* ---- Campi e selezioni ---- */
@@ -121,3 +125,44 @@ body {
   box-shadow: var(--sh-2);
   pointer-events: none;
 }
+
+/* ---- Notifiche (M11-3): in basso a destra sopra il foglio, con icona; i problemi restano finché si chiudono ---- */
+.toasts {
+  position: fixed;
+  z-index: 150;
+  right: calc(var(--w-side) + var(--s-4));
+  bottom: calc(var(--s-8) + var(--s-2));
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  width: min(26rem, calc(100vw - var(--w-side) - 2 * var(--s-4)));
+  max-height: 50vh;
+  overflow: auto;
+  pointer-events: none;
+}
+.toasts:empty { display: none; }
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-2);
+  padding: var(--s-3);
+  border: 1px solid var(--c-line);
+  border-left: 4px solid var(--c-accent);
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+  box-shadow: var(--sh-2);
+  color: var(--c-text);
+  pointer-events: auto;
+}
+.toast > .ico { margin-top: 0.15em; color: var(--c-accent-hover); }
+.toast-ok { border-left-color: var(--ok-fg); }
+.toast-ok > .ico { color: var(--ok-fg); }
+.toast-avviso { border-left-color: var(--warn-line); background: var(--warn-bg); }
+.toast-avviso > .ico { color: var(--warn-fg); }
+.toast-errore { border-left-color: var(--err-fg); background: var(--err-bg); }
+.toast-errore > .ico { color: var(--err-fg); }
+.toast-body { flex: 1; min-width: 0; }
+.toast-text { margin: 0; overflow-wrap: anywhere; }
+.toast-detail { margin: var(--s-1) 0 0; color: var(--c-text-3); font-size: var(--fs-sm); overflow-wrap: anywhere; }
+.toast-action { margin-top: var(--s-2); }
+.toast-close { flex: none; width: 1.75rem; min-height: 1.75rem; padding: 0; border-color: transparent; background: transparent; }

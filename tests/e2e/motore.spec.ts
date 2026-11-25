@@ -2,7 +2,7 @@
 // motore finto (in pagina) che riconosce le parole con regole semplici e risponde dopo qualche
 // millisecondo. Le prove con il motore vero e con le immagini ARASAAC sono a mano (app Tauri).
 import { expect, test, type Page } from "@playwright/test";
-import { open } from "./fixtures";
+import { open, rispondiConferma } from "./fixtures";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -777,7 +777,7 @@ test("Unisci non si può fare con la punteggiatura in mezzo, fra paragrafi o con
   await selectText(page, 1, 10);
   await expect(page.getByRole("button", { name: "Unisci" })).toBeDisabled();
   await page.keyboard.press("Control+Shift+u");
-  await expect(page.locator(".statusbar")).toContainText("senza punteggiatura");
+  await expect(page.locator(".toasts")).toContainText("senza punteggiatura"); // M11-3: i messaggi sono notifiche
   expect(await page.evaluate(() => JSON.stringify((window as any).caaProto.docJSON()).includes('"group"'))).toBe(false);
   // Una parola sola e due paragrafi.
   await selectText(page, 1, 5);
@@ -883,7 +883,7 @@ test("un file che non è un'immagine non apre il ritaglio e avvisa", async ({ pa
   await open(page, "Marco mangia pane");
   await clickSymbol(page, "pane");
   await page.locator(".side input[type=file]").setInputFiles({ name: "rotto.png", mimeType: "image/png", buffer: Buffer.from("non sono un'immagine") });
-  await expect(page.locator(".statusbar")).toContainText("Non riesco a leggere questa immagine");
+  await expect(page.locator(".toasts")).toContainText("Non riesco a leggere questa immagine"); // M11-3: i messaggi sono notifiche
   await expect(page.locator(".crop-overlay")).toHaveCount(0);
 });
 
@@ -968,7 +968,7 @@ test("Unisci non tocca una divisione già fatta", async ({ page }) => {
   await expect.poll(() => page.evaluate(() => JSON.stringify((window as any).caaProto.docJSON()).includes('"split"'))).toBe(true);
   await selectText(page, 1 + 17, 1 + 25); // «media di», dentro la divisione
   await page.keyboard.press("Control+Shift+u");
-  await expect(page.locator(".statusbar")).toContainText("Riunisci");
+  await expect(page.locator(".toasts")).toContainText("Riunisci"); // M11-3: i messaggi sono notifiche
   const marks = await page.evaluate(() => JSON.stringify((window as any).caaProto.docJSON()));
   expect(marks.includes('"merge"')).toBe(false);
   expect(marks.includes('"split"')).toBe(true);
@@ -1405,7 +1405,7 @@ test("chiudendo la finestra si aspetta il salvataggio e, se non riesce, si chied
   expect(closed).toBe(true);
   expect(await storedText(page, "Prima parte.caa")).toContain("Prima parte e seconda parte");
   // Salvataggio impossibile: si chiede conferma; «no» resta nel programma, «sì» esce.
-  await page.evaluate(() => { const m = (window as any).__mock; m.saveDelay = 0; m.saveFail = 100; (window as any).__asked = []; (window as any).confirm = (msg: string) => { (window as any).__asked.push(msg); return (window as any).__answer; }; });
+  await page.evaluate(() => { const m = (window as any).__mock; m.saveDelay = 0; m.saveFail = 100; (window as any).__asked = []; (window as any).__caaConferma = (c: any) => { (window as any).__asked.push(`${c.domanda} ${c.spiegazione ?? ""}`); return (window as any).__answer; }; });
   await page.keyboard.type(" e terza");
   await page.evaluate(() => { (window as any).__answer = false; });
   expect(await page.evaluate(() => (window as any).caaProto.closeRequest())).toBe(false);
@@ -1531,7 +1531,7 @@ test("primo avvio: si chiede il nome una volta sola e non si prosegue senza", as
 test("primo avvio: con più Drive condivisi lo dice; con un nome già scelto non chiede niente", async ({ page }) => {
   await open(page, "", true, { name: "Maria", candidates: [{ path: "G:/A/CAA", drive: "A" }, { path: "G:/B/CAA", drive: "B" }] });
   await expect(page.locator(".first-box")).toHaveCount(0);
-  await expect(page.locator(".statusbar")).toContainText("più Drive condivisi");
+  await expect(page.locator(".toasts")).toContainText("più Drive condivisi"); // M11-3: i messaggi sono notifiche
   await expect(page.locator(".lib-status")).toBeHidden();
 });
 
@@ -1883,7 +1883,7 @@ test("«ricorda per sempre»: «Nessun simbolo» o «Solo testo» non si ricorda
   await clickSymbol(page, "pane");
   await page.locator(".pm-always input").check();
   await page.locator(".pm-cell").nth(0).click();
-  await expect(page.locator(".statusbar")).toContainText("Non sono riuscito a ricordare");
+  await expect(page.locator(".toasts")).toContainText("Non sono riuscito a ricordare"); // M11-3: i messaggi sono notifiche
 });
 
 test("«Cosa ricordo»: elenco nella barra vuota, Dimentica e Dimentica tutto", async ({ page }) => {
@@ -1919,11 +1919,10 @@ test("simbolo personale: si elimina dal computer (con conferma)", async ({ page 
   await open(page, "Marco mangia pane");
   await clickSymbol(page, "pane");
   await expect(page.locator(".pm-custom .pm-mini-cell")).toHaveCount(2);
-  page.removeAllListeners("dialog");
-  page.once("dialog", (d) => void d.dismiss()); // «Annulla» alla conferma: non succede niente
+  await rispondiConferma(page, false); // «Annulla» alla conferma: non succede niente
   await page.getByRole("button", { name: "Elimina il simbolo mela" }).click();
   expect(await page.evaluate(() => (window as any).__mock.deletes)).toEqual([]);
-  page.once("dialog", (d) => void d.accept());
+  await rispondiConferma(page, true);
   await page.getByRole("button", { name: "Elimina il simbolo mela" }).click();
   await expect.poll(() => page.evaluate(() => (window as any).__mock.deletes)).toEqual(["u-mela"]);
   await expect(page.locator(".pm-custom .pm-mini-cell")).toHaveCount(1);
@@ -1968,7 +1967,7 @@ test("simbolo personale: «Condividi con tutta la scuola» solo con la bibliotec
   await dialog.getByRole("checkbox").check();
   await dialog.getByRole("button", { name: "Usa questo simbolo" }).click();
   await expect.poll(async () => (await docLocks(page)).length).toBe(1); // il simbolo si usa comunque
-  await expect(page.locator(".statusbar")).toContainText("non condiviso");
+  await expect(page.locator(".toasts")).toContainText("non condiviso"); // M11-3: i messaggi sono notifiche
 });
 
 test("simbolo personale: senza biblioteca non compare «Condividi con tutta la scuola»", async ({ page }) => {
@@ -2045,11 +2044,10 @@ test("correzioni anonime: senza Drive non si invia; «Butta via» chiede conferm
   await page.locator(".docs-panel").getByRole("button", { name: "Biblioteca", exact: true }).click();
   const sec = page.locator(".lib-corrections");
   await expect(sec.getByRole("button", { name: "Invia correzioni" })).toBeDisabled();
-  page.removeAllListeners("dialog");
-  page.once("dialog", (d) => void d.dismiss());
+  await rispondiConferma(page, false);
   await sec.getByRole("button", { name: "Butta via" }).click();
   expect(await page.evaluate(() => (window as any).__mock.corr.pending.length)).toBe(1);
-  page.once("dialog", (d) => void d.accept());
+  await rispondiConferma(page, true);
   await sec.getByRole("button", { name: "Butta via" }).click();
   await expect(sec).toContainText("Nessuna correzione in attesa");
   expect(await page.evaluate(() => (window as any).__mock.corr.pending.length)).toBe(0);
