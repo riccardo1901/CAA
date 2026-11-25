@@ -1,10 +1,29 @@
 # Piano di M11: miglioramento dell'interfaccia
 
-**Stato**: proposta da approvare. Non è stato cambiato codice. Prima di partire servono le risposte alle domande della sezione 7.
+**Stato**: **approvato dall'utente** (piano completo, tutte le divergenze dalla specifica, risposte sotto). Non è stato ancora cambiato codice. La sezione 0 ha la precedenza su tutto quello che segue.
 
 **In una frase**: il foglio resta com'è; tutto quello che gli sta intorno (barre, barra laterale, finestre, messaggi) diventa più ordinato, più calmo e più facile, soprattutto sui portatili da 1366 px, senza aggiungere funzioni.
 
 **Come è stato scritto**: ho letto `SPEC.md`, i rapporti di M8, M9 e M10, tutte le istruzioni `docs/PROVE-*.md` e il codice dell'interfaccia (`ui/src/`). Poi ho aperto il programma nel browser con il motore finto delle prove automatiche e ho fatto 40 schermate, a 1366×768 e a 1920×1080. Nelle schermate i pittogrammi sono quadrati colorati: è il motore finto, non un difetto. Le schermate sono in una cartella di lavoro temporanea (elenco in fondo). Nel blocco M11-0 le stesse schermate diventano una prova automatica che si può rifare quando serve.
+
+---
+
+## 0. Decisioni dell'utente (valgono più del resto del documento)
+
+1. **Piano completo**, non la versione minima.
+2. **Divergenze dalla specifica approvate** (le quattro della sezione 6): barra laterale richiudibile con tre schede, stampa come scheda «Pagina», politica solo nella barra degli strumenti, «Contorna simbolo e parola» nella scheda Pagina. A fine M11 si aggiorna `SPEC.md`.
+3. **Nome e segno**: «Editor CAA» con il segno proposto (quadratino sopra una riga, blu inchiostro).
+4. **Dimensione dell'interfaccia regolabile** (Normale / Grande / Molto grande, il foglio non cambia): **sì**, in M11.
+5. **Piè di pagina**: «il tuo nome» al posto di «l'autore» (l'autore dell'originale nelle copie adattate resta per dopo).
+6. **Prova con un docente nuovo** (domanda 5): da decidere prima di M11-9 (chi, su quale PC). Non blocca l'inizio.
+7. **NON TARARE SU UNA DIMENSIONE DI SCHERMO.** Il programma deve funzionare su **tutti i desktop e i portatili della scuola**, quindi su schermi molto diversi (dai portatili piccoli ai monitor grandi) e con il «ridimensionamento» di Windows dal 100% al 200%. Le cifre «1366×768» e «1280×720» di questo documento sono **solo le schermate di esempio della diagnosi**, non un obiettivo. Regole vincolanti per tutti i blocchi:
+   - **Layout fluido**, mai misure fisse per l'interfaccia (unità relative, `flex`/`grid`, `min`/`max`/`clamp`, regole per larghezza **e per altezza**).
+   - **Intervallo supportato**: da **1024×600** (minimo assoluto) fino a **3840×2160**, con zoom di Windows 100%, 125%, 150%, 175%, 200%.
+   - **La barra degli strumenti si adatta**: le azioni meno usate passano in un menu «Altro» man mano che manca spazio (nessun a capo su due righe, nessun pulsante tagliato).
+   - **La barra laterale si richiude da sola** sotto una certa larghezza (e si riapre con un clic); il foglio ha **«Adatta alla larghezza»** (predefinito) e uno zoom manuale, così A4 verticale e orizzontale si vedono interi su qualunque schermo senza barre di scorrimento orizzontali dell'interfaccia.
+   - **Finestre e pannelli**: mai più alti dello schermo (scorrono dentro), mai più larghi (`max-width` in percentuale).
+   - **Finestra del programma**: la dimensione iniziale si calcola dallo schermo (per esempio 85% di larghezza e altezza del monitor, mai oltre) e c'è una dimensione minima ragionevole, non una fissa di 1100×800 (D17).
+   - **Prova automatica a matrice** (Playwright) in M11-0 e a ogni blocco: larghezze/altezze 1024×600, 1280×720, 1366×768, 1440×900, 1536×864, 1920×1080, 2560×1440, 3840×2160, con fattore di scala 1, 1,25, 1,5 e 2. In ogni combinazione: nessuna barra di scorrimento orizzontale della pagina, nessun elemento sovrapposto o tagliato, tutte le azioni principali raggiungibili (anche tramite «Altro»), barra degli strumenti su una riga, avvisi non oltre una frazione dell'altezza (indicativamente un quarto), foglio intero visibile con «Adatta alla larghezza». Le schermate di confronto di ogni blocco si fanno su almeno tre di queste combinazioni (piccola, media, grande).
 
 ---
 
@@ -287,7 +306,7 @@ Ogni componente ha una classe CSS e, se serve, una piccola funzione TypeScript. 
 
 ### 3.2 Il foglio su 1366×768 (e sui portatili con lo schermo ingrandito)
 
-Molti portatili da 1920 px hanno Windows con il «ridimensionamento» al 150%: per il programma lo schermo è **1280×720**. Quindi progetto per **1280×720 come minimo**, non solo per 1366×768.
+Molti portatili da 1920 px hanno Windows con il «ridimensionamento» al 150%: per il programma lo schermo è **1280×720**. (Vale la sezione 0, punto 7: non si progetta per una misura sola; quello che segue è un esempio.) Quindi progetto per **1280×720 come minimo**, non solo per 1366×768.
 
 - **A4 verticale (794 px)**: ci sta sempre con la barra laterale aperta (794 + 320 + margini = 1150 px).
 - **A4 orizzontale (1123 px)**: non ci sta con la barra aperta. Decisione: **quando il foglio non entra, la barra laterale parte chiusa** (striscia da 44 px) e quando si apre si appoggia sopra la scrivania con un'ombra, senza spingere il foglio; la parola scelta resta visibile perché il foglio scorre fino a lei. Si richiude con Esc o con [>].
@@ -547,7 +566,7 @@ Se il piano è approvato, a fine M11 aggiorno `SPEC.md`:
 2. **Quanto spostare.** Il piano sposta la stampa dalla finestra alla barra laterale (scheda Pagina), mette «Testo di esempio» e «Informazioni» nel menu «Altro» e separa le «Correzioni anonime» in una scheda propria. Va bene così, oppure preferisci una versione minima che cambia solo l'aspetto e lascia tutto dove è (risparmia circa 4 sessioni ma non risolve D1, D5, D6, D8)?
 3. **Dimensione dell'interfaccia regolabile** (Normale / Grande / Molto grande, il foglio non cambia): la vuoi in M11? Costa circa mezza sessione ed è utile a chi vede meno bene.
 4. **Il piè di pagina**: va bene la correzione «il tuo nome (Maria Rossi)» al posto di «l'autore»? Oppure per le copie adattate vorresti che si stampasse l'autore dell'originale (richiede di salvare quel nome nella copia: è una modifica ai dati, da fare dopo M11)?
-5. **La prova con un docente nuovo** (criterio di chiusura di M11): chi la fa, su quale PC (meglio un portatile da 1366 px) e quando? Ne serve almeno uno che non abbia mai visto il programma; se possibile due (uno della primaria, uno della secondaria).
+5. **La prova con un docente nuovo** (criterio di chiusura di M11): chi la fa, su quale PC (meglio un portatile piccolo, tra quelli della scuola) e quando? Ne serve almeno uno che non abbia mai visto il programma; se possibile due (uno della primaria, uno della secondaria).
 
 ---
 
