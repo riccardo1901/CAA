@@ -201,7 +201,13 @@ function impronta(page: Page) {
     const sheet = document.querySelector(".sheet")!;
     walk(sheet, "div.sheet");
     box.remove();
-    return { els, styles, larghezza: (sheet as HTMLElement).offsetWidth, page: document.getElementById("caa-page")?.textContent ?? "" };
+    // In stampa conta anche lo sfondo della pagina sotto il foglio: si vede dove il foglio finisce (sopra il primo
+    // titolo, sotto l'ultima riga). In M10 era il grigio della scrivania. Sullo schermo è interfaccia e non conta.
+    let pagina = document.getElementById("caa-page")?.textContent ?? "";
+    if (matchMedia("print").matches) {
+      pagina += `\nsfondo: html ${getComputedStyle(document.documentElement).backgroundColor}, body ${getComputedStyle(document.body).backgroundColor}`;
+    }
+    return { els, styles, larghezza: (sheet as HTMLElement).offsetWidth, page: pagina };
   });
 }
 

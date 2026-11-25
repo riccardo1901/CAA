@@ -19501,7 +19501,7 @@
   },
   "atkinson/stampa": {
    "larghezza": 1700,
-   "page": "@page { size: A4 portrait; margin: 15mm 15mm 24mm 15mm; @bottom-center { content: \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }",
+   "page": "@page { size: A4 portrait; margin: 15mm 15mm 24mm 15mm; @bottom-center { content: \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }\nsfondo: html rgb(255, 255, 255), body rgb(255, 255, 255)",
    "elementi": [
     "div.sheet | 26 |  | ",
     "div.sheet>div.ProseMirror | 27 |  | ",
@@ -19841,7 +19841,7 @@
   },
   "bordo/stampa": {
    "larghezza": 1700,
-   "page": "@page { size: A4 portrait; margin: 15mm 15mm 24mm 15mm; @bottom-center { content: \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }",
+   "page": "@page { size: A4 portrait; margin: 15mm 15mm 24mm 15mm; @bottom-center { content: \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }\nsfondo: html rgb(255, 255, 255), body rgb(255, 255, 255)",
    "elementi": [
     "div.sheet | 26 |  | ",
     "div.sheet>div.ProseMirror | 72 |  | ",
@@ -20181,7 +20181,7 @@
   },
   "contorno/stampa": {
    "larghezza": 1700,
-   "page": "@page { size: A4 portrait; margin: 15mm 15mm 24mm 15mm; @bottom-center { content: \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }",
+   "page": "@page { size: A4 portrait; margin: 15mm 15mm 24mm 15mm; @bottom-center { content: \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }\nsfondo: html rgb(255, 255, 255), body rgb(255, 255, 255)",
    "elementi": [
     "div.sheet | 26 |  | ",
     "div.sheet>div.ProseMirror | 72 |  | ",
@@ -20521,7 +20521,7 @@
   },
   "grande/stampa": {
    "larghezza": 1700,
-   "page": "@page { size: A4 portrait; margin: 15mm 15mm 24mm 15mm; @bottom-center { content: \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }",
+   "page": "@page { size: A4 portrait; margin: 15mm 15mm 24mm 15mm; @bottom-center { content: \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }\nsfondo: html rgb(255, 255, 255), body rgb(255, 255, 255)",
    "elementi": [
     "div.sheet | 146 |  | ",
     "div.sheet>div.ProseMirror | 147 |  | ",
@@ -20861,7 +20861,7 @@
   },
   "lexend/stampa": {
    "larghezza": 1700,
-   "page": "@page { size: A4 portrait; margin: 15mm 15mm 24mm 15mm; @bottom-center { content: \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }",
+   "page": "@page { size: A4 portrait; margin: 15mm 15mm 24mm 15mm; @bottom-center { content: \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }\nsfondo: html rgb(255, 255, 255), body rgb(255, 255, 255)",
    "elementi": [
     "div.sheet | 26 |  | ",
     "div.sheet>div.ProseMirror | 192 |  | ",
@@ -21201,7 +21201,7 @@
   },
   "maiuscolo/stampa": {
    "larghezza": 1700,
-   "page": "@page { size: A4 portrait; margin: 15mm 15mm 24mm 15mm; @bottom-center { content: \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }",
+   "page": "@page { size: A4 portrait; margin: 15mm 15mm 24mm 15mm; @bottom-center { content: \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }\nsfondo: html rgb(255, 255, 255), body rgb(255, 255, 255)",
    "elementi": [
     "div.sheet | 26 |  | ",
     "div.sheet>div.ProseMirror | 237 |  | ",
@@ -21541,7 +21541,7 @@
   },
   "margini-e-piede/stampa": {
    "larghezza": 1700,
-   "page": "@page { size: A4 portrait; margin: 25mm 25mm 34mm 25mm; @bottom-center { content: \"La gita al mare · Maria Rossi\" \" · pag. \" counter(page) \"\\A \" \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }",
+   "page": "@page { size: A4 portrait; margin: 25mm 25mm 34mm 25mm; @bottom-center { content: \"La gita al mare · Maria Rossi\" \" · pag. \" counter(page) \"\\A \" \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }\nsfondo: html rgb(255, 255, 255), body rgb(255, 255, 255)",
    "elementi": [
     "div.sheet | 283 |  | ",
     "div.sheet>div.ProseMirror | 284 |  | ",
@@ -21881,7 +21881,7 @@
   },
   "medio/stampa": {
    "larghezza": 1700,
-   "page": "@page { size: A4 portrait; margin: 15mm 15mm 24mm 15mm; @bottom-center { content: \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }",
+   "page": "@page { size: A4 portrait; margin: 15mm 15mm 24mm 15mm; @bottom-center { content: \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }\nsfondo: html rgb(255, 255, 255), body rgb(255, 255, 255)",
    "elementi": [
     "div.sheet | 26 |  | ",
     "div.sheet>div.ProseMirror | 72 |  | ",
@@ -22221,7 +22221,7 @@
   },
   "molto-grande/stampa": {
    "larghezza": 1700,
-   "page": "@page { size: A4 portrait; margin: 15mm 15mm 24mm 15mm; @bottom-center { content: \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }",
+   "page": "@page { size: A4 portrait; margin: 15mm 15mm 24mm 15mm; @bottom-center { content: \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }\nsfondo: html rgb(255, 255, 255), body rgb(255, 255, 255)",
    "elementi": [
     "div.sheet | 330 |  | ",
     "div.sheet>div.ProseMirror | 331 |  | ",
@@ -22561,7 +22561,7 @@
   },
   "orizzontale-molto-grande/stampa": {
    "larghezza": 1123,
-   "page": "@page { size: A4 landscape; margin: 15mm 15mm 24mm 15mm; @bottom-center { content: \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }",
+   "page": "@page { size: A4 landscape; margin: 15mm 15mm 24mm 15mm; @bottom-center { content: \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }\nsfondo: html rgb(255, 255, 255), body rgb(255, 255, 255)",
    "elementi": [
     "div.sheet | 330 |  | ",
     "div.sheet>div.ProseMirror | 331 |  | ",
@@ -22901,7 +22901,7 @@
   },
   "orizzontale/stampa": {
    "larghezza": 1123,
-   "page": "@page { size: A4 landscape; margin: 15mm 15mm 24mm 15mm; @bottom-center { content: \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }",
+   "page": "@page { size: A4 landscape; margin: 15mm 15mm 24mm 15mm; @bottom-center { content: \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }\nsfondo: html rgb(255, 255, 255), body rgb(255, 255, 255)",
    "elementi": [
     "div.sheet | 26 |  | ",
     "div.sheet>div.ProseMirror | 72 |  | ",
@@ -23241,7 +23241,7 @@
   },
   "parola-scelta/stampa": {
    "larghezza": 1700,
-   "page": "@page { size: A4 portrait; margin: 15mm 15mm 24mm 15mm; @bottom-center { content: \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }",
+   "page": "@page { size: A4 portrait; margin: 15mm 15mm 24mm 15mm; @bottom-center { content: \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }\nsfondo: html rgb(255, 255, 255), body rgb(255, 255, 255)",
    "elementi": [
     "div.sheet | 26 |  | ",
     "div.sheet>div.ProseMirror | 72 |  | ",
@@ -23581,7 +23581,7 @@
   },
   "piccolo/stampa": {
    "larghezza": 1700,
-   "page": "@page { size: A4 portrait; margin: 15mm 15mm 24mm 15mm; @bottom-center { content: \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }",
+   "page": "@page { size: A4 portrait; margin: 15mm 15mm 24mm 15mm; @bottom-center { content: \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }\nsfondo: html rgb(255, 255, 255), body rgb(255, 255, 255)",
    "elementi": [
     "div.sheet | 379 |  | ",
     "div.sheet>div.ProseMirror | 380 |  | ",
@@ -23921,7 +23921,7 @@
   },
   "testo-sopra/stampa": {
    "larghezza": 1700,
-   "page": "@page { size: A4 portrait; margin: 15mm 15mm 24mm 15mm; @bottom-center { content: \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }",
+   "page": "@page { size: A4 portrait; margin: 15mm 15mm 24mm 15mm; @bottom-center { content: \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }\nsfondo: html rgb(255, 255, 255), body rgb(255, 255, 255)",
    "elementi": [
     "div.sheet | 26 |  | ",
     "div.sheet>div.ProseMirror | 72 |  | ",
@@ -24261,7 +24261,7 @@
   },
   "tutto-insieme/stampa": {
    "larghezza": 1700,
-   "page": "@page { size: A4 portrait; margin: 15mm 15mm 24mm 15mm; @bottom-center { content: \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }",
+   "page": "@page { size: A4 portrait; margin: 15mm 15mm 24mm 15mm; @bottom-center { content: \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }\nsfondo: html rgb(255, 255, 255), body rgb(255, 255, 255)",
    "elementi": [
     "div.sheet | 146 |  | ",
     "div.sheet>div.ProseMirror | 436 |  | ",
@@ -24607,7 +24607,7 @@
   },
   "una-frase-per-riga/stampa": {
    "larghezza": 1700,
-   "page": "@page { size: A4 portrait; margin: 15mm 15mm 24mm 15mm; @bottom-center { content: \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }",
+   "page": "@page { size: A4 portrait; margin: 15mm 15mm 24mm 15mm; @bottom-center { content: \"Pittogrammi: Sergio Palao per ARASAAC (arasaac.org), proprietà del Governo d'Aragona, licenza CC BY-NC-SA.\"; white-space: pre; text-align: center; vertical-align: top; padding-top: 2.5mm; font: 7.5pt \"Segoe UI\", system-ui, sans-serif; color: #666; } }\nsfondo: html rgb(255, 255, 255), body rgb(255, 255, 255)",
    "elementi": [
     "div.sheet | 26 |  | ",
     "div.sheet>div.ProseMirror | 72 |  | ",

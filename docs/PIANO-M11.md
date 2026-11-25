@@ -46,7 +46,7 @@
 - **Azioni principali** (`primary`): Stampa…, Stampa, Continua, Usa questo simbolo, Pubblica, Adatta.
 - **Barra degli strumenti compatta fino a M11-4** (testo 14 px): con 15 px sugli schermi larghi 1536–1700 punti andava su due righe (la matrice l'ha visto).
 - **Prove** `tests/e2e/stile.spec.ts`: coppie della tavolozza (WCAG AA), contrasto vero dei testi in 8 situazioni, anello di fuoco su ogni controllo e giro con Tab. Sul codice di M10 trovano 15 difetti (fra cui «?» a 3,54:1 e anelli da 1 px).
-- **Difetto di M10 trovato e conservato** (stampa): la radice della pagina in stampa era grigia (#e8e8ec) e lascia una striscia chiara sopra il primo titolo o paragrafo. Con la tavolozza nuova sparirebbe; per la regola «la stampa non cambia» è conservato in `sheet.css` in attesa di decisione.
+- **Difetto di M10 trovato** (stampa): la radice della pagina in stampa era grigia (#e8e8ec): una striscia chiara sopra il primo titolo o paragrafo e, sull'ultima pagina, tutta la parte sotto l'ultima riga. **Tolto su decisione dell'utente** (commit a parte, dopo M11-2): ogni pixel cambiato era grigio ed è diventato bianco (più i bordi sfumati che lo toccavano). L'impronta della stampa ora controlla anche lo sfondo della pagina sotto il foglio.
 - **Ombra del foglio** (`.sheet`): resta quella di prima (è nel foglio), non quella più morbida del piano.
 
 ### M11-2 — fatto (in attesa del via libera)
