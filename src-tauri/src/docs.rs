@@ -150,11 +150,21 @@ pub struct Opened {
 
 pub struct DocStore {
     dir: PathBuf,
+    /// Salvataggio automatico, pubblicazione e adattamento scrivono gli stessi file da thread diversi:
+    /// uno alla volta, altrimenti un ricordo (`published_rev`) o un nome libero si perdono.
+    write_lock: std::sync::Mutex<()>,
 }
 
 impl DocStore {
     pub fn new(dir: PathBuf) -> DocStore {
-        DocStore { dir }
+        DocStore {
+            dir,
+            write_lock: std::sync::Mutex::new(()),
+        }
+    }
+
+    fn exclusive(&self) -> std::sync::MutexGuard<'_, ()> {
+        self.write_lock.lock().unwrap_or_else(|e| e.into_inner())
     }
 
     pub fn dir(&self) -> &Path {
@@ -218,6 +228,7 @@ impl DocStore {
         author: &str,
         app_version: &str,
     ) -> Result<DocEntry, String> {
+        let _w = self.exclusive();
         std::fs::create_dir_all(&self.dir).map_err(|e| format!("cartella non disponibile: {e}"))?;
         let file = match &p.file {
             Some(f) => {
@@ -300,6 +311,7 @@ impl DocStore {
 
     /// Scrive un documento intero (una copia da adattare) con un nome libero preso dal titolo.
     pub fn write_document(&self, doc: &Document) -> Result<DocEntry, String> {
+        let _w = self.exclusive();
         std::fs::create_dir_all(&self.dir).map_err(|e| format!("cartella non disponibile: {e}"))?;
         let file = self.free_name(&doc.manifest.title);
         caa_doc::write(&self.dir.join(&file), doc).map_err(|e| e.to_string())?;
@@ -324,6 +336,7 @@ impl DocStore {
         file: &str,
         f: impl FnOnce(&mut Manifest),
     ) -> Result<DocEntry, String> {
+        let _w = self.exclusive();
         let path = self.path(file)?;
         let mut loaded = caa_doc::read(&path).map_err(|e| e.to_string())?;
         if loaded.read_only {

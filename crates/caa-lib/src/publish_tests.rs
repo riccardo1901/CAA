@@ -356,40 +356,40 @@ fn ritira_sposta_in_archivio_solo_l_autore_o_un_amministratore() {
     let admins = vec!["Segreteria".to_string()];
     // Un altro docente no; un nome vuoto neppure.
     assert_eq!(
-        retire(&root, &file, "Luca", &admins).unwrap_err(),
+        retire(&root, &file, "Luca", "Luca", &admins).unwrap_err(),
         LibError::NotAuthor {
             author: "Maria Rossi".into()
         }
     );
     assert!(matches!(
-        retire(&root, &file, "", &admins),
+        retire(&root, &file, "", "", &admins),
         Err(LibError::NotAuthor { .. })
     ));
     assert!(root.join("biblioteca").join(&file).exists());
     // L'autore sì: il documento esce da biblioteca\ e sta in archivio\, intero.
-    let to = retire(&root, &file, " maria rossi", &admins).unwrap();
+    let to = retire(&root, &file, " maria rossi", " maria rossi", &admins).unwrap();
     assert!(!root.join("biblioteca").join(&file).exists());
     assert_eq!(to, root.join("archivio").join(&file));
     assert_eq!(caa_doc::read(&to).unwrap().doc.manifest.title, "Storia");
     // Un amministratore ritira anche quelli degli altri; un nome già in archivio non viene sovrascritto.
     publish(&root, &d, "Maria Rossi").unwrap();
-    let again = retire(&root, &file, "segreteria", &admins).unwrap();
+    let again = retire(&root, &file, "segreteria", "segreteria", &admins).unwrap();
     assert!(again.to_string_lossy().contains("(2)"), "{again:?}");
     assert_eq!(std::fs::read_dir(root.join("archivio")).unwrap().count(), 2);
     // Un file rovinato (o a metà) lo ritira solo un amministratore.
     std::fs::write(root.join("biblioteca/rotto.caa"), b"PK\x03\x04").unwrap();
     assert!(matches!(
-        retire(&root, "rotto.caa", "Maria Rossi", &admins),
+        retire(&root, "rotto.caa", "Maria Rossi", "Maria Rossi", &admins),
         Err(LibError::NotAuthor { .. })
     ));
-    assert!(retire(&root, "rotto.caa", "Segreteria", &admins).is_ok());
+    assert!(retire(&root, "rotto.caa", "Segreteria", "Segreteria", &admins).is_ok());
     // Nomi sbagliati e documenti che non ci sono.
     assert!(matches!(
-        retire(&root, "../x.caa", "Maria Rossi", &admins),
+        retire(&root, "../x.caa", "Maria Rossi", "Maria Rossi", &admins),
         Err(LibError::Io(_))
     ));
     assert_eq!(
-        retire(&root, "non-c-e.caa", "Maria Rossi", &admins).unwrap_err(),
+        retire(&root, "non-c-e.caa", "Maria Rossi", "Maria Rossi", &admins).unwrap_err(),
         LibError::NotFound
     );
     std::fs::remove_dir_all(&root).unwrap();
@@ -403,8 +403,8 @@ fn ritirare_un_documento_toglie_anche_il_suo_blocco() {
     let lock = root
         .join("biblioteca")
         .join(format!("{}.lock", d.manifest.id));
-    std::mem::forget(acquire_lock(&lock, "Maria", NOW).unwrap()); // un blocco rimasto (programma chiuso a metà)
-    retire(&root, &library_file(&d.manifest.id), "Maria", &[]).unwrap();
+    std::mem::forget(acquire_lock(&lock, "Maria", 1).unwrap()); // un blocco vecchio rimasto (programma chiuso a metà)
+    retire(&root, &library_file(&d.manifest.id), "Maria", "Maria", &[]).unwrap();
     assert!(!lock.exists());
     std::fs::remove_dir_all(&root).unwrap();
 }
@@ -460,4 +460,98 @@ fn versioni_del_programma() {
     ] {
         assert_eq!(newer_version(cur, new), expect, "{cur} → {new}");
     }
+}
+
+#[test]
+fn il_nome_da_mostrare_non_da_i_poteri_di_amministratore() {
+    let root = tmp("ritira-nome");
+    let d = doc("Storia", "Maria");
+    publish(&root, &d, "Maria").unwrap();
+    let file = library_file(&d.manifest.id);
+    let admins = vec!["segreteria".to_string()];
+    // Chi sceglie «segreteria» come nome da mostrare, ma ha un altro nome utente, non è amministratore.
+    assert!(matches!(
+        retire(&root, &file, "segreteria", "luca", &admins),
+        Err(LibError::NotAuthor { .. })
+    ));
+    assert!(root.join("biblioteca").join(&file).exists());
+    // Con il nome utente di Windows giusto sì, qualunque sia il nome da mostrare.
+    assert!(retire(&root, &file, "Pinco", "SEGRETERIA", &admins).is_ok());
+    std::fs::remove_dir_all(&root).unwrap();
+}
+
+#[test]
+fn un_blocco_proprio_rimasto_dopo_un_crash_non_blocca_l_autore() {
+    let root = tmp("blocco-proprio");
+    let d = doc("Storia", "Maria");
+    publish(&root, &d, "Maria").unwrap();
+    let lock = root
+        .join("biblioteca")
+        .join(format!("{}.lock", d.manifest.id));
+    std::mem::forget(acquire_lock(&lock, "Maria", NOW).unwrap());
+    // Subito dopo potrebbe essere un altro mio computer che sta aggiornando: aspetta.
+    assert!(matches!(
+        update(&root, &d, 1, "Maria", NOW + 60),
+        Err(LibError::Locked { .. })
+    ));
+    // Dopo qualche minuto non può più essere un aggiornamento in corso (dura secondi): si riprende.
+    assert_eq!(
+        update(&root, &d, 1, "Maria", NOW + OWN_LOCK_SECONDS).unwrap(),
+        Updated::Revision { rev: 2 }
+    );
+    assert!(!lock.exists());
+    std::fs::remove_dir_all(&root).unwrap();
+}
+
+#[test]
+fn ritirare_non_toglie_il_blocco_di_chi_sta_aggiornando() {
+    let root = tmp("ritira-occupato");
+    let d = doc("Storia", "Maria");
+    publish(&root, &d, "Maria").unwrap();
+    let file = library_file(&d.manifest.id);
+    let lock = root
+        .join("biblioteca")
+        .join(format!("{}.lock", d.manifest.id));
+    let _held = acquire_lock(&lock, "Maria", NOW).unwrap();
+    let admins = vec!["segreteria".to_string()];
+    // L'amministratore non può ritirare mentre l'autore aggiorna: il documento non risorgerebbe mai più.
+    assert!(matches!(
+        retire(&root, &file, "Segr", "segreteria", &admins),
+        Err(LibError::Locked { .. })
+    ));
+    assert!(root.join("biblioteca").join(&file).exists());
+    assert!(lock.exists());
+    std::fs::remove_dir_all(&root).unwrap();
+}
+
+#[test]
+fn un_identificativo_strano_non_porta_fuori_dalla_cartella() {
+    let root = tmp("ritira-id");
+    let mut d = doc("Storia", "Maria");
+    d.manifest.id = "../fuori".into();
+    // Un manifest di biblioteca con un id che è un percorso (file non fidato).
+    caa_doc::write(&root.join("biblioteca").join("x.caa"), &d).unwrap_or(());
+    let outside = root.join("fuori.lock");
+    std::fs::write(&outside, b"{}").unwrap();
+    let _ = retire(&root, "x.caa", "Maria", "maria", &[]);
+    assert!(outside.exists(), "un file fuori da biblioteca non si tocca");
+    std::fs::remove_dir_all(&root).unwrap();
+}
+
+#[test]
+fn la_copia_da_adattare_non_ricorda_la_pubblicazione() {
+    let c = crate::adapted_copy(&doc("Storia", "Maria"), "Luca");
+    assert_eq!(c.manifest.published_rev, None);
+}
+
+#[test]
+fn rev_pubblicata_di_un_documento_gia_in_biblioteca() {
+    let root = tmp("rev-esistente");
+    let d = doc("Storia", "Maria");
+    publish(&root, &d, "Maria").unwrap();
+    update(&root, &d, 1, "Maria", NOW).unwrap();
+    assert_eq!(existing_rev(&root, &d.manifest.id, "maria"), Some(2));
+    assert_eq!(existing_rev(&root, &d.manifest.id, "Luca"), None);
+    assert_eq!(existing_rev(&root, "altro", "Maria"), None);
+    std::fs::remove_dir_all(&root).unwrap();
 }

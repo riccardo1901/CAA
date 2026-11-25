@@ -16,6 +16,9 @@ use caa_doc::{DocError, Document, Origin};
 /// Dopo quanto un blocco non vale più (SPEC.md: 2 ore).
 pub const LOCK_SECONDS: u64 = 2 * 60 * 60;
 
+/// Dopo quanto un blocco *mio* rimasto (programma chiuso a metà) si riprende: un aggiornamento dura secondi.
+pub const OWN_LOCK_SECONDS: u64 = 5 * 60;
+
 /// Il nome di un documento nella biblioteca.
 pub fn library_file(id: &str) -> String {
     format!("{id}.caa")
@@ -201,7 +204,14 @@ pub fn acquire_lock(path: &Path, user: &str, now: u64) -> Result<LockGuard, LibE
                 Err(r) if r.kind() == std::io::ErrorKind::NotFound => {}
                 Err(r) => return Err(r.into()),
                 Ok(bytes) => match serde_json::from_slice::<LockFile>(&bytes) {
-                    Ok(l) if now.saturating_sub(l.at) < LOCK_SECONDS => {
+                    Ok(l)
+                        if now.saturating_sub(l.at)
+                            < if l.user == user {
+                                OWN_LOCK_SECONDS
+                            } else {
+                                LOCK_SECONDS
+                            } =>
+                    {
                         return Err(LibError::Locked {
                             by: l.user,
                             at: l.at,
@@ -302,7 +312,13 @@ pub fn update_using(
 
 /// Ritira: il documento esce dalla biblioteca (spostato in `archivio\`, non cancellato). Solo l'autore o un
 /// amministratore. Si indica il file (può essere una copia in conflitto, con lo stesso id di un'altra).
-pub fn retire(root: &Path, file: &str, user: &str, admins: &[String]) -> Result<PathBuf, LibError> {
+pub fn retire(
+    root: &Path,
+    file: &str,
+    display_name: &str,
+    os_user: &str,
+    admins: &[String],
+) -> Result<PathBuf, LibError> {
     if !crate::index::is_doc_name(file) {
         return Err(LibError::Io("nome di file non valido".into()));
     }
@@ -315,13 +331,27 @@ pub fn retire(root: &Path, file: &str, user: &str, admins: &[String]) -> Result<
         // Un file che non si legge (rovinato o in sincronizzazione) lo può ritirare solo un amministratore.
         Err(_) => None,
     };
-    let is_admin = admins.iter().any(|a| same_user(a, user));
-    let is_author = m.as_ref().is_some_and(|m| same_user(&m.author, user));
+    // Gli amministratori sono nomi utente di Windows (non il nome da mostrare, che ognuno sceglie);
+    // l'autore si riconosce dal nome da mostrare.
+    let is_admin = admins.iter().any(|a| same_user(a, os_user));
+    let is_author = m
+        .as_ref()
+        .is_some_and(|m| same_user(&m.author, display_name));
     if !is_author && !is_admin {
         return Err(LibError::NotAuthor {
             author: m.map(|m| m.author).unwrap_or_default(),
         });
     }
+    // Si ritira con il blocco del documento in mano: se qualcuno lo sta aggiornando, la sua scrittura
+    // rimetterebbe il documento in biblioteca. (Un id che non è un nome valido non dà mai un percorso.)
+    let _lock = match m.as_ref().filter(|m| valid_id(&m.id)) {
+        Some(m) => Some(acquire_lock(
+            &lib_dir(root).join(format!("{}.lock", m.id)),
+            display_name,
+            now_secs(),
+        )?),
+        None => None,
+    };
     let dir = root.join("archivio");
     std::fs::create_dir_all(&dir)?;
     let stem = file.trim_end_matches(".caa");
@@ -332,12 +362,23 @@ pub fn retire(root: &Path, file: &str, user: &str, admins: &[String]) -> Result<
         n += 1;
     }
     std::fs::rename(&from, &to)?;
-    // Il blocco di quel documento, se c'era, non serve più.
-    if let Some(m) = m {
-        let lock = lib_dir(root).join(format!("{}.lock", m.id));
-        let _ = std::fs::remove_file(lock);
-    }
     Ok(to)
+}
+
+fn now_secs() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_secs())
+}
+
+/// La revisione che `author` ha già in biblioteca per il documento `id` (per ritrovare il ricordo della
+/// pubblicazione se il documento personale l'ha perso): `None` se non c'è o l'autore è un altro.
+pub fn existing_rev(root: &Path, id: &str, author: &str) -> Option<u32> {
+    if !valid_id(id) {
+        return None;
+    }
+    let m = caa_doc::read_manifest(&lib_dir(root).join(library_file(id))).ok()?;
+    (m.id == id && same_user(&m.author, author)).then_some(m.rev)
 }
 
 /// Se la biblioteca ha una revisione più nuova dell'originale da cui è nata una copia.

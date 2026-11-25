@@ -198,6 +198,9 @@ export function createDocsPanel(docs: DocClient, session: Session, confirmDelete
               level: level.value,
               tags: tags.value.split(",").map((t) => t.trim()).filter(Boolean),
             });
+            // Il titolo scelto nel modulo vale anche per il documento aperto (altrimenti il prossimo salvataggio
+            // automatico rimette il vecchio).
+            if (entry.file === session.state().file) session.adopt(out.entry);
             void showMine({ text: `Pubblicato in biblioteca (revisione ${out.rev}). Quando lo modifichi, premi «Aggiorna in biblioteca».`, ok: true });
           } catch (e) {
             go.disabled = false;

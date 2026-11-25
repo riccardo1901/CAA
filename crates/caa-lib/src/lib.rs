@@ -30,6 +30,7 @@ pub fn adapted_copy(original: &Document, author: &str) -> Document {
         rev: original.manifest.rev,
     });
     m.id = caa_doc::new_id();
+    m.published_rev = None;
     m.rev = 1;
     m.author = author.to_string();
     m.created = now.clone();

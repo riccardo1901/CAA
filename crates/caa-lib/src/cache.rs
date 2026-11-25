@@ -23,10 +23,13 @@ pub fn sync_docs(root: &Path, entries: &[LibEntry], cache_dir: &Path) -> usize {
             continue;
         }
         let dest = cache_dir.join(&e.file);
-        if std::fs::metadata(&dest).is_ok_and(|m| m.len() == e.size) {
+        // Già in cache e della stessa revisione e dimensione (un aggiornamento può non cambiare la dimensione).
+        if std::fs::metadata(&dest).is_ok_and(|m| m.len() == e.size)
+            && caa_doc::read_manifest(&dest).is_ok_and(|m| m.rev == e.rev)
+        {
             continue;
         }
-        let tmp = cache_dir.join(format!("{}.{}.tmp", e.file, std::process::id()));
+        let tmp = caa_doc::tmp_path(&dest);
         let from = root.join("biblioteca").join(&e.file);
         // Si copia solo se il file è completo e valido (può essere ancora in sincronizzazione).
         if std::fs::copy(&from, &tmp).is_ok()
@@ -43,10 +46,21 @@ pub fn sync_docs(root: &Path, entries: &[LibEntry], cache_dir: &Path) -> usize {
             let name = f.file_name().to_string_lossy().to_string();
             if is_doc_name(&name) && !entries.iter().any(|e| e.file == name) {
                 let _ = std::fs::remove_file(f.path());
+            } else if name.ends_with(".tmp") && is_old(&f.path()) {
+                // Avanzi di una copia interrotta.
+                let _ = std::fs::remove_file(f.path());
             }
         }
     }
     copied
+}
+
+fn is_old(path: &Path) -> bool {
+    std::fs::metadata(path)
+        .and_then(|m| m.modified())
+        .ok()
+        .and_then(|t| t.elapsed().ok())
+        .is_some_and(|age| age > Duration::from_secs(600))
 }
 
 /// Legge un documento di biblioteca per adattarlo: dalla biblioteca (con un tempo massimo: un Drive in

@@ -559,6 +559,7 @@ export function createSession(deps: SessionDeps): Session {
     adopt: (entry) => {
       st.id = entry.id;
       st.rev = entry.rev;
+      st.title = entry.title;
       changed();
     },
     openOriginal,

@@ -60,5 +60,16 @@ Limiti noti (accettati):
 - Due scritture dello stesso processo (autosalvataggio e pubblicazione, o più thread) usavano lo stesso nome di file temporaneo. Ora ogni scrittura ha il suo.
 - Aprendo «Documenti» subito dopo aver scritto, il documento aperto non era ancora nell'elenco: ora si salva prima.
 
+## Revisione indipendente di M9b (Opus) e correzioni
+Ogni difetto confermato ha la prova scritta prima (sul codice vecchio falliva).
+- **Ricordo della pubblicazione perso** (salvataggio automatico e Pubblica scrivevano lo stesso file da thread diversi): ora le scritture dell'archivio personale sono una alla volta (anche contro due «Adatta» con lo stesso titolo); se il ricordo manca ma il documento è già in biblioteca con lo stesso autore, «Pubblica» lo ritrova invece di dare errore.
+- **Poteri di amministratore dal nome da mostrare**: ora gli amministratori si riconoscono solo dal nome utente di Windows; l'autore dal nome da mostrare.
+- **Titolo scelto in «Pubblica» perso** al salvataggio successivo: il documento aperto ora adotta il titolo.
+- **Blocco proprio rimasto dopo un crash**: dopo 5 minuti l'autore lo riprende (prima 2 ore); entro 5 minuti vale ancora (potrebbe essere un suo altro computer).
+- **«Ritira» durante un aggiornamento**: ora prende il blocco del documento; se qualcuno aggiorna, non ritira. Un id strano in un file di biblioteca non porta più fuori cartella.
+- **Cache offline**: file temporanei unici e puliti; un aggiornamento della stessa dimensione ora si ricopia (si confronta la revisione).
+- Minori: la copia da adattare azzera il ricordo della pubblicazione; `version.json` si legge al massimo per 64 KB.
+- Non corretto, noto: la ricerca automatica della cartella senza tempo massimo se un'unità di rete è scollegata (resta da rivedere in M9c o con la prova sul Drive vero); due utenti omonimi si riconoscono come lo stesso autore (SPEC chiede nome utente Windows + nome da mostrare: da decidere, segnalato).
+
 ## Metriche del motore
 Invariate: il motore non è cambiato in M9.

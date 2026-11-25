@@ -263,14 +263,23 @@ impl LibraryState {
         let root = self.writable_root()?;
         let mut doc = docs.read(file)?.doc;
         apply_meta(&mut doc.manifest, meta);
-        let lib = caa_lib::publish::publish(&root, &doc, author).map_err(|e| e.to_string())?;
+        let rev = match caa_lib::publish::publish(&root, &doc, author) {
+            Ok(lib) => lib.manifest.rev,
+            // Già in biblioteca, e dello stesso autore: il documento personale aveva perso il ricordo
+            // (o la pubblicazione era riuscita ma il ricordo non si era scritto). Lo si ritrova.
+            Err(caa_lib::publish::LibError::AlreadyPublished) => {
+                caa_lib::publish::existing_rev(&root, &doc.manifest.id, author)
+                    .ok_or_else(|| caa_lib::publish::LibError::AlreadyPublished.to_string())?
+            }
+            Err(e) => return Err(e.to_string()),
+        };
         let entry = docs.update_manifest(file, |m| {
             apply_meta(m, meta);
-            m.published_rev = Some(lib.manifest.rev);
+            m.published_rev = Some(rev);
         })?;
         Ok(PublishOutcome {
             kind: "published",
-            rev: lib.manifest.rev,
+            rev,
             entry,
         })
     }
@@ -322,15 +331,9 @@ impl LibraryState {
     pub fn retire(&self, file: &str, display_name: &str, os_user: &str) -> Result<(), String> {
         let root = self.writable_root()?;
         let admins = &self.config.admins;
-        match caa_lib::publish::retire(&root, file, display_name, admins) {
-            Err(caa_lib::publish::LibError::NotAuthor { .. }) => {
-                // Forse è un amministratore (i nomi del `config.json` sono nomi utente di Windows).
-                caa_lib::publish::retire(&root, file, os_user, admins)
-                    .map(|_| ())
-                    .map_err(|e| e.to_string())
-            }
-            other => other.map(|_| ()).map_err(|e| e.to_string()),
-        }
+        caa_lib::publish::retire(&root, file, display_name, os_user, admins)
+            .map(|_| ())
+            .map_err(|e| e.to_string())
     }
 
     /// L'originale della biblioteca per guardarlo (sola lettura): dal Drive o, se non risponde, dalla copia locale.
@@ -344,7 +347,17 @@ impl LibraryState {
     pub fn newer_version(&self, current: &str) -> Option<VersionInfo> {
         let root = self.root()?;
         let path = root.join("aggiornamenti").join("version.json");
-        let raw = with_timeout(REACH_LIMIT, move || std::fs::read(&path).ok())??;
+        let raw = with_timeout(REACH_LIMIT, move || {
+            use std::io::Read;
+            let mut buf = Vec::new();
+            // Un file enorme non si legge per intero: un annuncio di versione sta in poche righe.
+            std::fs::File::open(&path)
+                .ok()?
+                .take(64 * 1024)
+                .read_to_end(&mut buf)
+                .ok()?;
+            Some(buf)
+        })??;
         #[derive(Deserialize)]
         struct V {
             version: String,
@@ -616,11 +629,21 @@ mod tests {
             (local.subject.as_str(), local.published_rev),
             ("Italiano", Some(1))
         );
-        // Non si pubblica due volte; senza Drive non si scrive.
+        // Non si pubblica due volte (un altro autore non può); se il documento personale ha perso il ricordo
+        // (salvataggio in corsa), l'autore lo ritrova senza errori e senza toccare la biblioteca.
+        docs.update_manifest(&mine.file, |m| m.published_rev = None)
+            .unwrap();
         assert!(st
-            .publish(&mine.file, &meta("x"), &docs, "Maria Rossi")
+            .publish(&mine.file, &meta("x"), &docs, "Luca Bianchi")
             .unwrap_err()
             .contains("già in biblioteca"));
+        let again = st
+            .publish(&mine.file, &meta("x"), &docs, "Maria Rossi")
+            .unwrap();
+        assert_eq!(
+            (again.kind, again.rev, again.entry.published_rev),
+            ("published", 1, Some(1))
+        );
         // Aggiorna: revisione 2 in biblioteca e nel ricordo del documento personale.
         let up = st.update(&mine.file, &docs, "Maria Rossi").unwrap();
         assert_eq!(

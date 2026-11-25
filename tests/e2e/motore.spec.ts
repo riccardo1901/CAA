@@ -1248,7 +1248,7 @@ test("«Documenti»: elenco, apertura con tutte le scelte, documento nuovo e eli
   await expect(panel.locator(".docs-row.current")).toContainText("Un altro documento");
   await expect(panel).toContainText("Cartella: Documenti/CAA");
   await panel.getByRole("button", { name: "Biblioteca" }).click();
-  await expect(panel).toContainText("arriva con la prossima versione");
+  await expect(panel).toContainText("non è disponibile in questa versione");
   await panel.getByRole("button", { name: "I miei documenti" }).click();
   // Apro il primo: ritrovo testo, blocco, scelta, tabella, dimensione.
   await panel.locator(".docs-row", { hasText: "Pesca e pesca noce" }).getByRole("button", { name: "Apri" }).click();
@@ -1855,8 +1855,10 @@ test("Pubblica: il documento si salva, si compila il modulo e finisce in bibliot
   await expect(after.getByRole("button", { name: "Aggiorna in biblioteca" })).toBeVisible();
   await expect(after.getByRole("button", { name: "Pubblica", exact: true })).toHaveCount(0);
   // E compare nella scheda Biblioteca.
-  await page.locator(".docs-panel").getByRole("button", { name: "Biblioteca" }).click();
+  await page.locator(".docs-panel").getByRole("button", { name: "Biblioteca", exact: true }).click();
   await expect(page.locator(".docs-panel .lib-row", { hasText: "Il bus: storia sociale" })).toBeVisible();
+  // Il titolo scelto nel modulo è anche quello del documento aperto (il salvataggio automatico non lo rimette com'era).
+  await expect(page.getByLabel("Titolo del documento")).toHaveValue("Il bus: storia sociale");
 });
 
 test("Pubblica: un errore resta nel modulo; senza biblioteca collegata o senza Drive i pulsanti non ci sono o sono spenti", async ({ page }) => {
