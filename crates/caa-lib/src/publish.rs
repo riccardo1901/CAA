@@ -358,6 +358,52 @@ fn update_full(
     Ok(Updated::Revision { rev })
 }
 
+/// Chi può ritirare un documento: un amministratore (gli amministratori sono nomi utente di Windows, non il nome da
+/// mostrare che ognuno sceglie) o l'autore (`is_author`). `author` è l'autore scritto nel file (nome da mostrare e,
+/// se c'è, nome utente di Windows); `None` se il file non si legge: allora solo un amministratore.
+pub fn may_retire(
+    author: Option<(&str, Option<&str>)>,
+    display_name: &str,
+    os_user: &str,
+    admins: &[String],
+) -> bool {
+    admins.iter().any(|a| same_user(a, os_user))
+        || author.is_some_and(|(name, user)| is_author(name, user, display_name, Some(os_user)))
+}
+
+/// Un documento della biblioteca come lo riceve l'interfaccia: i dati dell'elenco e se l'utente può ritirarlo (K1).
+/// La regola è la stessa di `retire`: così «Ritira» compare solo a chi riuscirebbe davvero.
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+pub struct EntryView {
+    #[serde(flatten)]
+    pub entry: crate::index::LibEntry,
+    pub can_retire: bool,
+}
+
+/// Aggiunge a ogni documento il permesso di ritirarlo. Senza il Drive (`offline`, elenco dall'ultima copia) non si
+/// può ritirare niente: si scrive nel Drive, e la copia locale non ricorda il nome utente di chi ha pubblicato.
+pub fn entry_views(
+    entries: Vec<crate::index::LibEntry>,
+    display_name: &str,
+    os_user: &str,
+    admins: &[String],
+    offline: bool,
+) -> Vec<EntryView> {
+    entries
+        .into_iter()
+        .map(|entry| {
+            let can_retire = !offline
+                && may_retire(
+                    Some((entry.author.as_str(), entry.author_user.as_deref())),
+                    display_name,
+                    os_user,
+                    admins,
+                );
+            EntryView { entry, can_retire }
+        })
+        .collect()
+}
+
 /// Ritira: il documento esce dalla biblioteca (spostato in `archivio\`, non cancellato). Solo l'autore o un
 /// amministratore. Si indica il file (può essere una copia in conflitto, con lo stesso id di un'altra).
 pub fn retire(
@@ -379,18 +425,10 @@ pub fn retire(
         // Un file che non si legge (rovinato o in sincronizzazione) lo può ritirare solo un amministratore.
         Err(_) => None,
     };
-    // Gli amministratori sono nomi utente di Windows (non il nome da mostrare, che ognuno sceglie);
-    // l'autore si riconosce dal nome da mostrare.
-    let is_admin = admins.iter().any(|a| same_user(a, os_user));
-    let is_author = m.as_ref().is_some_and(|m| {
-        is_author(
-            &m.author,
-            m.author_user.as_deref(),
-            display_name,
-            Some(os_user),
-        )
-    });
-    if !is_author && !is_admin {
+    let author = m
+        .as_ref()
+        .map(|m| (m.author.as_str(), m.author_user.as_deref()));
+    if !may_retire(author, display_name, os_user, admins) {
         return Err(LibError::NotAuthor {
             author: m.map(|m| m.author).unwrap_or_default(),
         });

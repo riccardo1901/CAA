@@ -2,7 +2,7 @@
 // motore finto (in pagina) che riconosce le parole con regole semplici e risponde dopo qualche
 // millisecondo. Le prove con il motore vero e con le immagini ARASAAC sono a mano (app Tauri).
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { casellaContorno, open, rispondiConferma, voceAltro } from "./fixtures";
+import { azioneRiga, casellaContorno, open, rispondiConferma, voceAltro, voceRiga } from "./fixtures";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -1067,9 +1067,9 @@ test("«Documenti»: elenco, apertura con tutte le scelte, documento nuovo e eli
   await expect(panel.locator(".docs-row")).toHaveCount(2);
   await expect(panel.locator(".docs-row.current")).toContainText("Un altro documento");
   await expect(panel).toContainText("Cartella: Documenti/CAA");
-  await panel.getByRole("button", { name: "Biblioteca" }).click();
+  await panel.getByRole("tab", { name: "Biblioteca" }).click(); // M11-6: le schede hanno il ruolo «tab»
   await expect(panel).toContainText("non è disponibile in questa versione");
-  await panel.getByRole("button", { name: "I miei documenti" }).click();
+  await panel.getByRole("tab", { name: "I miei documenti" }).click();
   // Apro il primo: ritrovo testo, blocco, scelta, tabella, dimensione.
   await panel.locator(".docs-row", { hasText: "Pesca e pesca noce" }).getByRole("button", { name: "Apri" }).click();
   await expect(panel).toHaveCount(0);
@@ -1086,7 +1086,7 @@ test("«Documenti»: elenco, apertura con tutte le scelte, documento nuovo e eli
   expect(await mockSaves(page)).toHaveLength(count);
   // Elimino quello aperto: il documento resta in pagina ma non ha più un file.
   await page.getByRole("button", { name: "Documenti" }).click();
-  await page.locator(".docs-panel .docs-row.current").getByRole("button", { name: "Elimina" }).click();
+  await azioneRiga(page.locator(".docs-panel .docs-row.current"), "Elimina"); // M11-6: nel menu «⋯» della riga
   await expect(page.locator(".docs-panel .docs-row")).toHaveCount(1);
   expect(await page.evaluate(() => (window as any).__mock.docsStore.size)).toBe(1);
   await page.locator(".docs-panel").getByRole("button", { name: "Chiudi" }).click();
@@ -1430,7 +1430,7 @@ test("un documento eliminato mentre si salva non rinasce con lo stesso file", as
   await page.keyboard.type("!");
   await expect.poll(async () => (await mockSaves(page)).length).toBe(2);
   await page.getByRole("button", { name: "Documenti" }).click();
-  await page.locator(".docs-row.current").getByRole("button", { name: "Elimina" }).click();
+  await azioneRiga(page.locator(".docs-row.current"), "Elimina"); // M11-6: nel menu «⋯» della riga
   await page.locator(".docs-panel").getByRole("button", { name: "Chiudi" }).click();
   await page.waitForTimeout(1500);
   await page.evaluate(() => { (window as any).__mock.saveDelay = 0; });
@@ -1510,7 +1510,7 @@ const LIB_ENTRIES = [
 
 const tabLibrary = async (page: Page) => {
   await page.getByRole("button", { name: "Documenti" }).click();
-  await page.locator(".docs-panel").getByRole("button", { name: "Biblioteca" }).click();
+  await page.locator(".docs-panel").getByRole("tab", { name: "Biblioteca" }).click();
 };
 
 test("primo avvio: si chiede il nome una volta sola e non si prosegue senza", async ({ page }) => {
@@ -1546,6 +1546,8 @@ test("biblioteca non collegata: si sceglie la cartella trovata o si scrive il pe
   await expect(panel).toContainText("Ho trovato queste cartelle");
   await expect(panel.locator(".docs-row")).toContainText("CAA Istituto");
   // Un percorso sbagliato: l'errore compare e non si collega; «Crea la biblioteca qui» lo accetta.
+  // (M11-6: il percorso a mano sta nella parte chiusa «Per chi imposta la biblioteca».)
+  await panel.getByText("Per chi imposta la biblioteca").click();
   await panel.getByLabel("Percorso della cartella della biblioteca").fill("X:/sbagliato");
   await panel.getByRole("button", { name: "Usa questo percorso" }).click();
   await expect(panel).toContainText("non contiene una «biblioteca»");
@@ -1563,9 +1565,10 @@ test("«Crea la biblioteca qui» per chi imposta la biblioteca", async ({ page }
   await open(page, "", true, { entries: [] });
   await tabLibrary(page);
   const panel = page.locator(".docs-panel");
+  await panel.getByText("Per chi imposta la biblioteca").click();
   await panel.getByLabel("Percorso della cartella della biblioteca").fill("X:/sbagliato");
   await panel.getByRole("button", { name: "Crea la biblioteca qui" }).click();
-  await expect(panel).toContainText("La biblioteca è vuota");
+  await expect(panel).toContainText("Nessun documento in biblioteca"); // M11-6: stato vuoto della 3.6
   const calls = await page.evaluate(() => (window as any).__mock.lib.setCalls);
   expect(calls).toEqual([{ path: "X:/sbagliato", create: true }]);
 });
@@ -1658,8 +1661,10 @@ test("Pubblica: il documento si salva, si compila il modulo e finisce in bibliot
   await page.keyboard.type("La mia storia sociale");
   await page.getByRole("button", { name: "Documenti" }).click(); // subito, senza aspettare il salvataggio automatico
   const row = mine(page, "La mia storia sociale");
-  await expect(row.getByRole("button", { name: "Pubblica" })).toBeEnabled();
-  await row.getByRole("button", { name: "Pubblica" }).click();
+  // M11-6: «Pubblica…» sta nel menu «⋯» della riga.
+  const voce = await voceRiga(row, "Pubblica…");
+  await expect(voce).toBeEnabled();
+  await voce.click();
   const form = page.locator(".pub-form");
   await expect(form).toContainText("Pubblica «La mia storia sociale» nella biblioteca");
   await expect(form.getByLabel("Titolo")).toHaveValue("La mia storia sociale");
@@ -1682,10 +1687,11 @@ test("Pubblica: il documento si salva, si compila il modulo e finisce in bibliot
   // Ora il documento risulta in biblioteca e offre «Aggiorna in biblioteca» al posto di «Pubblica».
   const after = mine(page, "Il bus");
   await expect(after.locator(".docs-tag.pub")).toContainText("in biblioteca (rev. 1)");
-  await expect(after.getByRole("button", { name: "Aggiorna in biblioteca" })).toBeVisible();
-  await expect(after.getByRole("button", { name: "Pubblica", exact: true })).toHaveCount(0);
+  await expect(await voceRiga(after, "Aggiorna in biblioteca")).toBeVisible();
+  await expect(after.getByRole("menuitem", { name: "Pubblica…" })).toHaveCount(0);
+  await page.keyboard.press("Escape");
   // E compare nella scheda Biblioteca.
-  await page.locator(".docs-panel").getByRole("button", { name: "Biblioteca", exact: true }).click();
+  await page.locator(".docs-panel").getByRole("tab", { name: "Biblioteca", exact: true }).click();
   await expect(page.locator(".docs-panel .lib-row", { hasText: "Il bus: storia sociale" })).toBeVisible();
   // Il titolo scelto nel modulo è anche quello del documento aperto (il salvataggio automatico non lo rimette com'era).
   await expect(page.getByLabel("Titolo del documento")).toHaveValue("Il bus: storia sociale");
@@ -1697,7 +1703,7 @@ test("Pubblica: un errore resta nel modulo; senza biblioteca collegata o senza D
   await page.keyboard.type("Prova");
   await expect.poll(async () => (await mockSaves(page)).length).toBeGreaterThan(0);
   await page.getByRole("button", { name: "Documenti" }).click();
-  await mine(page, "Prova").getByRole("button", { name: "Pubblica" }).click();
+  await azioneRiga(mine(page, "Prova"), "Pubblica…");
   await page.locator(".pub-form").getByRole("button", { name: "Pubblica" }).click();
   await expect(page.locator(".pub-form")).toContainText("già in biblioteca");
   await expect(page.locator(".pub-form").getByRole("button", { name: "Pubblica" })).toBeEnabled();
@@ -1707,7 +1713,7 @@ test("Pubblica: un errore resta nel modulo; senza biblioteca collegata o senza D
   await page.evaluate(() => { (window as any).__mock.lib.reachable = false; });
   await page.locator(".docs-panel").getByRole("button", { name: "Chiudi" }).click();
   await page.getByRole("button", { name: "Documenti" }).click();
-  await expect(mine(page, "Prova").getByRole("button", { name: "Pubblica" })).toBeDisabled();
+  await expect(await voceRiga(mine(page, "Prova"), "Pubblica…")).toBeDisabled();
 });
 
 test("senza biblioteca collegata non ci sono Pubblica né Aggiorna", async ({ page }) => {
@@ -1717,7 +1723,9 @@ test("senza biblioteca collegata non ci sono Pubblica né Aggiorna", async ({ pa
   await expect.poll(async () => (await mockSaves(page)).length).toBeGreaterThan(0);
   await page.getByRole("button", { name: "Documenti" }).click();
   await expect(mine(page, "Prova")).toBeVisible();
-  await expect(mine(page, "Prova").getByRole("button", { name: /Pubblica|Aggiorna/ })).toHaveCount(0);
+  await mine(page, "Prova").getByRole("button", { name: /^Altre azioni/ }).click();
+  await expect(mine(page, "Prova").getByRole("menuitem", { name: "Elimina" })).toBeVisible();
+  await expect(mine(page, "Prova").getByRole("menuitem", { name: /Pubblica|Aggiorna/ })).toHaveCount(0);
 });
 
 test("Aggiorna in biblioteca: revisione avanti, salvato come nuovo se la biblioteca è andata avanti, errori", async ({ page }) => {
@@ -1726,10 +1734,11 @@ test("Aggiorna in biblioteca: revisione avanti, salvato come nuovo se la bibliot
   await page.keyboard.type("Storia da aggiornare");
   await expect.poll(async () => (await mockSaves(page)).length).toBeGreaterThan(0);
   await page.getByRole("button", { name: "Documenti" }).click();
-  await mine(page, "Storia da aggiornare").getByRole("button", { name: "Pubblica" }).click();
+  await azioneRiga(mine(page, "Storia da aggiornare"), "Pubblica…");
   await page.locator(".pub-form").getByRole("button", { name: "Pubblica" }).click();
   await expect(page.locator(".docs-panel")).toContainText("Pubblicato in biblioteca");
-  const upd = () => mine(page, "Storia da aggiornare").getByRole("button", { name: "Aggiorna in biblioteca" });
+  // M11-6: «Aggiorna in biblioteca» sta nel menu «⋯» della riga.
+  const upd = () => ({ click: () => azioneRiga(mine(page, "Storia da aggiornare"), "Aggiorna in biblioteca") });
   // Aggiorna: revisione 2.
   await upd().click();
   await expect(page.locator(".docs-panel")).toContainText("Aggiornato in biblioteca: revisione 2");
@@ -1768,17 +1777,19 @@ test("Ritira: solo l'autore o un amministratore, con conferma", async ({ page })
   });
   await tabLibrary(page);
   const panel = page.locator(".docs-panel");
-  // Solo il suo: un solo pulsante «Ritira».
-  await expect(panel.getByRole("button", { name: "Ritira" })).toHaveCount(1);
-  await expect(panel.locator(".lib-row", { hasText: "La città di Marco" }).getByRole("button", { name: "Ritira" })).toBeVisible();
+  // Solo il suo: un solo menu «⋯» (M11-6: «Ritira» sta lì dentro), sulla sua riga.
+  const sua = panel.locator(".lib-row", { hasText: "La città di Marco" });
+  await expect(panel.getByRole("button", { name: /^Altre azioni/ })).toHaveCount(1);
+  await expect(await voceRiga(sua, "Ritira")).toBeVisible();
+  await page.keyboard.press("Escape");
   // Un errore: messaggio, il documento resta.
   await page.evaluate(() => { (window as any).__mock.lib.retireFail = "il documento non è più in biblioteca"; });
-  await panel.getByRole("button", { name: "Ritira" }).click();
+  await azioneRiga(sua, "Ritira");
   await expect(panel).toContainText("Non riesco a ritirare «La città di Marco»");
   await expect(panel.locator(".lib-row")).toHaveCount(3);
   // Riuscito: esce dall'elenco.
   await page.evaluate(() => { (window as any).__mock.lib.retireFail = ""; });
-  await panel.getByRole("button", { name: "Ritira" }).click();
+  await azioneRiga(sua, "Ritira");
   await expect(panel.locator(".lib-row")).toHaveCount(2);
   expect(await page.evaluate(() => (window as any).__mock.lib.retires)).toEqual(["citta.caa", "citta.caa"]);
 });
@@ -1786,7 +1797,7 @@ test("Ritira: solo l'autore o un amministratore, con conferma", async ({ page })
 test("Ritira: gli amministratori lo vedono su tutti i documenti", async ({ page }) => {
   await open(page, "", true, { configured: true, path: "G:/CAA", name: "Segretaria Anna", user: "Segreteria", admins: ["segreteria"], entries: LIB_ENTRIES });
   await tabLibrary(page);
-  await expect(page.locator(".docs-panel").getByRole("button", { name: "Ritira" })).toHaveCount(3);
+  await expect(page.locator(".docs-panel").getByRole("button", { name: /^Altre azioni/ })).toHaveCount(3);
 });
 
 test("«Originale aggiornato»: avviso sulla copia, Ignora, apri l'originale e torna alla copia", async ({ page }) => {
@@ -2020,7 +2031,7 @@ test("correzioni anonime: nella scheda Biblioteca si vedono, si spengono, si inv
   await withCorrections(page, { pending: ["pane\t1003", "casa\t1002"] });
   await open(page, "", true, { configured: true, path: "G:/CAA", entries: LIB_ENTRIES });
   await page.getByRole("button", { name: "Documenti" }).click();
-  await page.locator(".docs-panel").getByRole("button", { name: "Biblioteca", exact: true }).click();
+  await page.locator(".docs-panel").getByRole("tab", { name: "Correzioni" }).click(); // M11-6: scheda propria
   const sec = page.locator(".lib-corrections");
   await expect(sec).toContainText("2 correzioni in attesa");
   await expect(sec).toContainText("Mai il testo e mai il tuo nome dentro il file");
@@ -2046,7 +2057,7 @@ test("correzioni anonime: senza Drive non si invia; «Butta via» chiede conferm
   await withCorrections(page, { pending: ["pane\t1003"] });
   await open(page, "", true, { configured: true, path: "G:/CAA", entries: LIB_ENTRIES, reachable: false, cached: LIB_ENTRIES });
   await page.getByRole("button", { name: "Documenti" }).click();
-  await page.locator(".docs-panel").getByRole("button", { name: "Biblioteca", exact: true }).click();
+  await page.locator(".docs-panel").getByRole("tab", { name: "Correzioni" }).click(); // M11-6: scheda propria
   const sec = page.locator(".lib-corrections");
   await expect(sec.getByRole("button", { name: "Invia correzioni" })).toBeDisabled();
   await rispondiConferma(page, false);

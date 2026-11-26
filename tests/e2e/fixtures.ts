@@ -1,7 +1,7 @@
 // Pezzi comuni delle prove dell'editor: il motore finto (in pagina) e l'apertura del programma con quel motore.
 // Nel browser non c'è il motore vero: il motore finto riconosce le parole con regole semplici e risponde dopo
 // qualche millisecondo. Usati da motore.spec.ts e dalle prove dell'aspetto (M11).
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const MOCK = `
@@ -105,7 +105,13 @@ export const MOCK = `
       scan: async () => {
         const l = window.__mock.lib; l.scans++;
         if (!l.configured) return { configured: false, entries: [], incomplete: 0, offline: false };
-        return { configured: true, entries: l.reachable ? l.entries : l.cached, incomplete: l.reachable ? l.incomplete : 0, offline: !l.reachable };
+        // Il permesso di ritirare lo calcola il programma (M11-6, K1), come caa-lib: amministratore (nome utente di
+        // Windows), oppure autore riconosciuto dal nome utente se il file lo ricorda (author_user), se no dal nome da
+        // mostrare. Senza il Drive nessuno. Una voce con can_retire già scritto lo tiene.
+        const same = (a, b) => { const x = String(a || '').trim().toLowerCase(); return x !== '' && x === String(b || '').trim().toLowerCase(); };
+        const admin = l.admins.some((a) => same(a, l.user));
+        const perm = (e) => ({ ...e, can_retire: typeof e.can_retire === 'boolean' ? e.can_retire : l.reachable && (admin || (e.author_user ? same(e.author_user, l.user) : same(e.author, l.name))) });
+        return { configured: true, entries: (l.reachable ? l.entries : l.cached).map(perm), incomplete: l.reachable ? l.incomplete : 0, offline: !l.reachable };
       },
       publish: async (file, meta) => {
         const l = window.__mock.lib; l.publishes.push({ file, meta, savedBefore: window.__mock.saves.length });
@@ -234,4 +240,15 @@ export async function casellaContorno(page: Page) {
   const c = page.locator(".page-panel").getByLabel("Riquadro attorno a simbolo e parola");
   if (!(await c.isVisible())) await page.locator(".app-header").getByRole("button", { name: "Stampa…" }).click();
   return c;
+}
+
+/** Apre il menu «⋯» di una riga di Documenti o Biblioteca (M11-6) e restituisce la voce con quel nome. */
+export async function voceRiga(riga: Locator, nome: string | RegExp): Promise<Locator> {
+  await riga.getByRole("button", { name: /^Altre azioni/ }).click();
+  return riga.getByRole("menuitem", { name: nome });
+}
+
+/** Sceglie una voce del menu «⋯» di una riga (Pubblica…, Aggiorna in biblioteca, Elimina, Ritira). */
+export async function azioneRiga(riga: Locator, nome: string | RegExp): Promise<void> {
+  await (await voceRiga(riga, nome)).click();
 }

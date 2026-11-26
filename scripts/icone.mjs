@@ -53,6 +53,7 @@ const ICONE = {
   bandierina: "flag",
   puntatore: "mouse-pointer-click",
   memoria: "bookmark-check",
+  indietro: "arrow-left",
 };
 
 const mancano = Object.entries(ICONE).filter(([, v]) => !nodi[v]);

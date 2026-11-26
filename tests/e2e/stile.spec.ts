@@ -142,7 +142,7 @@ const SITUAZIONI: Array<[string, (page: Page) => Promise<void>]> = [
   ["biblioteca", async (page) => {
     await apriCompleto(page);
     await page.getByRole("button", { name: "Documenti" }).click();
-    await page.locator(".docs-panel").getByRole("button", { name: "Biblioteca" }).click();
+    await page.locator(".docs-panel").getByRole("tab", { name: "Biblioteca" }).click();
     await page.locator(".docs-panel .docs-row").first().waitFor();
   }],
   ["stampa", async (page) => {
