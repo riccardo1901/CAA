@@ -135,6 +135,34 @@ fn configurazione_e_impostazioni() {
 }
 
 #[test]
+fn si_trova_la_cartella_anche_nel_mio_drive_di_un_account_comune() {
+    // Con un solo account Google in comune (nessun Drive condiviso) la cartella sta in «Il mio Drive» o «My Drive».
+    let g = tmp("mio-drive-g");
+    let h = tmp("mio-drive-h");
+    std::fs::create_dir_all(g.join("Il mio Drive/CAA/biblioteca")).unwrap();
+    std::fs::create_dir_all(h.join("My Drive/CAA/biblioteca")).unwrap();
+    std::fs::create_dir_all(h.join("My Drive/Altro/biblioteca")).unwrap(); // un'altra cartella: non c'entra
+    let roots = [g.clone(), h.clone()];
+    let all = find_candidates(&roots, &SharedConfig::default());
+    assert_eq!(all.len(), 2, "{all:?}");
+    assert!(all
+        .iter()
+        .all(|c| c.path.ends_with("CAA") && c.drive.ends_with("Drive")));
+    // Con il nome di un Drive condiviso nella configurazione, il «Mio Drive» non entra.
+    let cfg = SharedConfig {
+        drive_name: Some("Scuola".into()),
+        ..Default::default()
+    };
+    assert!(find_candidates(&roots, &cfg).is_empty());
+    // Un altro nome di cartella vale anche qui.
+    let cfg = SharedConfig {
+        folder: Some("Altro".into()),
+        ..Default::default()
+    };
+    assert_eq!(find_candidates(&roots, &cfg).len(), 1);
+}
+
+#[test]
 fn si_trova_la_cartella_nei_drive_condivisi() {
     let g = tmp("drive-g");
     let h = tmp("drive-h");

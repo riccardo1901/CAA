@@ -106,7 +106,7 @@ export function showLibraryTab(body: HTMLElement, deps: LibraryTabDeps): void {
       }
       box.append(ul);
     } else {
-      box.append(el("p", "docs-note", "Non ho trovato nessun Drive condiviso con una cartella «CAA» e dentro «biblioteca». Chiedi al referente della biblioteca."));
+      box.append(el("p", "docs-note", "Non ho trovato nessuna cartella «CAA» con dentro «biblioteca» né nei Drive condivisi né in «Il mio Drive». Controlla che Google Drive per computer sia aperto e che la cartella sia sincronizzata, oppure scrivi il percorso qui sotto."));
     }
     box.append(err);
 

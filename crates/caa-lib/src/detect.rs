@@ -1,5 +1,6 @@
 //! Trovare la cartella della biblioteca: ogni PC ha Google Drive per computer, che di solito mostra i Drive
-//! condivisi in `<lettera>:\Drive condivisi\<nome del Drive>\` (in inglese `Shared drives`).
+//! condivisi in `<lettera>:\Drive condivisi\<nome del Drive>\` (in inglese `Shared drives`) oppure, con un account
+//! in comune, in `<lettera>:\Il mio Drive\` (`My Drive`).
 
 use std::path::{Path, PathBuf};
 
@@ -15,6 +16,8 @@ pub const SUBFOLDERS: [&str; 5] = [
 ];
 
 const SHARED_NAMES: [&str; 2] = ["Drive condivisi", "Shared drives"];
+/// Con un account Google in comune (senza Drive condivisi) la cartella sta nel «Mio Drive» dell'account.
+const MY_DRIVE_NAMES: [&str; 2] = ["Il mio Drive", "My Drive"];
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Candidate {
@@ -40,6 +43,18 @@ pub fn find_candidates(roots: &[PathBuf], cfg: &SharedConfig) -> Vec<Candidate> 
         .unwrap_or("CAA");
     let mut out = Vec::new();
     for root in roots {
+        // «Il mio Drive»: solo se la configurazione non chiede un Drive condiviso preciso.
+        if cfg.drive_name.as_deref().is_none_or(str::is_empty) {
+            for mine in MY_DRIVE_NAMES {
+                let path = root.join(mine).join(folder);
+                if is_library(&path) {
+                    out.push(Candidate {
+                        path,
+                        drive: mine.to_string(),
+                    });
+                }
+            }
+        }
         for shared in SHARED_NAMES {
             let Ok(drives) = std::fs::read_dir(root.join(shared)) else {
                 continue;

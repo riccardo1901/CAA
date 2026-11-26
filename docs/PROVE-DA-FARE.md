@@ -1,5 +1,7 @@
 # Prove a mano da fare su Windows
 
+**Usa `docs/GIRO-DI-PROVA.md`**: tutte le prove in un solo percorso (circa 45 controlli in tre parti), in ordine di rischio e con i nomi dell'interfaccia di M11. I file `PROVE-*.md` restano per i dettagli.
+
 Elenco delle prove già pronte che aspettano un PC Windows. Si aggiorna a ogni blocco; quando una prova è fatta, si segna qui con l'esito.
 
 | Blocco | Istruzioni | Stato |
