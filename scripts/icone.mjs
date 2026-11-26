@@ -51,6 +51,7 @@ const ICONE = {
   apriPannello: "panel-right-open",
   chiudiPannello: "panel-right-close",
   bandierina: "flag",
+  indietro: "arrow-left",
 };
 
 const mancano = Object.entries(ICONE).filter(([, v]) => !nodi[v]);

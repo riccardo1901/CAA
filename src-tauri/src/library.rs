@@ -9,6 +9,7 @@ use caa_lib::cache::{read_for_adapt, sync_docs};
 use caa_lib::config::{clean_display_name, load_settings, save_settings, Settings, SharedConfig};
 use caa_lib::detect::{create_library, find_candidates, is_library, Candidate};
 use caa_lib::index::{load_index, save_index, scan, IndexCache, LibEntry};
+use caa_lib::publish::{entry_views, EntryView};
 use caa_lib::reach::{is_reachable, with_timeout};
 use serde::{Deserialize, Serialize};
 
@@ -118,6 +119,15 @@ pub struct LibScan {
     /// File che non si leggono adesso (ancora in sincronizzazione).
     pub incomplete: usize,
     /// L'elenco viene dall'ultima copia locale, non dal Drive.
+    pub offline: bool,
+}
+
+/// L'elenco come lo riceve l'interfaccia: per ogni documento anche se l'utente lo può ritirare (K1, M11-6).
+#[derive(Debug, Serialize)]
+pub struct LibScanView {
+    pub configured: bool,
+    pub entries: Vec<EntryView>,
+    pub incomplete: usize,
     pub offline: bool,
 }
 
@@ -246,6 +256,18 @@ impl LibraryState {
                 incomplete: 0,
                 offline: true,
             },
+        }
+    }
+
+    /// L'elenco per l'interfaccia: come `scan`, più il permesso di ritirare ogni documento, calcolato con la stessa
+    /// regola di `retire` (nome utente di Windows dell'autore se il file lo ricorda, amministratori).
+    pub fn scan_for(&self, display_name: &str, os: &str) -> LibScanView {
+        let s = self.scan();
+        LibScanView {
+            entries: entry_views(s.entries, display_name, os, &self.config.admins, s.offline),
+            configured: s.configured,
+            incomplete: s.incomplete,
+            offline: s.offline,
         }
     }
 
@@ -677,6 +699,38 @@ mod tests {
         assert!(st.adapt("non-c-e.caa", &docs, "Anna").is_err());
         assert!(st.adapt("../x.caa", &docs, "Anna").is_err());
         for d in [&sd, &docs_dir] {
+            let _ = std::fs::remove_dir_all(d);
+        }
+    }
+
+    #[test]
+    fn ritira_compare_solo_a_chi_puo_davvero() {
+        let (sd, lib, dd, st, docs) = setup("permesso");
+        // Maria Rossi (utente «mrossi») pubblica: il file ricorda il suo nome utente di Windows.
+        let mine = personal(&docs, "Storia", "Maria Rossi");
+        st.publish(&mine.file, &meta("Storia"), &docs, "Maria Rossi", "mrossi")
+            .unwrap();
+        let view = |name: &str, os: &str| -> bool {
+            let v = st.scan_for(name, os);
+            assert_eq!(v.entries.len(), 1);
+            v.entries[0].can_retire
+        };
+        assert!(view("Maria Rossi", "mrossi"));
+        assert!(
+            !view("Maria Rossi", "mrossi2"),
+            "un'omonima non lo può ritirare"
+        );
+        assert!(view("Anna", "segreteria"), "un amministratore sì");
+        // All'interfaccia arriva `can_retire`, mai il nome utente di chi ha pubblicato.
+        let json = serde_json::to_value(st.scan_for("Maria Rossi", "mrossi2")).unwrap();
+        assert_eq!(json["entries"][0]["can_retire"], json!(false));
+        assert_eq!(json["entries"][0]["title"], json!("Storia"));
+        assert!(json["entries"][0].get("author_user").is_none());
+        // E il Drive dice lo stesso: l'omonima riceve un errore, l'autrice ritira.
+        let file = st.scan().entries[0].file.clone();
+        assert!(st.retire(&file, "Maria Rossi", "mrossi2").is_err());
+        assert!(st.retire(&file, "Maria Rossi", "mrossi").is_ok());
+        for d in [&sd, &lib, &dd] {
             let _ = std::fs::remove_dir_all(d);
         }
     }

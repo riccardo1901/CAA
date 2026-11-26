@@ -24,6 +24,10 @@ pub struct LibEntry {
     pub size: u64,
     /// Un altro file ha lo stesso identificativo (Drive ha creato una copia «in conflitto»).
     pub conflict: bool,
+    /// Il nome utente di Windows di chi l'ha pubblicato (dal manifest), per sapere chi può ritirarlo (K1). Resta in
+    /// memoria: non va nell'elenco salvato in cache né all'interfaccia (il formato dei file non cambia).
+    #[serde(skip)]
+    pub author_user: Option<String>,
 }
 
 /// Il massimo di documenti letti in una scansione (una cartella enorme non deve bloccare il programma).
@@ -109,6 +113,7 @@ pub fn scan(root: &Path, cache: &mut IndexCache) -> std::io::Result<Scan> {
                     rev: m.rev,
                     size: len,
                     conflict: false,
+                    author_user: m.author_user,
                 };
                 cache.map.insert(
                     name,

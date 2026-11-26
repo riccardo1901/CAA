@@ -57,13 +57,15 @@ const STATI: Array<[string, (page: Page) => Promise<void>]> = [
     await apriCompleto(page);
     await documentiSalvati(page);
     await page.getByRole("button", { name: "Documenti" }).click();
-    await page.locator(".docs-panel .docs-row", { hasText: "La storia del gatto Pepe" }).getByRole("button", { name: "Pubblica" }).click();
+    // M11-6: «Pubblica…» sta nel menu «⋯» della riga.
+    await page.locator(".docs-panel .docs-row", { hasText: "La storia del gatto Pepe" }).getByRole("button", { name: /^Altre azioni/ }).click();
+    await page.locator(".docs-panel").getByRole("menuitem", { name: "Pubblica…" }).click();
     await page.locator(".pub-form").waitFor();
   }],
   ["05-biblioteca", async (page) => {
     await apriCompleto(page);
     await page.getByRole("button", { name: "Documenti" }).click();
-    await page.locator(".docs-panel").getByRole("button", { name: "Biblioteca" }).click();
+    await page.locator(".docs-panel").getByRole("tab", { name: "Biblioteca" }).click();
     await page.locator(".docs-panel .docs-row").first().waitFor();
   }],
   ["06-stampa", async (page) => {
@@ -111,7 +113,7 @@ const STATI: Array<[string, (page: Page) => Promise<void>]> = [
   ["12b-biblioteca-da-collegare", async (page) => {
     await apriCompleto(page, { configured: false, name: "Maria Rossi", candidates: [{ path: "G:/Drive condivisi/CAA Istituto/CAA", drive: "CAA Istituto" }], entries: LIB_ENTRIES }, "");
     await page.getByRole("button", { name: "Documenti" }).click();
-    await page.locator(".docs-panel").getByRole("button", { name: "Biblioteca" }).click();
+    await page.locator(".docs-panel").getByRole("tab", { name: "Biblioteca" }).click();
     await page.waitForTimeout(200);
   }],
   ["13-simboli-scuola", async (page) => {
@@ -144,7 +146,8 @@ const STATI: Array<[string, (page: Page) => Promise<void>]> = [
       delete (window as any).__caaConferma; // la finestra vera
     });
     await page.getByRole("button", { name: "Documenti" }).click();
-    await page.locator(".docs-row", { hasText: "In mensa" }).getByRole("button", { name: "Elimina" }).click();
+    await page.locator(".docs-row", { hasText: "In mensa" }).getByRole("button", { name: /^Altre azioni/ }).click();
+    await page.locator(".docs-panel").getByRole("menuitem", { name: "Elimina" }).click();
     await page.getByRole("alertdialog").waitFor();
   }],
   ["16-notifica-errore", async (page) => {
@@ -157,6 +160,24 @@ const STATI: Array<[string, (page: Page) => Promise<void>]> = [
     await apriCompleto(page);
     await page.getByRole("button", { name: "Altro", exact: true }).click();
     await page.locator("#menu-altro").waitFor();
+  }],
+  // M11-6: il menu «⋯» di una riga di Documenti e la scheda Correzioni.
+  ["18-documenti-menu-riga", async (page) => {
+    await apriCompleto(page);
+    await documentiSalvati(page);
+    await page.getByRole("button", { name: "Documenti" }).click();
+    await page.locator(".docs-panel .docs-row", { hasText: "La storia del gatto Pepe" }).getByRole("button", { name: /^Altre azioni/ }).click();
+    await page.locator(".row-menu").waitFor();
+  }],
+  ["19-correzioni", async (page) => {
+    await page.addInitScript(() => {
+      (window as any).__withCorrFlag = true;
+      (window as any).__corrInit = { pending: ["pane\t1003", "casa\t1002"] };
+    });
+    await apriCompleto(page);
+    await page.getByRole("button", { name: "Documenti" }).click();
+    await page.locator(".docs-panel").getByRole("tab", { name: "Correzioni" }).click();
+    await page.locator(".lib-corrections").waitFor();
   }],
 ];
 

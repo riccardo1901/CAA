@@ -1,9 +1,11 @@
-// La scheda «Biblioteca» (M9b-1): trovare la cartella del Drive condiviso, elencare i documenti di
-// riferimento, cercarli e farne una copia da adattare.
+// La scheda «Biblioteca» (M9b-1; riordinata in M11-6): trovare la cartella del Drive condiviso, elencare i documenti
+// di riferimento, cercarli e farne una copia da adattare. E la scheda «Correzioni» (M9c-3, scheda propria da M11-6).
 import type { CorrectionsClient, LibEntry, LibraryClient, LibScan, LibStatus } from "../engine/client";
+import { statoVuoto } from "./empty";
 import { formatWhen } from "./panel-format";
-import { conIcona } from "../ui/icons";
+import { conIcona, icona } from "../ui/icons";
 import type { Conferma } from "../ui/confirm";
+import { menuRiga } from "../ui/rowmenu";
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
@@ -46,20 +48,19 @@ export interface LibraryTabDeps {
   changed(status: LibStatus): void;
   /** Chiede conferma al docente (finestra del programma). */
   confirm(c: Conferma): Promise<boolean>;
-  /** Le correzioni anonime (M9c-3): se c'è, in fondo alla scheda c'è la sezione per vederle e inviarle. */
-  corrections?: CorrectionsClient;
-}
-
-/** Due nomi sono lo stesso (senza badare a maiuscole e spazi ai lati). */
-function sameName(a: string, b: string): boolean {
-  const x = a.trim().toLowerCase();
-  return x !== "" && x === b.trim().toLowerCase();
+  /** La scheda è ancora quella in vista (le risposte lente del Drive non disegnano sopra un'altra scheda). */
+  attiva?: () => boolean;
+  /** Passa a «I miei documenti» (dallo stato vuoto: «pubblica un tuo documento»). */
+  toMine?: () => void;
 }
 
 /** Disegna la scheda dentro `body`. */
 export function showLibraryTab(body: HTMLElement, deps: LibraryTabDeps): void {
   const { library } = deps;
+  const inVista = (): boolean => deps.attiva?.() ?? true;
 
+  /** La biblioteca non è collegata (o la cartella scelta non risponde): prima la frase per il docente e le cartelle
+   *  trovate; sotto, chiusa, la parte per chi imposta la biblioteca (così nessuno ne crea una vuota per sbaglio). */
   const setup = async (status: LibStatus | null): Promise<void> => {
     body.replaceChildren(el("p", "docs-note", "Cerco la biblioteca nel Drive condiviso…"));
     let found: Array<{ path: string; drive: string }> = [];
@@ -68,12 +69,13 @@ export function showLibraryTab(body: HTMLElement, deps: LibraryTabDeps): void {
     } catch {
       /* si può sempre scrivere il percorso a mano */
     }
+    if (!inVista()) return;
     const box = el("div", "lib-setup");
-    box.append(
-      el("p", "docs-note", status?.configured ? `La cartella scelta (${status.path ?? ""}) non risponde. Puoi sceglierne un'altra.` : "La biblioteca dell'istituto non è ancora collegata."),
-      el("p", "docs-note", "Serve Google Drive per computer, con il Drive condiviso dell'istituto: il programma legge la cartella che Drive mostra sul computer."),
-    );
+    const lead = el("p", "docs-lead");
+    lead.append(icona("bibliotecaOff"), el("span", "", status?.configured ? `La cartella della biblioteca (${status.path ?? ""}) non risponde. Controlla che Google Drive sia acceso, oppure scegli una cartella trovata.` : "La biblioteca della scuola non è ancora collegata. Chiedi al referente o scegli una cartella trovata."));
+    box.append(lead, el("p", "docs-note", "Serve Google Drive per computer, con il Drive condiviso dell'istituto: il programma legge la cartella che Drive mostra sul computer."));
     const err = el("p", "docs-note warn");
+    err.setAttribute("role", "alert");
     const choose = async (path: string, create: boolean): Promise<void> => {
       err.textContent = "";
       try {
@@ -85,25 +87,35 @@ export function showLibraryTab(body: HTMLElement, deps: LibraryTabDeps): void {
       }
     };
     if (found.length > 0) {
-      box.append(el("p", "docs-note", "Ho trovato queste cartelle:"));
+      box.append(el("h3", "lib-subtitle", "Ho trovato queste cartelle"));
       const ul = el("ul", "docs-list");
       for (const c of found) {
-        const li = el("li", "docs-row");
+        const li = el("li", "docs-row row");
         const info = el("div", "docs-info");
-        info.append(el("strong", "", c.drive), el("span", "docs-when", c.path));
-        const use = el("button", "", "Usa questa");
+        const meta = el("div", "docs-meta");
+        meta.append(el("span", "docs-when", c.path));
+        info.append(el("strong", "docs-title", c.drive), meta);
+        const use = el("button", "primary", "Usa questa");
         use.type = "button";
+        use.setAttribute("aria-label", `Usa questa: ${c.drive}`);
         use.addEventListener("click", () => void choose(c.path, false));
-        li.append(info, use);
+        const actions = el("div", "row-actions");
+        actions.append(use);
+        li.append(info, actions);
         ul.append(li);
       }
       box.append(ul);
     } else {
-      box.append(el("p", "docs-note", "Non ho trovato nessun Drive condiviso con una cartella «CAA» e dentro «biblioteca». Scrivi il percorso della cartella."));
+      box.append(el("p", "docs-note", "Non ho trovato nessun Drive condiviso con una cartella «CAA» e dentro «biblioteca». Chiedi al referente della biblioteca."));
     }
+    box.append(err);
+
+    // Per chi imposta la biblioteca: chiusa finché non la si apre.
+    const tecnico = el("details", "lib-admin");
+    const summary = el("summary", "", "Per chi imposta la biblioteca");
     const path = el("input", "lib-path");
     path.type = "text";
-    path.placeholder = "Percorso della cartella, per esempio G:\\Drive condivisi\\CAA Istituto\\CAA";
+    path.placeholder = "Per esempio G:\\Drive condivisi\\CAA Istituto\\CAA";
     path.setAttribute("aria-label", "Percorso della cartella della biblioteca");
     const row = el("div", "lib-actions");
     const use = el("button", "", "Usa questo percorso");
@@ -114,7 +126,13 @@ export function showLibraryTab(body: HTMLElement, deps: LibraryTabDeps): void {
     create.title = "Solo la prima volta, per chi imposta la biblioteca: crea le cartelle biblioteca, archivio, simboli…";
     create.addEventListener("click", () => void choose(path.value, true));
     row.append(use, create);
-    box.append(path, row, err);
+    tecnico.append(
+      summary,
+      el("p", "docs-note", "Scrivi il percorso della cartella «CAA» nel Drive condiviso dell'istituto. «Crea la biblioteca qui» serve solo la prima volta: crea le cartelle della biblioteca (biblioteca, archivio, simboli…)."),
+      path,
+      row,
+    );
+    box.append(tecnico);
     body.replaceChildren(box);
   };
 
@@ -127,14 +145,16 @@ export function showLibraryTab(body: HTMLElement, deps: LibraryTabDeps): void {
       if (!status.configured) return void (await setup(null));
       scan = await library.scan();
     } catch (e) {
-      body.replaceChildren(el("p", "docs-note warn", `Non riesco a leggere la biblioteca: ${String(e)}`));
+      if (inVista()) body.replaceChildren(el("p", "docs-note warn", `Non riesco a leggere la biblioteca: ${String(e)}`));
       return;
     }
     if (!scan.configured) return void (await setup(status));
     deps.changed(status);
+    if (!inVista()) return;
 
     const top = el("div", "lib-top");
-    const state = el("span", scan.offline ? "lib-state off" : "lib-state on", scan.offline ? "Drive non raggiungibile: vedi l'ultima copia" : "Collegata al Drive");
+    const state = el("span", scan.offline ? "lib-state off" : "lib-state on");
+    state.append(icona(scan.offline ? "bibliotecaOff" : "biblioteca"), el("span", "", scan.offline ? "Drive non raggiungibile: vedi l'ultima copia" : "Collegata al Drive"));
     state.title = status.path ?? "";
     const refresh = conIcona(el("button", "", "Aggiorna"), "aggiorna");
     refresh.type = "button";
@@ -173,32 +193,54 @@ export function showLibraryTab(body: HTMLElement, deps: LibraryTabDeps): void {
     }
     const msg = el("p", "docs-note warn");
     const ul = el("ul", "docs-list");
+    const vuoto = el("div", "lib-empty");
     const draw = (): void => {
       const shown = filterLibrary(scan.entries, q.value, subject.value, level.value);
       ul.replaceChildren();
+      vuoto.replaceChildren();
       if (scan.entries.length === 0) {
-        ul.append(el("li", "docs-note", "La biblioteca è vuota."));
+        vuoto.append(
+          statoVuoto(
+            "biblioteca",
+            "Nessun documento in biblioteca. Pubblica un tuo documento da «I miei documenti» perché i colleghi possano adattarlo.",
+            deps.toMine ? { testo: "Vai a I miei documenti", fai: deps.toMine } : undefined,
+          ),
+        );
         return;
       }
       if (shown.length === 0) {
-        ul.append(el("li", "docs-note", "Nessun documento corrisponde alla ricerca."));
+        vuoto.append(
+          statoVuoto("cerca", "Nessun documento corrisponde alla ricerca.", {
+            testo: "Cancella la ricerca",
+            fai: () => {
+              q.value = "";
+              subject.value = "";
+              level.value = "";
+              draw();
+              q.focus();
+            },
+          }),
+        );
         return;
       }
       for (const e of shown) ul.append(row(e));
     };
     const row = (e: LibEntry): HTMLElement => {
-      const li = el("li", "docs-row lib-row");
+      const li = el("li", "docs-row row lib-row");
+      const name = e.title || e.file;
       const info = el("div", "docs-info");
-      info.append(el("strong", "", e.title || e.file));
-      const meta = [e.author, e.subject, e.level].filter(Boolean).join(" · ");
-      if (meta) info.append(el("span", "docs-when", meta));
-      info.append(el("span", "docs-when", formatWhen(e.modified)));
-      for (const t of e.tags) info.append(el("span", "docs-tag", t));
+      const meta = el("div", "docs-meta");
+      const who = [e.author, e.subject, e.level].filter(Boolean).join(" · ");
+      if (who) meta.append(el("span", "docs-when", who));
+      meta.append(el("span", "docs-when", formatWhen(e.modified)));
+      for (const t of e.tags) meta.append(el("span", "docs-tag chip", t));
       if (e.conflict) {
-        const c = el("span", "docs-tag conflict", "copia in conflitto");
+        const c = el("span", "docs-tag chip conflict", "copia in conflitto");
         c.title = "Un altro file ha lo stesso documento: chiedi all'autore quale tenere";
-        info.append(c);
+        meta.append(c);
       }
+      info.append(el("strong", "docs-title", name), meta);
+      const actions = el("div", "row-actions");
       const adapt = conIcona(el("button", "primary", "Adatta"), "adatta");
       adapt.type = "button";
       adapt.title = "Fai una tua copia da modificare";
@@ -213,67 +255,110 @@ export function showLibraryTab(body: HTMLElement, deps: LibraryTabDeps): void {
           },
         );
       });
-      li.append(info, adapt);
-      // Ritira: l'autore, o un amministratore (nomi utente di Windows nel config.json del tecnico).
-      const canRetire = sameName(e.author, status.display_name) || status.admins.some((a) => sameName(a, status.user));
-      if (canRetire) {
-        const retire = conIcona(el("button", "", "Ritira"), "ritira");
-        retire.type = "button";
-        retire.title = "Il documento esce dalla biblioteca (resta nella cartella «archivio»)";
-        retire.addEventListener("click", async () => {
-          const ok = await deps.confirm({
-            domanda: `Ritirare «${e.title}» dalla biblioteca?`,
-            spiegazione: "Esce dall'elenco ma resta nella cartella «archivio» del Drive.",
-            azione: "Ritira",
-            pericolo: true,
-          });
-          if (!ok) return;
-          retire.disabled = true;
-          library.retire(e.file).then(
-            () => void list(),
-            (err: unknown) => {
-              retire.disabled = false;
-              msg.textContent = `Non riesco a ritirare «${e.title}»: ${String(err)}`;
+      actions.append(adapt);
+      // Ritira: solo se il programma dice che l'utente può davvero (autore, riconosciuto dal nome utente di Windows,
+      // o amministratore; K1). Sta nel menu «⋯» e chiede conferma.
+      if (e.can_retire) {
+        actions.append(
+          menuRiga(`Altre azioni per «${name}»`, [
+            {
+              testo: "Ritira",
+              icona: "ritira",
+              pericolo: true,
+              fai: () =>
+                void (async () => {
+                  const ok = await deps.confirm({
+                    domanda: `Ritirare «${e.title}» dalla biblioteca?`,
+                    spiegazione: "Esce dall'elenco ma resta nella cartella «archivio» del Drive.",
+                    azione: "Ritira",
+                    pericolo: true,
+                  });
+                  if (!ok) return;
+                  library.retire(e.file).then(
+                    () => void list(),
+                    (err: unknown) => {
+                      msg.textContent = `Non riesco a ritirare «${e.title}»: ${String(err)}`;
+                    },
+                  );
+                })(),
             },
-          );
-        });
-        li.append(retire);
+          ]),
+        );
+      } else {
+        // Lo stesso spazio del pulsante «⋯»: le azioni principali restano in colonna.
+        actions.append(el("span", "row-more-spazio"));
       }
+      li.append(info, actions);
       return li;
     };
     for (const input of [q, subject, level]) input.addEventListener("input", draw);
     draw();
-    body.replaceChildren(top, filters, notes, msg, ul);
-    if (deps.corrections) void correctionsSection(deps.corrections, scan.offline);
+    body.replaceChildren(top, filters, notes, msg, ul, vuoto);
   }
 
-  /** «Correzioni anonime»: si vede cosa partirebbe, si può spegnere la raccolta e inviare a mano. */
-  async function correctionsSection(c: CorrectionsClient, offline: boolean): Promise<void> {
+  void list();
+}
+
+export interface CorrectionsTabDeps {
+  corrections: CorrectionsClient;
+  /** Per sapere se il Drive c'è (senza, non si invia). */
+  library?: LibraryClient;
+  confirm(c: Conferma): Promise<boolean>;
+  attiva?: () => boolean;
+}
+
+/** La scheda «Correzioni» (M9c-3, scheda propria da M11-6): la spiegazione sempre in vista, cosa partirebbe, la
+ *  raccolta che si può spegnere, l'invio a mano. */
+export function showCorrectionsTab(body: HTMLElement, deps: CorrectionsTabDeps): void {
+  const c = deps.corrections;
+  body.replaceChildren(el("p", "docs-note", "Carico le correzioni…"));
+  void (async () => {
     let info;
     try {
       info = await c.info();
-    } catch {
+    } catch (e) {
+      if (deps.attiva?.() ?? true) body.replaceChildren(el("p", "docs-note warn", `Non riesco a leggere le correzioni: ${String(e)}`));
       return;
     }
+    // Si inviano nella cartella «correzioni» del Drive: serve la biblioteca collegata e raggiungibile.
+    let drive = false;
+    if (deps.library) {
+      try {
+        const s = await deps.library.status();
+        drive = s.configured && s.reachable;
+      } catch {
+        drive = false;
+      }
+    }
+    if (!(deps.attiva?.() ?? true)) return;
     const box = el("section", "lib-corrections");
-    box.append(el("h3", "", "Correzioni anonime"));
+    box.setAttribute("aria-labelledby", "corr-titolo");
+    const h = el("h3", "", "Correzioni anonime");
+    h.id = "corr-titolo";
+    box.append(h);
     box.append(
       el(
         "p",
-        "docs-note",
+        "docs-note corr-explain",
         "Quando scegli un simbolo diverso da quello proposto, il programma ricorda solo la parola, una parola prima e una dopo (senza nomi propri né numeri) e il simbolo scelto. Mai il testo e mai il tuo nome dentro il file. Attenzione: il file lo crea il tuo account Google, quindi chi ha accesso alla cartella del Drive può vedere da quale account arriva. Parte solo se premi «Invia»: servono a migliorare i simboli per tutti.",
       ),
     );
     const on = el("input");
     on.type = "checkbox";
     on.checked = info.enabled;
-    const label = el("label", "pm-all");
+    const label = el("label", "pm-all corr-switch");
     label.append(on, " Raccogli le correzioni");
     on.addEventListener("change", () => {
       c.setEnabled(on.checked).catch(() => (on.checked = !on.checked));
     });
-    const count = el("p", "docs-note", info.pending === 0 ? "Nessuna correzione in attesa." : `${info.pending} ${info.pending === 1 ? "correzione in attesa" : "correzioni in attesa"}.`);
+    const count = el("div", "corr-count");
+    const nessuna = (): void => {
+      count.replaceChildren(statoVuoto("invia", "Nessuna correzione in attesa."));
+    };
+    if (info.pending === 0) nessuna();
+    else count.append(el("p", "docs-note", `${info.pending} ${info.pending === 1 ? "correzione in attesa" : "correzioni in attesa"}.`));
     const msg = el("p", "docs-note");
+    msg.setAttribute("role", "status");
     const preview = el("pre", "lib-corr-preview");
     preview.hidden = true;
     const actions = el("div", "lib-actions");
@@ -287,18 +372,22 @@ export function showLibraryTab(body: HTMLElement, deps: LibraryTabDeps): void {
         preview.textContent = ["forma · prima · dopo · lemma · categoria · simbolo scelto · proposto", ...lines.map((l) => l.split("\t").join(" · ")), ...more].join("\n");
       }, () => undefined);
     });
-    const send = conIcona(el("button", "", "Invia correzioni"), "invia");
+    const discard = conIcona(el("button", "", "Butta via"), "elimina");
+    discard.type = "button";
+    discard.disabled = info.pending === 0;
+    const send = conIcona(el("button", "primary", "Invia correzioni"), "invia");
     send.type = "button";
-    send.disabled = info.pending === 0 || offline;
-    send.title = offline ? "Serve il Drive" : "Le copia nella cartella «correzioni» del Drive";
+    send.disabled = info.pending === 0 || !drive;
+    send.title = drive ? "Le copia nella cartella «correzioni» del Drive" : "Serve il Drive: la biblioteca deve essere collegata e raggiungibile";
     send.addEventListener("click", () => {
       send.disabled = true;
       msg.textContent = "";
+      msg.classList.remove("warn");
       c.send().then(
         (n) => {
           msg.textContent = `Inviate ${n} ${n === 1 ? "correzione" : "correzioni"}. Grazie!`;
-          count.textContent = "Nessuna correzione in attesa.";
-          show.disabled = true;
+          nessuna();
+          show.disabled = discard.disabled = true;
           preview.hidden = true;
         },
         (e: unknown) => {
@@ -308,9 +397,6 @@ export function showLibraryTab(body: HTMLElement, deps: LibraryTabDeps): void {
         },
       );
     });
-    const discard = conIcona(el("button", "", "Butta via"), "elimina");
-    discard.type = "button";
-    discard.disabled = info.pending === 0;
     discard.addEventListener("click", async () => {
       const ok = await deps.confirm({
         domanda: "Buttare via le correzioni raccolte senza inviarle?",
@@ -320,15 +406,14 @@ export function showLibraryTab(body: HTMLElement, deps: LibraryTabDeps): void {
       });
       if (!ok) return;
       c.discard().then(() => {
-        count.textContent = "Nessuna correzione in attesa.";
+        nessuna();
         show.disabled = send.disabled = discard.disabled = true;
         preview.hidden = true;
       }, () => undefined);
     });
-    actions.append(show, send, discard);
+    // La principale («Invia») per ultima, a destra.
+    actions.append(show, discard, send);
     box.append(label, count, actions, msg, preview);
-    body.append(box);
-  }
-
-  void list();
+    body.replaceChildren(box);
+  })();
 }

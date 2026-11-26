@@ -21,7 +21,8 @@ use corrections::CorrectionStore;
 use custom::{app_dir, custom_dir, is_custom, CustomStore, CustomSymbol};
 use docs::{docs_dir, DocEntry, DocStore, Opened, SavePayload};
 use library::{
-    os_user, FolderDto, LibScan, LibStatus, LibraryState, PublishMeta, PublishOutcome, VersionInfo,
+    os_user, FolderDto, LibScanView, LibStatus, LibraryState, PublishMeta, PublishOutcome,
+    VersionInfo,
 };
 use memory::{MemoryEntry, MemoryStore};
 
@@ -541,8 +542,9 @@ fn library_set_folder(
 }
 
 #[tauri::command(async)]
-fn library_scan(state: State<'_, Arc<Backend>>) -> LibScan {
-    state.library.scan()
+fn library_scan(state: State<'_, Arc<Backend>>) -> LibScanView {
+    // Con il permesso di ritirare ogni documento (K1): stessi nomi che usa `library_retire`.
+    state.library.scan_for(&author_name(&state), &os_user())
 }
 
 #[tauri::command(async)]

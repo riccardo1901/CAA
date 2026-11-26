@@ -147,6 +147,9 @@ export interface LibEntry {
   size: number;
   /** Un altro file ha lo stesso identificativo (Drive ha creato una copia «in conflitto»). */
   conflict: boolean;
+  /** L'utente può ritirarlo dalla biblioteca (M11-6, K1): lo calcola il programma con la stessa regola del ritiro
+   *  (autore riconosciuto dal nome utente di Windows, o amministratore); falso senza il Drive. */
+  can_retire: boolean;
 }
 
 export interface LibStatus {

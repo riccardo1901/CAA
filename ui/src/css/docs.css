@@ -1,8 +1,10 @@
-/* Finestra Documenti e Biblioteca (M11-1): stesso contenuto di prima, nuovo aspetto. Righe, schede ed etichette
-   ordinate con la tavolozza; la riorganizzazione (menu «⋯», sotto-pagina Pubblica) arriva in M11-6. */
+/* Finestra Documenti, Biblioteca e Correzioni (M11-1 per l'aspetto, M11-6 per l'ordine): righe con titolo e
+   dettagli, l'azione principale a destra e il menu «⋯»; Pubblica come sotto-pagina; stati vuoti. Solo variabili di
+   tokens.css e misure in rem: segue la dimensione dell'interfaccia e non esce mai dallo schermo. */
 .docs-panel {
-  width: 40rem;
+  width: 55rem;
   max-width: 100%;
+  height: min(44rem, 100%);
   max-height: 100%;
   display: flex;
   flex-direction: column;
@@ -12,16 +14,18 @@
   overflow: hidden;
 }
 
-/* Schede in alto. */
-.docs-tabs {
+/* Schede in alto, «Chiudi» a destra. */
+.docs-head {
   display: flex;
-  align-items: center;
-  gap: var(--s-1);
+  align-items: flex-end;
+  gap: var(--s-2);
   padding: var(--s-3) var(--s-4) 0;
   border-bottom: 1px solid var(--c-line);
   background: var(--c-panel);
+  flex: none;
 }
-.docs-tabs .grow { flex: 1; }
+.docs-head .grow { flex: 1; }
+.docs-tabs { display: flex; flex-wrap: wrap; gap: var(--s-1); min-width: 0; }
 .docs-tab {
   padding: var(--s-2) var(--s-4);
   border: 1px solid transparent;
@@ -38,22 +42,30 @@
   color: var(--c-text);
   font-weight: 700;
 }
-.docs-close { margin-bottom: var(--s-2); }
+.docs-close { margin-bottom: var(--s-2); flex: none; }
 
-.docs-body { padding: var(--s-3) var(--s-4) var(--s-4); overflow: auto; }
+.docs-body { flex: 1; min-height: 0; padding: var(--s-3) var(--s-4) var(--s-4); overflow: auto; }
+
+/* ---- Righe di elenco (.row): titolo e dettagli a sinistra, azioni a destra ---- */
 .docs-list { list-style: none; margin: 0; padding: 0; }
 .docs-row {
   display: flex;
   align-items: center;
-  gap: var(--s-2);
-  padding: var(--s-2);
+  gap: var(--s-3);
+  padding: var(--s-2) var(--s-2) var(--s-2) var(--s-3);
   border-bottom: 1px solid var(--c-line);
 }
+.docs-row:last-child { border-bottom: 0; }
 .docs-row.current { background: var(--c-accent-soft); border-radius: var(--r-sm); }
-.docs-info { flex: 1; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-3); min-width: 0; }
-.docs-info strong { overflow: hidden; text-overflow: ellipsis; }
-.docs-when { color: var(--c-text-3); font-size: var(--fs-sm); }
-/* Etichette: colore per tipo, mai solo colore (c'è sempre la parola). */
+.docs-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--s-1); }
+.docs-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.docs-meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-2); min-width: 0; }
+.docs-when { color: var(--c-text-3); font-size: var(--fs-sm); overflow-wrap: anywhere; }
+.row-actions { flex: none; display: flex; align-items: center; gap: var(--s-2); }
+/* Al posto del «⋯» quando non ci sono altre azioni: le azioni principali restano in colonna. */
+.row-more-spazio { display: inline-block; width: var(--h-control); }
+
+/* Etichette («chip»): colore per tipo, mai solo colore (c'è sempre la parola). */
 .docs-tag {
   padding: 0 var(--s-2);
   border-radius: var(--r-pill);
@@ -61,32 +73,112 @@
   color: var(--p-800);
   font-size: var(--fs-xs);
   line-height: 1.6;
+  white-space: nowrap;
 }
 .docs-tag.conflict { background: var(--warn-bg); color: var(--warn-fg); }
 .docs-tag.pub { background: var(--ok-bg); color: var(--ok-fg); }
+.docs-tag.open { background: var(--c-surface); color: var(--p-800); box-shadow: inset 0 0 0 1px var(--p-200); }
+
+/* ---- Menu «⋯» delle righe ---- */
+.row-more { position: relative; display: inline-flex; }
+.row-menu {
+  position: fixed;
+  z-index: 100;
+  min-width: 13rem;
+  max-width: calc(100vw - 1rem);
+  display: flex;
+  flex-direction: column;
+  padding: var(--s-1);
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-2);
+}
+.row-menu-item {
+  justify-content: flex-start;
+  width: 100%;
+  border-color: transparent;
+  background: transparent;
+  text-align: left;
+}
+.row-menu-item:hover:not(:disabled), .row-menu-item:focus-visible { background: var(--c-accent-soft); border-color: transparent; }
+.row-menu-item:disabled { background: transparent; border-color: transparent; }
+/* Elimina, Ritira: rosso (con il testo, e la conferma rossa dopo). */
+.row-menu-item.danger-text { color: var(--err-fg); }
+.row-menu-item.danger-text:hover:not(:disabled), .row-menu-item.danger-text:focus-visible { background: var(--err-bg); }
+
+/* ---- Messaggi e stati vuoti ---- */
 .docs-note { color: var(--c-text-2); margin: var(--s-2) 0; }
+.docs-note:empty { display: none; }
 .docs-note.warn { color: var(--warn-fg); }
 .docs-note.ok { color: var(--ok-fg); }
-.docs-folder { color: var(--c-text-3); font-size: var(--fs-sm); margin: var(--s-3) 0 0; }
+.docs-folder { color: var(--c-text-3); font-size: var(--fs-sm); margin: var(--s-3) 0 0; overflow-wrap: anywhere; }
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-6) var(--s-4);
+  text-align: center;
+  color: var(--c-text-2);
+}
+.empty-icon { display: inline-flex; color: var(--c-text-3); font-size: 2rem; }
+.empty-text { margin: 0; max-width: 32rem; }
 
-/* Biblioteca. */
-.lib-top { display: flex; align-items: center; gap: var(--s-2); margin-bottom: var(--s-2); }
+/* ---- Biblioteca ---- */
+.lib-top { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); margin-bottom: var(--s-3); }
 .lib-top .grow { flex: 1; }
-.lib-state.on { color: var(--ok-fg); font-weight: 600; }
-.lib-state.off { color: var(--warn-fg); font-weight: 600; }
+.lib-state { display: inline-flex; align-items: center; gap: var(--s-1); font-weight: 600; }
+.lib-state.on { color: var(--ok-fg); }
+.lib-state.off { color: var(--warn-fg); }
 .lib-filters { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-bottom: var(--s-2); }
-.lib-search { flex: 1 1 16rem; }
+.lib-search { flex: 1 1 16rem; min-width: 0; }
+.lib-actions { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+
+/* Biblioteca non collegata: la frase per il docente sopra, la parte tecnica chiusa sotto. */
+.docs-lead { display: flex; align-items: flex-start; gap: var(--s-2); margin: var(--s-1) 0 var(--s-2); font-weight: 600; color: var(--c-text); }
+.docs-lead .ico { margin-top: 0.15em; color: var(--warn-fg); }
+.lib-subtitle { font-size: var(--fs-md); margin: var(--s-4) 0 var(--s-1); }
+.lib-admin {
+  margin-top: var(--s-4);
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+  background: var(--c-panel);
+}
+.lib-admin summary { cursor: pointer; color: var(--c-text-2); border-radius: var(--r-sm); }
+.lib-admin summary:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 2px; }
+.lib-admin[open] summary { margin-bottom: var(--s-1); }
 .lib-path { width: 100%; margin: var(--s-2) 0; }
-.lib-actions { display: flex; gap: var(--s-2); }
 
-/* Pubblica. */
-.pub-form { display: flex; flex-direction: column; gap: var(--s-3); }
-.pub-form label { display: flex; flex-direction: column; gap: var(--s-1); font-size: var(--fs-sm); color: var(--c-text-2); }
-.pub-form .lib-actions { margin-top: var(--s-1); }
+/* ---- Pubblica: sotto-pagina con «← Indietro» (K17) ---- */
+.docs-subpage { display: flex; flex-direction: column; gap: var(--s-3); max-width: 40rem; }
+.subpage-head { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-3); }
+.subpage-back { flex: none; font-weight: 600; }
+.subpage-title { font-family: var(--f-title); font-size: var(--fs-lg); line-height: 1.3; margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.docs-subpage > .docs-note { margin: 0; }
+/* Campi allineati: etichetta a sinistra, campo a destra; su schermo stretto una sotto l'altro. */
+.pub-fields {
+  display: grid;
+  grid-template-columns: minmax(6rem, max-content) minmax(0, 1fr);
+  align-items: baseline;
+  gap: var(--s-3) var(--s-4);
+}
+.pub-label { color: var(--c-text-2); font-weight: 600; }
+.pub-input { display: flex; flex-direction: column; gap: var(--s-1); min-width: 0; }
+.pub-input input { width: 100%; }
+.pub-help { color: var(--c-text-3); font-size: var(--fs-sm); }
+.pub-actions { justify-content: flex-end; }
+@media (max-width: 40rem) {
+  .pub-fields { grid-template-columns: minmax(0, 1fr); gap: var(--s-1); }
+  .pub-label { margin-top: var(--s-2); }
+}
 
-/* Correzioni anonime. */
-.lib-corrections { margin-top: var(--s-4); border-top: 1px solid var(--c-line); padding-top: var(--s-3); }
-.lib-corrections h3 { font-size: var(--fs-md); margin: 0 0 var(--s-2); }
+/* ---- Correzioni anonime ---- */
+.lib-corrections h3 { font-size: var(--fs-lg); font-family: var(--f-title); margin: 0 0 var(--s-2); }
+.corr-explain { max-width: 46rem; }
+.corr-switch { margin: var(--s-3) 0; }
+.lib-corrections .lib-actions { margin-top: var(--s-2); }
 .lib-corr-preview {
   max-height: 11rem;
   overflow: auto;

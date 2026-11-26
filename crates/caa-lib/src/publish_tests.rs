@@ -423,6 +423,7 @@ fn entry(id: &str, rev: u32, conflict: bool) -> LibEntry {
         rev,
         size: 1,
         conflict,
+        author_user: None,
     }
 }
 
@@ -614,4 +615,90 @@ fn un_documento_vecchio_prende_il_nome_utente_al_primo_aggiornamento_dell_autore
         Err(LibError::NotAuthor { .. })
     ));
     std::fs::remove_dir_all(&root).unwrap();
+}
+
+// ---- M11-6 (K1): «Ritira» solo per chi può davvero ----
+
+#[test]
+fn il_permesso_di_ritirare_segue_la_stessa_regola_di_retire() {
+    let root = tmp("permesso");
+    let mut nuovo = doc("Storia", "Maria Rossi");
+    nuovo.manifest.author_user = Some("mrossi".into());
+    publish(&root, &nuovo, "Maria Rossi").unwrap();
+    let vecchio = doc("Vecchio", "Maria Rossi"); // pubblicato prima di M9c-2: solo il nome da mostrare
+    publish(&root, &vecchio, "Maria Rossi").unwrap();
+    let altro = doc("Altro", "Luca Bianchi");
+    publish(&root, &altro, "Luca Bianchi").unwrap();
+    let entries = scan(&root, &mut IndexCache::default()).unwrap().entries;
+    // Il nome utente di chi ha pubblicato si legge dal file, ma non finisce nell'elenco salvato né all'interfaccia.
+    let e = entries.iter().find(|e| e.title == "Storia").unwrap();
+    assert_eq!(e.author_user.as_deref(), Some("mrossi"));
+    let json = serde_json::to_string(&entries).unwrap();
+    assert!(!json.contains("mrossi") && !json.contains("author_user"));
+    let back: Vec<LibEntry> = serde_json::from_str(&json).unwrap();
+    assert_eq!(back[0].author_user, None);
+
+    let permessi =
+        |name: &str, os: &str, admins: &[String], offline: bool| -> Vec<(String, bool)> {
+            let mut v: Vec<(String, bool)> =
+                entry_views(entries.clone(), name, os, admins, offline)
+                    .into_iter()
+                    .map(|x| (x.entry.title, x.can_retire))
+                    .collect();
+            v.sort();
+            v
+        };
+    let t = |a: bool, b: bool, c: bool| {
+        vec![
+            ("Altro".to_string(), a),
+            ("Storia".to_string(), b),
+            ("Vecchio".to_string(), c),
+        ]
+    };
+    // L'autrice vera (nome utente uguale), anche con un altro nome da mostrare.
+    assert_eq!(
+        permessi("M. Rossi", "MRossi", &[], false),
+        t(false, true, false)
+    );
+    assert_eq!(
+        permessi("Maria Rossi", "mrossi", &[], false),
+        t(false, true, true)
+    );
+    // Un'omonima con un altro utente di Windows: non il documento nuovo (che ricorda l'utente); quello vecchio sì,
+    // come fa `retire` (lì conta solo il nome da mostrare).
+    assert_eq!(
+        permessi("Maria Rossi", "mrossi2", &[], false),
+        t(false, false, true)
+    );
+    // Un amministratore: tutti. Senza Drive: nessuno.
+    let admins = vec!["Segreteria".to_string()];
+    assert_eq!(
+        permessi("Anna", "segreteria", &admins, false),
+        t(true, true, true)
+    );
+    assert_eq!(
+        permessi("Anna", "segreteria", &admins, true),
+        t(false, false, false)
+    );
+    assert_eq!(
+        permessi("Maria Rossi", "mrossi", &[], true),
+        t(false, false, false)
+    );
+    // E `retire` dice lo stesso.
+    let file = library_file(&nuovo.manifest.id);
+    assert!(matches!(
+        retire(&root, &file, "Maria Rossi", "mrossi2", &[]),
+        Err(LibError::NotAuthor { .. })
+    ));
+    assert!(retire(&root, &file, "M. Rossi", "MRossi", &[]).is_ok());
+    std::fs::remove_dir_all(&root).unwrap();
+}
+
+#[test]
+fn un_file_che_non_si_legge_lo_ritira_solo_un_amministratore() {
+    let admins = vec!["tecnico".to_string()];
+    assert!(!may_retire(None, "Maria", "maria", &[]));
+    assert!(may_retire(None, "Maria", "Tecnico", &admins));
+    assert!(may_retire(Some(("Maria", None)), " maria ", "x", &[]));
+    assert!(!may_retire(Some(("", None)), "", "x", &[]));
 }

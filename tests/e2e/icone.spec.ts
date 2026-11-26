@@ -115,7 +115,7 @@ test("nessuna richiesta fuori da questo computer: icone e caratteri sono dentro 
   await page.locator(".pm-cell").first().waitFor();
   await documentiSalvati(page);
   await page.getByRole("button", { name: "Documenti" }).click();
-  await page.locator(".docs-panel").getByRole("button", { name: "Biblioteca", exact: true }).click();
+  await page.locator(".docs-panel").getByRole("tab", { name: "Biblioteca", exact: true }).click();
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Stampa…" }).click();
   await page.waitForTimeout(300);

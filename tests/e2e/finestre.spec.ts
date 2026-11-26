@@ -4,7 +4,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { open } from "./fixtures";
+import { azioneRiga, open } from "./fixtures";
 import { apriCompleto, documentiSalvati } from "./schermi";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -122,7 +122,7 @@ test.describe("conferme del programma", () => {
     await conferme(page);
     await page.getByRole("button", { name: "Documenti" }).click();
     const riga = page.locator(".docs-row", { hasText: "In mensa" });
-    await riga.getByRole("button", { name: "Elimina" }).click();
+    await azioneRiga(riga, "Elimina"); // M11-6: nel menu «⋯» della riga
     const c = page.getByRole("alertdialog");
     await expect(c).toBeVisible();
     await expect(c.getByRole("heading")).toHaveText("Eliminare «In mensa»?");
@@ -137,7 +137,7 @@ test.describe("conferme del programma", () => {
     await expect(page.locator(".docs-panel")).toBeVisible();
     await expect(riga).toBeVisible();
     // Ora sì.
-    await riga.getByRole("button", { name: "Elimina" }).click();
+    await azioneRiga(riga, "Elimina"); // M11-6: nel menu «⋯» della riga
     await page.getByRole("alertdialog").getByRole("button", { name: "Elimina" }).click();
     await expect(riga).toHaveCount(0);
     expect(await page.evaluate(() => (window as any).__mock.docsStore.has("Mensa.caa"))).toBe(false);
