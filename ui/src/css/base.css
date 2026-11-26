@@ -192,7 +192,29 @@ body {
 }
 .invito-prova:hover:not(:disabled) { background: transparent; color: var(--p-800); }
 @media print {
-  .invito { display: none !important; }
+  .invito, .skip-link { display: none !important; }
+}
+
+/* ---- «Vai al testo» (M11-9): nascosto finché non ha il fuoco da tastiera ---- */
+.skip-link {
+  position: fixed;
+  top: var(--s-2);
+  left: var(--s-2);
+  z-index: 200;
+  padding: var(--s-2) var(--s-4);
+  background: var(--c-surface);
+  color: var(--c-accent-hover);
+  font-weight: 600;
+  border-radius: var(--r-sm);
+  box-shadow: var(--sh-2);
+}
+.skip-link:not(:focus) {
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* ---- Tasti scritti come tasti ---- */

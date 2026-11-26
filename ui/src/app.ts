@@ -208,11 +208,27 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
   bars.refresh();
 }
 
+/** Il collegamento nascosto «Vai al testo» (M11-9, PIANO-M11.md 3.8): il primo elemento con Tab; si vede solo
+ *  quando ha il fuoco e porta il cursore nel testo. Non entra nella stampa. */
+function installaVaiAlTesto(): void {
+  if (document.querySelector(".skip-link")) return;
+  const a = document.createElement("a");
+  a.className = "skip-link";
+  a.href = "#testo";
+  a.textContent = "Vai al testo";
+  a.addEventListener("click", (e) => {
+    e.preventDefault();
+    view.focus();
+  });
+  document.body.prepend(a);
+}
+
 export function startApp(mount: HTMLElement): void {
   root = mount;
   installaSuggerimenti();
   installaScorciatoie();
   ripristinaDimensione();
+  installaVaiAlTesto();
   const layout = document.createElement("div");
   layout.className = "layout";
   const wrap = document.createElement("main");

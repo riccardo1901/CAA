@@ -6,7 +6,7 @@
 //    cui sta davvero (il foglio è escluso: non cambia; i pulsanti spenti sono esclusi, come dice WCAG).
 // 3. Il fuoco da tastiera: andando avanti con Tab, ogni controllo raggiunto mostra un anello di almeno 2 px.
 import { expect, test, type Page } from "@playwright/test";
-import { apriCompleto, documentiSalvati, tuttiGliAvvisi } from "./schermi";
+import { BIBLIOTECA, apriCompleto, documentiSalvati, tuttiGliAvvisi } from "./schermi";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -178,7 +178,73 @@ const SITUAZIONI: Array<[string, (page: Page) => Promise<void>]> = [
     await page.getByRole("tab", { name: "Memoria" }).click();
     await page.locator(".side-memory li").first().waitFor();
   }],
+  // M11-9: controllo finale anche sulle situazioni nate dopo M11-1.
+  ["benvenuto", async (page) => {
+    await apriCompleto(page, { ...BIBLIOTECA, name: "" }, "");
+    await page.locator(".first-box").waitFor();
+  }],
+  ["invito", async (page) => {
+    await apriCompleto(page, undefined, "");
+    await page.locator(".invito").waitFor();
+  }],
+  ["scorciatoie", async (page) => {
+    await apriCompleto(page);
+    await page.keyboard.press("F1");
+    await page.locator(".help-dialog").waitFor();
+  }],
+  ["menu altro", async (page) => {
+    await apriCompleto(page);
+    await page.getByRole("button", { name: "Altro", exact: true }).click();
+    await page.locator("#menu-altro").waitFor();
+  }],
+  ["interfaccia molto grande", async (page) => {
+    await apriCompleto(page);
+    await page.getByRole("button", { name: "Altro", exact: true }).click();
+    await page.getByRole("menuitemradio", { name: "Molto grande" }).click();
+    await page.evaluate(() => localStorage.removeItem("caa.dimensioneInterfaccia"));
+  }],
+  ["pubblica", async (page) => {
+    await apriCompleto(page);
+    await documentiSalvati(page);
+    await page.getByRole("button", { name: "Documenti" }).click();
+    await page.locator(".docs-panel .docs-row", { hasText: "La storia del gatto Pepe" }).getByRole("button", { name: /^Altre azioni/ }).click();
+    await page.locator(".docs-panel").getByRole("menuitem", { name: "Pubblica…" }).click();
+    await page.getByRole("button", { name: /Indietro/ }).waitFor();
+  }],
+  ["conferma", async (page) => {
+    await apriCompleto(page);
+    await documentiSalvati(page);
+    await page.evaluate(() => {
+      delete (window as any).__caaConferma; // la finestra vera
+    });
+    await page.getByRole("button", { name: "Documenti" }).click();
+    await page.locator(".docs-row", { hasText: "In mensa" }).getByRole("button", { name: /^Altre azioni/ }).click();
+    await page.locator(".docs-panel").getByRole("menuitem", { name: "Elimina" }).click();
+    await page.getByRole("alertdialog").waitFor();
+  }],
 ];
+
+test.describe("ogni controllo visibile ha un nome (anche quelli solo icona)", () => {
+  for (const [nome, prepara] of SITUAZIONI) {
+    test(nome, async ({ page }) => {
+      await prepara(page);
+      const senza = await page.evaluate(() =>
+        [...document.querySelectorAll<HTMLElement>("button, select, input:not([type=hidden]), textarea, a[href], [role=tab], [role=menuitem], [role=menuitemradio]")]
+          .filter((e) => {
+            const r = e.getBoundingClientRect();
+            return r.width > 0 && r.height > 0 && !e.closest(".sheet, [hidden], [inert]");
+          })
+          .filter((e) => {
+            const etichetta = e.getAttribute("aria-label") || (e.getAttribute("aria-labelledby") ?? "").split(" ").map((id) => document.getElementById(id)?.textContent ?? "").join("");
+            const testo = e instanceof HTMLInputElement || e instanceof HTMLSelectElement || e instanceof HTMLTextAreaElement ? [...(e.labels ?? [])].map((l) => l.textContent).join("") || e.title || e.placeholder : e.textContent || e.title;
+            return !(etichetta || testo || "").trim();
+          })
+          .map((e) => e.outerHTML.slice(0, 120)),
+      );
+      expect(senza).toEqual([]);
+    });
+  }
+});
 
 test.describe("contrasto vero dei testi dell'interfaccia", () => {
   for (const [nome, prepara] of SITUAZIONI) {

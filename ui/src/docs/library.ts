@@ -372,7 +372,7 @@ export function showCorrectionsTab(body: HTMLElement, deps: CorrectionsTabDeps):
         preview.textContent = ["forma · prima · dopo · lemma · categoria · simbolo scelto · proposto", ...lines.map((l) => l.split("\t").join(" · ")), ...more].join("\n");
       }, () => undefined);
     });
-    const discard = conIcona(el("button", "", "Butta via"), "elimina");
+    const discard = conIcona(el("button", "", "Cancella senza inviare"), "elimina");
     discard.type = "button";
     discard.disabled = info.pending === 0;
     const send = conIcona(el("button", "primary", "Invia correzioni"), "invia");
@@ -399,9 +399,9 @@ export function showCorrectionsTab(body: HTMLElement, deps: CorrectionsTabDeps):
     });
     discard.addEventListener("click", async () => {
       const ok = await deps.confirm({
-        domanda: "Buttare via le correzioni raccolte senza inviarle?",
+        domanda: "Cancellare le correzioni raccolte senza inviarle?",
         spiegazione: "Non si può annullare.",
-        azione: "Butta via",
+        azione: "Cancella senza inviare",
         pericolo: true,
       });
       if (!ok) return;

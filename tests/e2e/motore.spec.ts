@@ -2053,7 +2053,7 @@ test("correzioni anonime: nella scheda Biblioteca si vedono, si spengono, si inv
   await expect(sec).toContainText("Nessuna correzione in attesa");
 });
 
-test("correzioni anonime: senza Drive non si invia; «Butta via» chiede conferma", async ({ page }) => {
+test("correzioni anonime: senza Drive non si invia; «Cancella senza inviare» chiede conferma", async ({ page }) => {
   await withCorrections(page, { pending: ["pane\t1003"] });
   await open(page, "", true, { configured: true, path: "G:/CAA", entries: LIB_ENTRIES, reachable: false, cached: LIB_ENTRIES });
   await page.getByRole("button", { name: "Documenti" }).click();
@@ -2061,10 +2061,10 @@ test("correzioni anonime: senza Drive non si invia; «Butta via» chiede conferm
   const sec = page.locator(".lib-corrections");
   await expect(sec.getByRole("button", { name: "Invia correzioni" })).toBeDisabled();
   await rispondiConferma(page, false);
-  await sec.getByRole("button", { name: "Butta via" }).click();
+  await sec.getByRole("button", { name: "Cancella senza inviare" }).click();
   expect(await page.evaluate(() => (window as any).__mock.corr.pending.length)).toBe(1);
   await rispondiConferma(page, true);
-  await sec.getByRole("button", { name: "Butta via" }).click();
+  await sec.getByRole("button", { name: "Cancella senza inviare" }).click();
   await expect(sec).toContainText("Nessuna correzione in attesa");
   expect(await page.evaluate(() => (window as any).__mock.corr.pending.length)).toBe(0);
 });

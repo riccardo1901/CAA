@@ -541,7 +541,18 @@ Ogni correzione nell'editor viene registrata in locale (forma, contesto di due p
 
 ## Editor e interazione
 
-Un solo schermo: barra degli strumenti in alto, foglio al centro e **una barra laterale fissa a destra** che si riempie quando si agisce su un simbolo (decisione dopo le prove di M8b: è più comoda di un menu che compare sopra il testo, e lascia il foglio libero). Oltre ai pannelli a comparsa Documenti e Biblioteca non ci sono altri pannelli. Il docente scrive come in Word; i simboli compaiono sopra le parole mentre scrive.
+Un solo schermo: intestazione e barra degli strumenti in alto, foglio al centro, **un pannello laterale a destra, richiudibile**, e la barra di stato in basso (decisione dopo le prove di M8b: un pannello è più comodo di un menu che compare sopra il testo, e lascia il foglio libero; richiudibile da M11). Il docente scrive come in Word; i simboli compaiono sopra le parole mentre scrive.
+
+**Struttura dello schermo (M11, `docs/RAPPORTO-M11.md`)**:
+
+- **Intestazione**: segno e nome «Editor CAA», Documenti, Nuovo, titolo del documento, stato del salvataggio, stato della biblioteca, **Stampa…** (l'azione principale) e il menu **«Altro»** (Testo di esempio, Informazioni, Scorciatoie da tastiera, Dimensione dell'interfaccia, avviso di versione nuova).
+- **Barra degli strumenti su una riga sola**: Annulla/Ripeti, Unisci/Dividi, dimensione dei simboli, politica delle parole funzionali. Quando manca spazio i gruppi passano interi nel menu «Altro» (Annulla e Ripeti restano sempre).
+- **Avvisi del documento** in una zona sola sotto la barra (fascia gialla con la ×, lessico nuovo, originale aggiornato).
+- **Pannello laterale con tre schede**: **Simbolo** (le alternative della parola), **Pagina** (le impostazioni di stampa, accanto al foglio che cambia dal vivo), **Memoria** (Cosa ricordo, I miei simboli). Accanto al foglio quando c'è posto; sugli schermi stretti parte chiuso e si apre sopra il foglio quando serve (clic sul simbolo, Alt+↓, F8, Stampa…).
+- **Finestre**: Documenti (con le schede I miei documenti, Biblioteca, Correzioni), Informazioni, Scorciatoie, ritaglio del simbolo personale, primo avvio e le conferme del programma. Tab gira dentro, Esc chiude, il fuoco torna dove era.
+- **Notifiche** in basso a destra: le riuscite spariscono da sole, avvisi ed errori restano finché non si chiudono.
+- **Schermi**: da 1024×600 a 3840×2160, con il ridimensionamento di Windows dal 100% al 200%. Niente misure fisse; la finestra parte all'85% dello schermo. Il foglio non ha zoom: l'A4 orizzontale sotto i 1200 punti di larghezza richiede di scorrere.
+- **Accessibilità**: tutto si raggiunge con la tastiera (primo elemento: «Vai al testo»), anello di fuoco visibile, contrasto WCAG AA controllato da prove automatiche, zone con nome per i lettori di schermo, dimensione dell'interfaccia Normale / Grande / Molto grande (il foglio non cambia), animazioni spente se Windows chiede di ridurle.
 
 ### Modello del documento (ProseMirror)
 
@@ -569,21 +580,24 @@ Il comportamento del cursore con parole impilate sotto un'immagine è l'unico pu
 | Cambiare simbolo | clic sul simbolo → menu alternative | Alt+↓ sulla parola al cursore, poi 1–8 |
 | Cercare un simbolo | "Cerca…" nel menu | nel menu, digitare |
 | Prossima parola dubbia | clic sul contatore nella barra di stato | Tab (fuori dal testo) o F8 |
+| Stampare | «Stampa…» in alto → scheda Pagina → «Stampa…» | Ctrl+P, poi Invio |
+| Annullare, ripetere | pulsanti nella barra | Ctrl+Z, Ctrl+Y o Ctrl+Maiusc+Z (anche fuori dal foglio) |
+| Vedere le scorciatoie | «Altro › Scorciatoie da tastiera» | F1 |
 | Unire parole in un simbolo | selezione + "Unisci" | Ctrl+Maiusc+U |
 | Dividere una multiparola | menu della multiparola | Ctrl+Maiusc+D |
 | Simbolo personale | "Simbolo personale…" nel menu | — |
 | Applicare a tutte le occorrenze | casella "usa per tutto il testo" nel menu (attiva per default) | — |
 | Dimensione simboli | 4 pulsanti in barra | Ctrl+1–4 |
 
-**Barra laterale delle alternative** (al posto del menu a comparsa; si apre cliccando il simbolo, con Alt+Giù o con F8): ricerca in cima, poi griglia di 8 miniature grandi con la parola chiave sotto, la riga "perché" del motore, e le voci fisse "Solo testo", "Nessun simbolo", "Automatico", "Simbolo personale…", i simboli già importati («I miei simboli») e quelli della scuola, le caselle «usa per tutto il testo» e «ricorda per sempre», Unisci/Dividi. Si riempie in meno di 100 ms. I numeri 1–8 scelgono solo con il fuoco nella barra.
+**Scheda Simbolo del pannello laterale** (al posto del menu a comparsa; si apre cliccando il simbolo, con Alt+Giù o con F8): ricerca in cima, poi griglia di 8 miniature grandi con la parola chiave sotto, la riga "perché" del motore, e le voci fisse "Solo testo", "Nessun simbolo", "Automatico", "Simbolo personale…", i simboli già importati («I miei simboli») e quelli della scuola, le caselle «usa per tutto il testo» e «ricorda per sempre», Unisci/Dividi. Si riempie in meno di 100 ms. I numeri 1–8 scelgono solo con il fuoco nella barra.
 
-**Barra di stato**: "4 parole da controllare" (sotto la soglia di confidenza), numero parole, politica parole funzionali attiva.
+**Barra di stato**: "4 parole da controllare" (sotto la soglia di confidenza; è un pulsante che porta alla prossima), numero parole e, solo se c'è un problema, lo stato del motore. La politica delle parole funzionali si vede solo nella barra degli strumenti (M11: prima era ripetuta qui).
 
 **Simboli personali**: importare PNG/JPG, ritaglio quadrato, salvataggio nel documento e, a scelta, nella propria raccolta o in quella della scuola. Opzione "usa sempre per questa parola".
 
 **Incolla**: da Word o dal web si importa testo con titoli e paragrafi; tutta l'altra formattazione si scarta.
 
-**Primo avvio**: si chiede solo il nome da mostrare (per la biblioteca) e si cerca la cartella della biblioteca nel Drive condiviso (vedi sotto). Poi documento vuoto.
+**Primo avvio**: un benvenuto con una frase su cosa fa il programma; si chiede solo il nome da mostrare (per la biblioteca e il piè di pagina) e si cerca la cartella della biblioteca nel Drive condiviso (vedi sotto). Poi documento vuoto con un **invito sul foglio** (tre suggerimenti e «Prova con un testo di esempio»), che sta sopra il foglio, non entra nel documento né nella stampa e sparisce alla prima lettera.
 
 ## Biblioteca, copie personali, sincronizzazione
 
@@ -684,10 +698,11 @@ La stampa è l'uscita principale (le storie si stampano e si leggono su carta), 
 - Opzione **una frase per riga**, comune nei materiali CAA.
 - Opzione **tutto maiuscolo** (stampato maiuscolo per i primi lettori), solo in resa: il testo salvato non cambia.
 - Testo sopra o sotto il simbolo.
-- Bordo attorno a ogni simbolo: sì/no.
+- Bordo attorno al solo simbolo: sì/no. Riquadro attorno a simbolo e parola: sì/no (fino a M10 «Contorna simbolo e parola» nella barra degli strumenti; da M11 nella scheda Pagina, stesso comportamento: vale per il documento e il computer ricorda l'ultima scelta per i documenti nuovi).
+- Le impostazioni stanno nella **scheda Pagina** del pannello laterale (fino a M10 erano una finestra), accanto al foglio che cambia dal vivo.
 - Caratteri ad alta leggibilità inclusi nel programma, entrambi con licenza libera SIL OFL: Atkinson Hyperlegible e Lexend.
 
-**Piè di pagina obbligatorio** (piccolo, grigio): attribuzione ARASAAC (pittogrammi di Sergio Palao, proprietà del Governo d'Aragona, licenza CC BY-NC-SA). Facoltativi: titolo, autore, numero di pagina.
+**Piè di pagina obbligatorio** (piccolo, grigio): attribuzione ARASAAC (pittogrammi di Sergio Palao, proprietà del Governo d'Aragona, licenza CC BY-NC-SA). Facoltativi: titolo, il nome di chi usa il programma (scritto al primo avvio), numero di pagina. Per le copie adattate dalla biblioteca non si stampa l'autore dell'originale (servirebbe un dato nuovo nel documento: dopo la v1).
 
 **Uscite:**
 

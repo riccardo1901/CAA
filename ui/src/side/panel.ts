@@ -32,8 +32,10 @@ export interface PannelloLaterale {
 }
 
 export function creaPannelloLaterale(contenuto: HTMLElement, layout: HTMLElement, wrap: HTMLElement): PannelloLaterale {
-  const root = document.createElement("div");
+  // Una zona con nome per i lettori di schermo (M11-9, PIANO-M11.md 3.8).
+  const root = document.createElement("aside");
   root.className = "side-panel";
+  root.setAttribute("aria-label", "Pannello laterale");
   const inner = document.createElement("div");
   inner.className = "side-inner";
   const head = document.createElement("div");
@@ -41,7 +43,7 @@ export function creaPannelloLaterale(contenuto: HTMLElement, layout: HTMLElement
   const linguette = document.createElement("div");
   linguette.className = "side-tabs";
   linguette.setAttribute("role", "tablist");
-  linguette.setAttribute("aria-label", "Pannello laterale");
+  linguette.setAttribute("aria-label", "Schede del pannello laterale");
   const toggle = document.createElement("button");
   toggle.type = "button";
   toggle.className = "side-toggle icon-only";
