@@ -88,6 +88,15 @@ Tre aiutanti su tre copie del progetto (git worktree), poi uniti nel ramo. Prepa
 - **M11-7, schede «Simbolo» e «Memoria»** (`sidebar.ts`, `side/memory.ts`, `side/common.ts`, `css/side.css`): scheda Simbolo in sezioni con titolo (Alternative, Scelte rapide, I miei simboli, Simboli della scuola, Opzioni), riga dei tasti leggibile, stato vuoto con i tasti disegnati e «Vedi cosa ricordo»; scheda Memoria con Cosa ricordo (Dimentica, Dimentica tutto) e I miei simboli (Elimina), stato vuoto. K14: simboli della scuola come etichette intere con nome e autore, × separata con nome. K4: «ricorda per sempre» spento con la spiegazione per le parole governate dalla politica (stessa regola del motore: lemma «che» o categoria ART, CLITIC, ADP, ARTADP, CONJ); in Memoria l'etichetta «la politica può nasconderla». Il motore non è toccato. La barra si apre ancora in meno di 100 ms. Prove: `simbolo.spec.ts` (14).
 - **Insieme**: 397 prove Playwright passate (96 saltate: schermate), 288 prove Rust; foglio e stampa invariati; matrice degli schermi invariata.
 
+### M11-8 — fatto (in attesa del via libera)
+
+- **Benvenuto** (`docs/firstrun.ts`): segno e «Benvenuto/a nell'Editor CAA», la frase «Scrivi un testo e sopra ogni parola compare il suo simbolo, pronto da stampare.», poi solo il nome.
+- **Invito sul foglio vuoto** (`ui/invito.ts`): sopra il foglio, non dentro (non entra nel documento, non si stampa), allineato all'inizio del testo; «Scrivi qui il tuo testo…», tre suggerimenti con icona, «Prova con un testo di esempio». Sparisce alla prima lettera, torna con un documento vuoto; i clic passano attraverso.
+- **Scorciatoie** (`ui/help.ts`): F1 e «Altro › Scorciatoie da tastiera»; gruppi Scrivere, Correggere un simbolo, Documento e stampa; tasti disegnati (`<kbd>`); si apre dall'inizio con «Chiudi» fermo in fondo.
+- **Dimensione dell'interfaccia** (`ui/dimensione.ts`): «Altro › Dimensione dell'interfaccia» con Normale, Grande, Molto grande (testo 15, 17, 19 px: cambia la radice, tutta l'interfaccia è in rem); il foglio resta uguale (testo a 20 px, A4 a 794 px); si ricorda sul computer.
+- **K16**: il titolo mostra subito la prima riga in grigio. **K18**: in Informazioni «Pittogrammi» non è ripetuto (l'attribuzione stampata è identica).
+- **Prove**: `tests/e2e/primi-minuti.spec.ts` (7), compreso il percorso del docente nuovo (benvenuto → invito → scrive → simbolo → scelta → Stampa). 404 prove Playwright, foglio e matrice invariati.
+
 ---
 
 ## 1. Diagnosi dell'interfaccia attuale

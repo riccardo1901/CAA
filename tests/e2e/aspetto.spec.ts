@@ -200,6 +200,28 @@ const STATI: Array<[string, (page: Page) => Promise<void>]> = [
     await page.locator(".docs-panel").getByRole("tab", { name: "Correzioni" }).click();
     await page.locator(".lib-corrections").waitFor();
   }],
+  // M11-8: l'invito sul foglio vuoto, le scorciatoie (F1), l'interfaccia «Molto grande».
+  ["22-invito", async (page) => {
+    await apriCompleto(page, BIBLIOTECA, "");
+    await page.locator(".invito").waitFor();
+  }],
+  ["23-scorciatoie", async (page) => {
+    await apriCompleto(page);
+    await page.keyboard.press("F1");
+    await page.locator(".help-dialog").waitFor();
+  }],
+  ["24-molto-grande", async (page) => {
+    await page.addInitScript(() => {
+      try {
+        localStorage.setItem("caa.dimensioneInterfaccia", "molto-grande");
+      } catch {
+        /* niente */
+      }
+    });
+    await apriCompleto(page);
+    await page.locator(".w", { hasText: /^mamma$/ }).first().click({ position: { x: 20, y: 8 } });
+    await page.locator(".pm-cell").first().waitFor();
+  }],
 ];
 
 for (const s of SCHERMI_CONFRONTO) {

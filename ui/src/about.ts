@@ -13,7 +13,8 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: 
 }
 
 export const CREDITS: Array<[string, string]> = [
-  ["Pittogrammi", `${ATTRIBUTION} I pittogrammi non si possono usare a scopo commerciale.`],
+  // La voce si chiama già «Pittogrammi»: il testo non lo ripete (K18). L'attribuzione stampata resta ATTRIBUTION, intera.
+  ["Pittogrammi", `${ATTRIBUTION.replace(/^Pittogrammi:\s*/, "")} I pittogrammi non si possono usare a scopo commerciale.`],
   ["Lessico delle forme (Morph-it!)", "Morph-it!, Università di Bologna (Baroni e Zanchetta), licenza CC BY-SA 2.0 / LGPL."],
   ["Disambiguazione (treebank ISDT)", "Italian Stanford Dependency Treebank (ISDT) di Universal Dependencies, licenza CC BY-NC-SA 3.0."],
   ["Caratteri", "Atkinson Hyperlegible (Braille Institute) e Lexend (Bonnie Shaver-Troup, Thomas Jockin, Santiago Orozco, Hector Gomez, Superunion): licenza SIL Open Font License 1.1."],

@@ -25,6 +25,9 @@ import { icona } from "./ui/icons";
 import { installaSuggerimenti } from "./ui/tooltip";
 import { conferma } from "./ui/confirm";
 import { creaPannelloLaterale } from "./side/panel";
+import { creaInvito } from "./ui/invito";
+import { installaScorciatoie } from "./ui/help";
+import { ripristinaDimensione } from "./ui/dimensione";
 import { attachMemoryTab } from "./side/memory";
 
 let view: EditorView;
@@ -190,6 +193,10 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
       }
     }
   }
+  // L'invito sul foglio vuoto (M11-8): sopra il foglio, non dentro; «Prova con un testo di esempio».
+  creaInvito(view, layoutEl.querySelector<HTMLElement>(".sheet-wrap")!, () =>
+    session ? void session.newDocument(sampleDoc(1)) : void confirmReplace(() => sampleDoc(1))(),
+  );
   root.appendChild(app);
   onEngineUpdate(bars.refresh);
   // I simboli finti del prototipo si spengono sempre: col motore non servono e costano tempo a ogni battuta.
@@ -204,6 +211,8 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
 export function startApp(mount: HTMLElement): void {
   root = mount;
   installaSuggerimenti();
+  installaScorciatoie();
+  ripristinaDimensione();
   const layout = document.createElement("div");
   layout.className = "layout";
   const wrap = document.createElement("main");

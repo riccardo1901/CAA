@@ -26,8 +26,17 @@ function askName(save: (name: string) => Promise<string>): Promise<string> {
     ok.type = "button";
     ok.disabled = true;
     const err = el("p", "docs-note warn");
+    // Benvenuto (M11-8, PIANO-M11.md 3.5): segno e nome del programma, una frase su cosa fa, poi solo il nome.
+    const titolo = el("h2", "first-title");
+    const segno = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    segno.setAttribute("viewBox", "0 0 24 24");
+    segno.setAttribute("aria-hidden", "true");
+    segno.classList.add("brand-mark");
+    segno.innerHTML = '<rect x="7" y="3" width="10" height="10" rx="2.5" fill="currentColor"/><rect x="4" y="17" width="16" height="3" rx="1.5" fill="currentColor"/>';
+    titolo.append(segno, "Benvenuto/a nell'Editor CAA");
     box.append(
-      el("h2", "", "Benvenuto/a nell'Editor CAA"),
+      titolo,
+      el("p", "first-lead", "Scrivi un testo e sopra ogni parola compare il suo simbolo, pronto da stampare."),
       el("p", "docs-note", "Come ti chiami? Il tuo nome comparirà come autore dei documenti che pubblichi nella biblioteca dell'istituto."),
       input,
       err,

@@ -12,6 +12,8 @@ export interface MenuAltro {
   panel: HTMLDivElement;
   /** Aggiunge una voce fissa; restituisce l'elemento (per nasconderlo o cambiarne il testo). */
   voce(testo: string, fai: () => void, ico?: NomeIcona): HTMLButtonElement;
+  /** Un gruppo di scelte «una fra tante» (per esempio la dimensione dell'interfaccia), con un titolo. */
+  scelta(titolo: string, opzioni: Array<[valore: string, testo: string]>, attuale: () => string, cambia: (valore: string) => void): void;
   /** La zona dove vanno i gruppi della barra che non ci stanno. */
   strumenti: HTMLDivElement;
   /** Accende o spegne il pallino («c'è una novità»). */
@@ -52,7 +54,7 @@ export function creaMenuAltro(): MenuAltro {
   panel.append(lista, strumenti);
 
   const voci = (): HTMLElement[] =>
-    [...panel.querySelectorAll<HTMLElement>("[role=menuitem], .menu-tools button, .menu-tools select, .menu-tools input")].filter(
+    [...panel.querySelectorAll<HTMLElement>("[role=menuitem], [role=menuitemradio], .menu-tools button, .menu-tools select, .menu-tools input")].filter(
       (e) => !e.closest("[hidden]") && !(e as HTMLButtonElement).disabled,
     );
 
@@ -127,6 +129,40 @@ export function creaMenuAltro(): MenuAltro {
       });
       lista.append(b);
       return b;
+    },
+    scelta(titolo, opzioni, attuale, cambia) {
+      const t = document.createElement("div");
+      t.className = "menu-heading";
+      t.textContent = titolo;
+      t.setAttribute("role", "presentation");
+      const gruppo = document.createElement("div");
+      gruppo.setAttribute("role", "group");
+      gruppo.setAttribute("aria-label", titolo);
+      const pulsanti = opzioni.map(([valore, testo]) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "menu-item menu-radio";
+        b.setAttribute("role", "menuitemradio");
+        b.dataset.valore = valore;
+        const lbl = document.createElement("span");
+        lbl.className = "lbl";
+        lbl.textContent = testo;
+        b.append(icona("ok"), lbl);
+        b.addEventListener("click", () => {
+          cambia(valore);
+          segna();
+          chiudi(true);
+        });
+        gruppo.append(b);
+        return b;
+      });
+      const segna = (): void => {
+        for (const b of pulsanti) b.setAttribute("aria-checked", String(b.dataset.valore === attuale()));
+      };
+      segna();
+      // Il segno si aggiorna anche ogni volta che il menu si apre.
+      button.addEventListener("click", segna);
+      lista.append(t, gruppo);
     },
     pallino: (acceso) => {
       dot.hidden = !acceso;

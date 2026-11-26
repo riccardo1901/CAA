@@ -70,3 +70,30 @@
 .confirm-dialog { width: 28rem; }
 .dialog-text { color: var(--c-text-2); margin: 0 0 var(--s-2); }
 .dialog-actions { display: flex; gap: var(--s-3); justify-content: flex-end; margin-top: var(--s-6); }
+
+/* Scorciatoie da tastiera (M11-8): gruppi con titolo, tasti a sinistra, cosa fanno a destra. */
+.help-dialog { width: 40rem; }
+.help-dialog h3 { margin: var(--s-4) 0 var(--s-2); font-size: var(--fs-md); color: var(--c-text-2); }
+/* La stessa colonna per i tasti in tutti i gruppi. */
+.help-list { display: grid; grid-template-columns: 15rem 1fr; gap: var(--s-2) var(--s-4); margin: 0; }
+.help-dialog { padding-bottom: 0; }
+.help-dialog .dialog-actions {
+  position: sticky;
+  bottom: 0;
+  margin: var(--s-4) calc(-1 * var(--s-6)) 0;
+  padding: var(--s-3) var(--s-6);
+  background: var(--c-surface);
+  border-top: 1px solid var(--c-line);
+}
+.help-list dt { white-space: nowrap; }
+.help-list dd { margin: 0; color: var(--c-text); }
+.keys { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.2em; }
+@media (max-width: 36rem) {
+  .help-list { grid-template-columns: 1fr; gap: 0 var(--s-4); }
+  .help-list dd { margin-bottom: var(--s-2); }
+}
+
+/* Benvenuto. */
+.first-title { display: flex; align-items: center; gap: var(--s-2); }
+.first-title .brand-mark { width: 1.75rem; height: 1.75rem; color: var(--p-600); flex: none; }
+.first-lead { margin: 0 0 var(--s-2); font-size: var(--fs-md); color: var(--c-text); }

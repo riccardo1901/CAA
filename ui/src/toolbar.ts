@@ -19,6 +19,9 @@ import { suggerimento } from "./ui/tooltip";
 import { notifica } from "./ui/toast";
 import { creaMenuAltro, type MenuAltro } from "./ui/menu";
 import { icona } from "./ui/icons";
+import { deriveTitle } from "./docs/session";
+import { apriScorciatoie } from "./ui/help";
+import { DIMENSIONI, dimensioneAttuale, impostaDimensione, type Dimensione } from "./ui/dimensione";
 
 const SIZES: Array<[string, number]> = [
   ["Piccolo", 45],
@@ -231,6 +234,9 @@ export function createBars(
   // «Testo di esempio» e «Informazioni» si usano di rado: stanno nel menu «Altro».
   menu.voce("Testo di esempio", sampleDocument, "esempio");
   menu.voce("Informazioni", () => openAbout(), "info");
+  menu.voce("Scorciatoie da tastiera", apriScorciatoie, "tastiera");
+  // La dimensione dell'interfaccia (M11-8): il foglio non cambia.
+  menu.scelta("Dimensione dell'interfaccia", DIMENSIONI, dimensioneAttuale, (v) => impostaDimensione(v as Dimensione));
   const updateNote = menu.voce("", () => openAbout(), "avviso");
   updateNote.classList.add("update-note");
   updateNote.hidden = true;
@@ -528,6 +534,8 @@ export function createBars(
       b.setAttribute("aria-pressed", String(on));
     });
     wordsInfo.textContent = `${s.words} parole`;
+    // Il titolo mostra subito la prima riga, in grigio, finché il docente non ne scrive uno (K16).
+    if (titleInputRef && !titleInputRef.value) titleInputRef.placeholder = deriveTitle(view.state.doc);
     etichetta(doubtInfo, s.doubtful === 1 ? "1 parola da controllare" : `${s.doubtful} parole da controllare`);
     doubtInfo.classList.toggle("warn", s.doubtful > 0);
     // Il motore ha dato errore e sta riprovando: lo si dice, altrimenti i simboli mancano senza spiegazione.

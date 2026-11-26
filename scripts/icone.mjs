@@ -51,6 +51,7 @@ const ICONE = {
   apriPannello: "panel-right-open",
   chiudiPannello: "panel-right-close",
   bandierina: "flag",
+  tastiera: "keyboard",
   puntatore: "mouse-pointer-click",
   memoria: "bookmark-check",
   indietro: "arrow-left",
