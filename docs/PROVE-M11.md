@@ -1,6 +1,6 @@
 # Prove a mano di M11 (PC Windows): la nuova interfaccia
 
-Serve l'app nuova (`caa-app.exe` della CI dell'ultimo commit, artifact `caa-app`) e il pacchetto dati più recente. Il foglio e la stampa **non devono essere cambiati**: se vedi un simbolo, una parola o un margine diverso da prima, è un difetto.
+Serve l'app nuova (`caa-app.exe` della CI dell'ultimo commit, artifact `editor-caa-windows`) e il pacchetto dati più recente. Il foglio e la stampa **non devono essere cambiati**: se vedi un simbolo, una parola o un margine diverso da prima, è un difetto.
 
 Se puoi, fai le prove su **due computer**: il portatile più piccolo della scuola e un monitor grande. Per cambiare il ridimensionamento: tasto destro sul desktop → Impostazioni schermo → «Scala» (100%, 125%, 150%).
 

@@ -22,4 +22,4 @@ Elenco delle prove già pronte che aspettano un PC Windows. Si aggiorna a ogni b
 
 Nota per le prove di M8–M10 fatte dopo M11: i comandi sono cambiati di posto. «Testo di esempio» e «Informazioni» stanno nel menu **«Altro»**; «Contorna simbolo e parola» si chiama «Riquadro attorno a simbolo e parola» ed è nella scheda **Pagina**; le conferme sono finestre del programma con il verbo sul pulsante («Elimina», «Ritira»…) invece di «OK»; «Butta via» (correzioni) si chiama «Cancella senza inviare»; Pubblica, Elimina e Ritira dei documenti stanno nel menu **«⋯»** della riga.
 
-Per ogni blocco serve `caa-app.exe` della CI dell'ultimo commit (artifact `caa-app`) e il pacchetto dati `caa-dati-prova.zip` più recente.
+Per ogni blocco serve `caa-app.exe` della CI dell'ultimo commit (artifact `editor-caa-windows`) e il pacchetto dati `caa-dati-prova.zip` più recente.

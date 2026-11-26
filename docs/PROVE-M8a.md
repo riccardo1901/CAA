@@ -4,7 +4,7 @@ Cosa serve: l'app compilata dalla CI (`caa-app.exe`, artifact del run di GitHub 
 
 ## Preparazione
 
-1. Scarica l'artifact `caa-app` dal run della CI e decomprimilo in una cartella, per esempio `C:\caa`.
+1. Scarica l'artifact `editor-caa-windows` dal run della CI e decomprimilo in una cartella, per esempio `C:\caa`.
 2. Decomprimi `caa-dati-prova.zip` **dentro la stessa cartella**: deve esserci `C:\caa\dati\` accanto a `caa-app.exe`.
 3. Avvia `caa-app.exe`. Se Windows chiede conferma (programma non firmato), scegli "Esegui comunque".
 

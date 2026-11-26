@@ -3,7 +3,7 @@
 Questo documento **sostituisce l'ordine** dei file `docs/PROVE-*.md` (che restano per i dettagli). Le prove sono rimesse in ordine di rischio e scritte con i nomi della **nuova interfaccia** (M11). Sono circa 45 controlli in tre parti: **A** un solo PC senza Drive (circa 50 minuti), **B** un PC con Google Drive (circa 25 minuti), **C** due computer (circa 30 minuti). Se hai poco tempo, fai prima la parte A, poi la C.
 
 ## Preparazione (10 minuti)
-1. **Programma**: scarica `caa-app` dalla pagina della CI dell'ultimo commit (<https://github.com/riccardo1901/CAA/actions>, la corsa verde in cima, in fondo «Artifacts» → `caa-app`) e decomprimilo in una cartella, per esempio `C:\CAA-prova`.
+1. **Programma**: scarica `caa-app` dalla pagina della CI dell'ultimo commit (<https://github.com/riccardo1901/CAA/actions>, la corsa verde in cima, in fondo «Artifacts» → `editor-caa-windows`, che contiene `caa-app.exe`) e decomprimilo in una cartella, per esempio `C:\CAA-prova`.
 2. **Dati**: decomprimi `caa-dati-prova.zip` e metti la cartella **`dati`** accanto a `caa-app.exe`. Windows può dire «app sconosciuta»: «Ulteriori informazioni» → «Esegui comunque».
 3. **Per la parte A**: due o tre immagini tue (PNG o JPG; **non foto di studenti**), un testo tuo di una pagina e mezza e, per la stampa su carta, un righello.
 4. **Per le parti B e C**: Google Drive per computer, con l'account che userete. La cartella deve avere questa forma: `…\CAA\biblioteca` (dentro «Il mio Drive» se l'account è uno solo, o dentro un Drive condiviso). Per C servono **due computer** con lo stesso Drive (o due account Windows).
