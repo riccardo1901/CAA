@@ -4,7 +4,7 @@
 // Dimentica tutto (conferma del programma). Prima si vedeva solo con la barra dei simboli vuota; ora è sempre qui.
 // Sotto, «I miei simboli»: le immagini importate su questo computer, che si possono eliminare (prima solo con la ×
 // piccola nella scheda Simbolo, che resta). Le voci delle parole governate dalla politica delle parole funzionali
-// hanno l'etichetta «la politica può nasconderla» (K4: il motore oggi lascia vincere la memoria; si corregge dopo M11).
+// hanno l'etichetta «mostra sempre il simbolo» (K4: il motore oggi lascia vincere la memoria; si corregge dopo M11).
 import type { EditorView } from "prosemirror-view";
 import type { EngineClient, MemoryEntry } from "../engine/client";
 import { setEngine } from "../editor/engineSymbols";
@@ -140,8 +140,9 @@ function cosaRicordo(c: Contesto, voci: MemoryEntry[]): HTMLElement {
     const parola = el("span", "mem-word");
     parola.append(el("span", "mem-name", nomeVoce(m)));
     if (governataDallaPolitica(nomeVoce(m), m.cat)) {
-      const chip = el("span", "mem-chip", "la politica può nasconderla");
-      chip.title = "È una parola funzionale (articolo, preposizione, congiunzione, «che», pronome come «lo»): la politica delle parole funzionali dovrebbe decidere se mostrarne il simbolo.";
+      // Revisione M11: la scelta ricordata vince su «Parole funzionali» (K4, nel motore): l'etichetta dice questo.
+      const chip = el("span", "mem-chip", "mostra sempre il simbolo");
+      chip.title = "È una parola funzionale (articolo, preposizione, congiunzione, «che», pronome come «lo»): questa scelta ricordata mostra il simbolo anche quando «Parole funzionali» dice di nasconderlo. Se non lo vuoi, premi «Dimentica».";
       parola.append(chip);
     }
     const forget = conIcona(el("button", "", "Dimentica"), "dimentica");

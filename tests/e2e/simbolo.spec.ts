@@ -270,12 +270,12 @@ test("K4: «ricorda per sempre» spento con la spiegazione per un articolo, «ch
     await expect(page.locator(".pm-titles strong")).toHaveText(parola);
     await expect(page.locator(".pm-always input"), parola).toBeDisabled();
     await expect(page.locator(".pm-always input")).not.toBeChecked();
-    await expect(page.locator(".pm-note")).toHaveText("Qui decide la politica delle parole funzionali.");
-    await expect(page.locator(".pm-always input")).toHaveAccessibleDescription("Qui decide la politica delle parole funzionali.");
+    await expect(page.locator(".pm-note")).toHaveText("Qui decide «Parole funzionali», in alto.");
+    await expect(page.locator(".pm-always input")).toHaveAccessibleDescription("Qui decide «Parole funzionali», in alto.");
   }
   // Il suggerimento sul controllo spento spiega perché.
   await page.locator(".pm-always").hover();
-  await expect(tip(page)).toHaveText(/decide la politica delle parole funzionali, nella barra degli strumenti/, { timeout: 2000 });
+  await expect(tip(page)).toHaveText(/decide la scelta «Parole funzionali», in alto/, { timeout: 2000 });
   await page.mouse.move(5, 300);
   // Un nome: acceso, senza la nota.
   await clicSimbolo(page, "pane");
@@ -284,7 +284,7 @@ test("K4: «ricorda per sempre» spento con la spiegazione per un articolo, «ch
   await expect(page.locator(".pm-note")).toHaveCount(0);
 });
 
-test("K4: nella scheda Memoria le voci delle parole della politica hanno l'etichetta «la politica può nasconderla»", async ({ page }) => {
+test("K4: nella scheda Memoria le voci delle parole della politica hanno l'etichetta «mostra sempre il simbolo»", async ({ page }) => {
   await prepara(page, { mem: [
     { lemma: "il", cat: "ART", form: "", picto: 1003 },
     { lemma: "pane", cat: "NOUN", form: "", picto: 1004 },
@@ -299,5 +299,5 @@ test("K4: nella scheda Memoria le voci delle parole della politica hanno l'etich
   await expect(righe).toHaveCount(6);
   const conEtichetta = await righe.evaluateAll((els) => els.map((li) => [li.querySelector(".mem-name")!.textContent, !!li.querySelector(".mem-chip")]));
   expect(conEtichetta).toEqual([["il", true], ["pane", false], ["che", true], ["nel", true], ["e", true], ["lo", true]]);
-  await expect(righe.first().locator(".mem-chip")).toHaveText("la politica può nasconderla");
+  await expect(righe.first().locator(".mem-chip")).toHaveText("mostra sempre il simbolo");
 });

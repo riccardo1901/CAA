@@ -185,7 +185,7 @@ export function createDocsPanel(docs: DocClient, session: Session, confirmDelete
         void showMine(
           out.kind === "saved_as_new"
             ? { text: "La biblioteca era già andata avanti (qualcun altro, o un tuo altro computer, l'ha aggiornata): ho salvato questo documento come nuovo in biblioteca. Da adesso aggiorni quello. Il precedente non è stato toccato.", ok: true }
-            : { text: `Aggiornato in biblioteca: revisione ${out.rev}.`, ok: true },
+            : { text: `Aggiornato in biblioteca: versione ${out.rev}.`, ok: true },
         );
       } catch (e) {
         void showMine({ text: `Non riesco ad aggiornare «${entry.title}»: ${String(e)}`, ok: false });
@@ -284,7 +284,7 @@ export function createDocsPanel(docs: DocClient, session: Session, confirmDelete
             // automatico rimette il vecchio).
             if (entry.file === session.state().file) session.adopt(out.entry);
             fuocoSu = entry.file;
-            void showMine({ text: `Pubblicato in biblioteca (revisione ${out.rev}). Quando lo modifichi, scegli «Aggiorna in biblioteca» dal menu «⋯» del documento.`, ok: true });
+            void showMine({ text: `Pubblicato in biblioteca (versione ${out.rev}). Quando lo modifichi, scegli «Aggiorna in biblioteca» dal menu «⋯» del documento.`, ok: true });
           } catch (e) {
             go.disabled = false;
             err.textContent = String(e);
@@ -306,7 +306,7 @@ export function createDocsPanel(docs: DocClient, session: Session, confirmDelete
       // Etichette con il testo, mai solo colore: anche la riga del documento aperto lo dice a parole.
       if (isCurrent) meta.append(el("span", "docs-tag chip open", "aperto adesso"));
       if (entry.origin) meta.append(el("span", "docs-tag chip", "copia"));
-      if (entry.published_rev != null) meta.append(el("span", "docs-tag chip pub", `in biblioteca (rev. ${entry.published_rev})`));
+      if (entry.published_rev != null) meta.append(el("span", "docs-tag chip pub", `in biblioteca (versione ${entry.published_rev})`));
       info.append(el("strong", "docs-title", name), meta);
       const actions = el("div", "row-actions");
       const openBtn = conIcona(el("button", "primary", "Apri"), "apri");

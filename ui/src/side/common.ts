@@ -46,4 +46,4 @@ export function governataDallaPolitica(lemmaOForma: string, cat: string): boolea
 
 /** La spiegazione sul controllo spento (suggerimento). */
 export const SPIEGAZIONE_POLITICA =
-  "Non si può ricordare: per articoli, preposizioni, congiunzioni, «che» e pronomi come «lo» decide la politica delle parole funzionali, nella barra degli strumenti.";
+  "Non si può ricordare: per articoli, preposizioni, congiunzioni, «che» e pronomi come «lo» decide la scelta «Parole funzionali», in alto.";

@@ -7,6 +7,7 @@
 import { TextSelection } from "prosemirror-state";
 import type { EditorView } from "prosemirror-view";
 import { cropImage } from "./customDialog";
+import { finestraAperta } from "./ui/dialog";
 import { conIcona, icona, type NomeIcona } from "./ui/icons";
 import { suggerimento } from "./ui/tooltip";
 import { conferma } from "./ui/confirm";
@@ -178,7 +179,7 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
       alwaysLabel.classList.add("off");
       suggerimento(alwaysLabel, SPIEGAZIONE_POLITICA);
       // La stessa spiegazione, breve e sempre visibile (il controllo spento non riceve il fuoco da tastiera).
-      policyNote = el("p", "pm-note", "Qui decide la politica delle parole funzionali.");
+      policyNote = el("p", "pm-note", "Qui decide «Parole funzionali», in alto.");
       policyNote.id = `pm-note-${mine}`;
       always.setAttribute("aria-describedby", policyNote.id);
     } else {
@@ -506,6 +507,7 @@ export function installSidebar(view: EditorView, client: EngineClient, root: HTM
   const onF8 = (e: KeyboardEvent): void => {
     if (e.key !== "F8" || e.defaultPrevented) return;
     e.preventDefault();
+    if (finestraAperta()) return; // il cursore non si muove dietro una finestra (revisione M11)
     hooks.next?.();
   };
   document.addEventListener("keydown", onF8);

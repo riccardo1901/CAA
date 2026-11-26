@@ -114,7 +114,7 @@ test("se il motore dà errore l'editor lo dice, riprova da solo e poi i simboli 
   await page.locator(".ProseMirror").click();
   await page.keyboard.press("End");
   await page.keyboard.type(" mangia", { delay: 0 });
-  await expect(page.locator(".statusbar")).toContainText("Il motore non risponde");
+  await expect(page.locator(".statusbar")).toContainText("I simboli non arrivano");
   // Con il motore guasto non parte una richiesta a ogni battuta: 10 battute in piu', poche chiamate.
   const before = await page.evaluate(() => (window as any).__mock.calls.length);
   await page.keyboard.type(" aaaaaaaaaa", { delay: 0 });
@@ -124,7 +124,7 @@ test("se il motore dà errore l'editor lo dice, riprova da solo e poi i simboli 
   // Il motore torna a funzionare: al prossimo tentativo (dopo 1 s, poi 2 s, poi 4 s) i simboli compaiono.
   await page.evaluate(() => { (window as any).__mock.fail = 0; });
   await expect(page.locator(".w[style*='--img']", { hasText: "mangia" })).toHaveCount(1, { timeout: 20_000 });
-  await expect(page.locator(".statusbar")).not.toContainText("Il motore non risponde");
+  await expect(page.locator(".statusbar")).not.toContainText("I simboli non arrivano");
 });
 
 test("la barra di stato non salta mentre si scrive", async ({ page }) => {
@@ -1675,7 +1675,7 @@ test("Pubblica: il documento si salva, si compila il modulo e finisce in bibliot
   await form.getByLabel("Livello").fill("Primaria");
   await form.getByLabel("Etichette").fill("storia sociale, bus ,");
   await form.getByRole("button", { name: "Pubblica" }).click();
-  await expect(page.locator(".docs-panel")).toContainText("Pubblicato in biblioteca (revisione 1)");
+  await expect(page.locator(".docs-panel")).toContainText("Pubblicato in biblioteca (versione 1)");
   const sent = await page.evaluate(() => (window as any).__mock.lib.publishes);
   expect(sent).toHaveLength(1);
   expect(sent[0].meta).toEqual({ title: "Il bus: storia sociale", subject: "Italiano", level: "Primaria", tags: ["storia sociale", "bus"] });
@@ -1686,7 +1686,7 @@ test("Pubblica: il documento si salva, si compila il modulo e finisce in bibliot
   expect(sent[0].savedBefore).toBe(saves.length);
   // Ora il documento risulta in biblioteca e offre «Aggiorna in biblioteca» al posto di «Pubblica».
   const after = mine(page, "Il bus");
-  await expect(after.locator(".docs-tag.pub")).toContainText("in biblioteca (rev. 1)");
+  await expect(after.locator(".docs-tag.pub")).toContainText("in biblioteca (versione 1)");
   await expect(await voceRiga(after, "Aggiorna in biblioteca")).toBeVisible();
   await expect(after.getByRole("menuitem", { name: "Pubblica…" })).toHaveCount(0);
   await page.keyboard.press("Escape");
@@ -1741,13 +1741,13 @@ test("Aggiorna in biblioteca: revisione avanti, salvato come nuovo se la bibliot
   const upd = () => ({ click: () => azioneRiga(mine(page, "Storia da aggiornare"), "Aggiorna in biblioteca") });
   // Aggiorna: revisione 2.
   await upd().click();
-  await expect(page.locator(".docs-panel")).toContainText("Aggiornato in biblioteca: revisione 2");
-  await expect(mine(page, "Storia da aggiornare").locator(".docs-tag.pub")).toContainText("rev. 2");
+  await expect(page.locator(".docs-panel")).toContainText("Aggiornato in biblioteca: versione 2");
+  await expect(mine(page, "Storia da aggiornare").locator(".docs-tag.pub")).toContainText("versione 2");
   // Il blocco di un altro: errore chiaro, nessun cambiamento.
   await page.evaluate(() => { (window as any).__mock.lib.updateMode = "fail"; });
   await upd().click();
   await expect(page.locator(".docs-panel")).toContainText("Luca lo sta aggiornando adesso");
-  await expect(mine(page, "Storia da aggiornare").locator(".docs-tag.pub")).toContainText("rev. 2");
+  await expect(mine(page, "Storia da aggiornare").locator(".docs-tag.pub")).toContainText("versione 2");
   // La biblioteca era andata avanti: il documento si salva come nuovo e il documento aperto ne prende l'identità.
   await page.evaluate(() => { (window as any).__mock.lib.updateMode = "new"; });
   await upd().click();
@@ -1810,7 +1810,7 @@ test("«Originale aggiornato»: avviso sulla copia, Ignora, apri l'originale e t
   });
   await openStored(page, "Le frazioni");
   const bar = page.locator(".origbar");
-  await expect(bar).toContainText("L'originale «Le frazioni» è stato aggiornato in biblioteca (revisione 3)");
+  await expect(bar).toContainText("L'originale «Le frazioni» è stato aggiornato in biblioteca (versione 3)");
   // «Apri l'originale»: sola lettura, con la barra per tornare.
   await bar.getByRole("button", { name: "Apri l'originale" }).click();
   await expect(bar).toContainText("Stai guardando l'originale «Le frazioni»");
@@ -1825,7 +1825,7 @@ test("«Originale aggiornato»: avviso sulla copia, Ignora, apri l'originale e t
   await bar.getByRole("button", { name: "Torna alla mia copia" }).click();
   expect(await page.evaluate(() => (window as any).caaProto.view.state.doc.textContent)).toBe("La mia copia delle frazioni");
   await expect(page.locator(".ProseMirror")).toHaveAttribute("contenteditable", "true");
-  await expect(bar).toContainText("è stato aggiornato in biblioteca (revisione 3)");
+  await expect(bar).toContainText("è stato aggiornato in biblioteca (versione 3)");
   // «Ignora» lo toglie, e non torna per quella revisione (nemmeno riaprendo il documento).
   await bar.getByRole("button", { name: "Ignora" }).click();
   await expect(bar).toBeHidden();
@@ -1838,7 +1838,7 @@ test("«Originale aggiornato»: avviso sulla copia, Ignora, apri l'originale e t
   await page.evaluate(() => { (window as any).__mock.lib.entries[0].rev = 4; });
   await page.getByRole("button", { name: "Nuovo" }).click();
   await openStored(page, "Le frazioni");
-  await expect(bar).toContainText("revisione 4");
+  await expect(bar).toContainText("versione 4");
 });
 
 test("«Originale aggiornato»: niente avviso se la revisione è la stessa o la copia non viene da una biblioteca", async ({ page }) => {

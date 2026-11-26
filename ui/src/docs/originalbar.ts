@@ -35,7 +35,7 @@ export function createOriginalBar(): OriginalBar {
     if (!m) return;
     if (m.kind === "update") {
       root.append(
-        el("span", "orig-text", `L'originale «${m.title}» è stato aggiornato in biblioteca (revisione ${m.rev}). La tua copia non cambia da sola.`),
+        el("span", "orig-text", `L'originale «${m.title}» è stato aggiornato in biblioteca (versione ${m.rev}). La tua copia non cambia da sola.`),
         button("Apri l'originale", "Lo guardi in sola lettura, poi torni alla tua copia", m.onOpen),
         button("Ignora", "Non ricordarmelo per questa revisione", m.onIgnore),
       );

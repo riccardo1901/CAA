@@ -191,12 +191,12 @@ test.describe("righe: azione principale a destra, le altre nel menu «⋯»", ()
     expect(await page.evaluate(() => (window as any).__mock.docsStore.has("Mensa.caa"))).toBe(false);
   });
 
-  test("etichette con il testo: copia, in biblioteca (rev. N), aperto adesso; in Biblioteca «copia in conflitto»", async ({ page }) => {
+  test("etichette con il testo: copia, in biblioteca (versione N), aperto adesso; in Biblioteca «copia in conflitto»", async ({ page }) => {
     await apriCompleto(page);
     await documentiSalvati(page);
     await page.getByRole("button", { name: "Documenti" }).click();
     await expect(riga(page, "Le frazioni").locator(".chip")).toHaveText(["copia"]);
-    await expect(riga(page, "Regole della classe").locator(".chip")).toHaveText(["in biblioteca (rev. 2)"]);
+    await expect(riga(page, "Regole della classe").locator(".chip")).toHaveText(["in biblioteca (versione 2)"]);
     // Il documento pubblicato offre «Aggiorna in biblioteca» al posto di «Pubblica…».
     await expect(await voceRiga(riga(page, "Regole della classe"), "Aggiorna in biblioteca")).toBeVisible();
     await page.keyboard.press("Escape");

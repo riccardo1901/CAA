@@ -110,11 +110,14 @@ export function menuRiga(nome: string, voci: VoceMenuRiga[]): HTMLElement {
       lbl.className = "lbl";
       lbl.textContent = v.testo;
       b.append(lbl);
+      // Una voce spenta resta raggiungibile con le frecce e dice perché è spenta (revisione M11: con «disabled»
+      // la spiegazione arrivava solo con il mouse).
       if (v.spenta) {
-        b.disabled = true;
+        b.setAttribute("aria-disabled", "true");
         b.title = v.spenta;
       }
       b.addEventListener("click", () => {
+        if (v.spenta) return;
         // Prima il fuoco torna al pulsante: una conferma aperta dall'azione, chiudendosi, ci ritorna.
         chiudi(true);
         v.fai();

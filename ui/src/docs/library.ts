@@ -369,7 +369,7 @@ export function showCorrectionsTab(body: HTMLElement, deps: CorrectionsTabDeps):
       c.preview().then((lines) => {
         preview.hidden = false;
         const more = info.pending > lines.length ? [`… e altre ${info.pending - lines.length}: partono tutte quando premi «Invia»`] : [];
-        preview.textContent = ["forma · prima · dopo · lemma · categoria · simbolo scelto · proposto", ...lines.map((l) => l.split("\t").join(" · ")), ...more].join("\n");
+        preview.textContent = ["parola · parola prima · parola dopo · forma base · tipo di parola · simbolo scelto · simbolo proposto", ...lines.map((l) => l.split("\t").join(" · ")), ...more].join("\n");
       }, () => undefined);
     });
     const discard = conIcona(el("button", "", "Cancella senza inviare"), "elimina");

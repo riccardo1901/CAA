@@ -1,6 +1,6 @@
 // Le scorciatoie da tastiera (M11-8, PIANO-M11.md 3.7): una finestra con tutte le scorciatoie divise per argomento,
 // scritte come tasti. Si apre con F1 o da «Altro › Scorciatoie da tastiera»; Esc la chiude.
-import { finestra } from "./dialog";
+import { finestra, finestraAperta } from "./dialog";
 
 /** [tasti, cosa fanno]. I tasti separati da «+» si premono insieme, «o» separa alternative. */
 const GRUPPI: Array<[string, Array<[string, string]>]> = [
@@ -9,7 +9,7 @@ const GRUPPI: Array<[string, Array<[string, string]>]> = [
     [
       ["Ctrl+Z", "Annulla"],
       ["Ctrl+Y o Ctrl+Maiusc+Z", "Ripeti"],
-      ["Ctrl+1 o 2 o 3 o 4", "Simboli piccoli, medi, grandi, molto grandi"],
+      ["Ctrl+1 o Ctrl+2 o Ctrl+3 o Ctrl+4", "Simboli piccoli, medi, grandi, molto grandi"],
       ["Ctrl+Maiusc+U", "Unisci le parole selezionate in un simbolo solo"],
       ["Ctrl+Maiusc+D", "Dividi (o riunisci) il gruppo della parola al cursore"],
     ],
@@ -112,6 +112,8 @@ export function installaScorciatoie(): void {
   document.addEventListener("keydown", (e) => {
     if (e.key === "F1" && !e.ctrlKey && !e.altKey && !e.metaKey) {
       e.preventDefault();
+      // Sopra un'altra finestra no: due finestre impilate confondono (e la seconda Esc andrebbe a quella sotto).
+      if (finestraAperta()) return;
       apriScorciatoie();
     }
   });

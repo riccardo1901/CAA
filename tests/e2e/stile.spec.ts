@@ -101,7 +101,7 @@ const contrastoVero = (page: Page) =>
     for (let n = walker.nextNode(); n; n = walker.nextNode()) {
       const t = n.textContent?.trim();
       const e = n.parentElement;
-      if (!t || !e || e.closest(".sheet, script, style, option, [hidden]") || e.closest("button:disabled, select:disabled, input:disabled")) continue;
+      if (!t || !e || e.closest(".sheet, script, style, option, [hidden]") || e.closest("button:disabled, select:disabled, input:disabled, [aria-disabled='true']")) continue;
       const r = document.createRange();
       r.selectNodeContents(n);
       const box = r.getBoundingClientRect();
@@ -236,7 +236,7 @@ test.describe("ogni controllo visibile ha un nome (anche quelli solo icona)", ()
           })
           .filter((e) => {
             const etichetta = e.getAttribute("aria-label") || (e.getAttribute("aria-labelledby") ?? "").split(" ").map((id) => document.getElementById(id)?.textContent ?? "").join("");
-            const testo = e instanceof HTMLInputElement || e instanceof HTMLSelectElement || e instanceof HTMLTextAreaElement ? [...(e.labels ?? [])].map((l) => l.textContent).join("") || e.title || e.placeholder : e.textContent || e.title;
+            const testo = e instanceof HTMLInputElement || e instanceof HTMLSelectElement || e instanceof HTMLTextAreaElement ? [...(e.labels ?? [])].map((l) => l.textContent).join("") || e.title || (e.getAttribute("placeholder") ?? "") : e.textContent || e.title;
             return !(etichetta || testo || "").trim();
           })
           .map((e) => e.outerHTML.slice(0, 120)),

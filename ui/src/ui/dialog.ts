@@ -23,12 +23,20 @@ export interface OpzioniFinestra {
 
 const pila: HTMLElement[] = [];
 
-const SELETTORE = "button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])";
+const SELETTORE = "button, [href], input, select, textarea, summary, [tabindex]:not([tabindex='-1'])";
+
+/** Dentro un <details> chiuso si vede (e si raggiunge) solo il suo <summary>. */
+function nascostoInDettagli(e: HTMLElement): boolean {
+  for (let d = e.parentElement?.closest("details"); d; d = d.parentElement?.closest("details")) {
+    if (!(d as HTMLDetailsElement).open && !(e.matches("summary") && e.parentElement === d)) return true;
+  }
+  return false;
+}
 
 /** I controlli della finestra che si raggiungono con Tab, nell'ordine. */
 function raggiungibili(box: HTMLElement): HTMLElement[] {
   return [...box.querySelectorAll<HTMLElement>(SELETTORE)].filter((e) => {
-    if ((e as HTMLButtonElement).disabled || e.closest("[hidden], [inert]")) return false;
+    if ((e as HTMLButtonElement).disabled || e.closest("[hidden], [inert]") || nascostoInDettagli(e)) return false;
     const r = e.getBoundingClientRect();
     return r.width > 0 && r.height > 0;
   });

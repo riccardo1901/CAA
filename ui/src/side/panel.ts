@@ -110,6 +110,9 @@ export function creaPannelloLaterale(contenuto: HTMLElement, layout: HTMLElement
 
   function disegna(): void {
     const ap = aperto();
+    // Se il pannello si chiude mentre ha il fuoco (per esempio la finestra diventa più stretta), il fuoco va sul suo
+    // pulsante invece di perdersi (revisione M11).
+    if (!ap && root.contains(document.activeElement) && document.activeElement !== toggle) toggle.focus();
     root.classList.toggle("open", ap);
     root.classList.toggle("closed", !ap);
     root.classList.toggle("sopra", stretto && ap);
@@ -148,6 +151,15 @@ export function creaPannelloLaterale(contenuto: HTMLElement, layout: HTMLElement
     else chiusoDalDocente = true;
     disegna();
   }
+  // Pannello sopra il foglio: Esc lo chiude anche dalle linguette e dal pulsante e torna al testo (dentro le schede
+  // lo fanno già le schede stesse).
+  root.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape" || e.defaultPrevented || !stretto || !apertoSopra) return;
+    if (!(e.target === toggle || linguette.contains(e.target as Node))) return;
+    e.preventDefault();
+    chiudi();
+    wrap.querySelector<HTMLElement>(".ProseMirror")?.focus();
+  });
   toggle.addEventListener("click", () => {
     if (aperto()) chiudi();
     else {

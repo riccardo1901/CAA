@@ -21,6 +21,7 @@ import { creaMenuAltro, type MenuAltro } from "./ui/menu";
 import { icona } from "./ui/icons";
 import { deriveTitle } from "./docs/session";
 import { apriScorciatoie } from "./ui/help";
+import { finestraAperta } from "./ui/dialog";
 import { DIMENSIONI, dimensioneAttuale, impostaDimensione, type Dimensione } from "./ui/dimensione";
 
 const SIZES: Array<[string, number]> = [
@@ -274,7 +275,10 @@ export function createBars(
     const annulla = k === "z" && !e.shiftKey;
     const ripeti = (k === "y" && !e.shiftKey) || (k === "z" && e.shiftKey);
     if (!annulla && !ripeti) return;
+    // Bloccato sempre: altrimenti il browser annulla da solo l'ultima modifica del testo, anche con il fuoco altrove.
     e.preventDefault();
+    // Con una finestra aperta (Documenti, una conferma…) il documento dietro non cambia (revisione M11).
+    if (finestraAperta()) return;
     if (annulla) undo(view.state, view.dispatch);
     else redo(view.state, view.dispatch);
   });
@@ -316,13 +320,19 @@ export function createBars(
   const editBtn = el("button", "", "Modifica…");
   editBtn.type = "button";
   editBtn.hidden = true;
+  suggerimento(editBtn, "Modifica la tabella delle parole funzionali");
   const prefsListeners: Array<() => void> = [];
   const notifyPrefs = (): void => prefsListeners.forEach((cb) => cb());
   const dialog = createPolicyDialog(table, () => {
     setPolicy(view, tablePolicy(table));
     refresh();
     notifyPrefs();
-  }, () => (editBtn.hidden ? select : editBtn).focus(), () => [editBtn, select]);
+  }, () => {
+    // Il fuoco torna a chi ha aperto la tabella; se quel controllo sta nel menu «Altro» ormai chiuso, su «Altro».
+    const dove = editBtn.hidden ? select : editBtn;
+    if (menu.panel.hidden && menu.panel.contains(dove)) menu.button.focus();
+    else dove.focus();
+  }, () => [editBtn, select]);
   const applyPolicy = (): void => {
     const custom = select.value === "custom";
     const cambia = editBtn.hidden === custom;
@@ -457,7 +467,8 @@ export function createBars(
   printBtn.addEventListener("click", openPrint);
   document.addEventListener("keydown", (e) => {
     if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "p") {
-      e.preventDefault();
+      e.preventDefault(); // niente stampa del browser, nemmeno con una finestra aperta
+      if (finestraAperta()) return;
       openPrint();
     }
   });
@@ -514,7 +525,7 @@ export function createBars(
   // «Motore attivo» non si scrive più: si dice solo se c'è un problema.
   if (info?.ok && (!info.tagger || !info.expressions)) {
     const manca = [!info.tagger ? "la disambiguazione" : "", !info.expressions ? "le espressioni di più parole" : ""].filter(Boolean).join(" e ");
-    queueMicrotask(() => notifica(`I simboli funzionano, ma senza ${manca}: possono essere meno precisi. Se continua, chiama il tecnico.`, { tipo: "avviso" }));
+    queueMicrotask(() => notifica(`Mancano alcuni dati del programma (${manca}): alcuni simboli possono essere meno precisi. Se continua, chiama il tecnico.`, { tipo: "avviso" }));
   }
 
   let ultimoDividi = "";
@@ -539,7 +550,7 @@ export function createBars(
     etichetta(doubtInfo, s.doubtful === 1 ? "1 parola da controllare" : `${s.doubtful} parole da controllare`);
     doubtInfo.classList.toggle("warn", s.doubtful > 0);
     // Il motore ha dato errore e sta riprovando: lo si dice, altrimenti i simboli mancano senza spiegazione.
-    errorInfo.textContent = s.error ? "Il motore non risponde: riprovo…" : s.pending > 0 ? "Analisi in corso…" : "";
+    errorInfo.textContent = s.error ? "I simboli non arrivano: riprovo…" : s.pending > 0 ? "Analisi in corso…" : "";
     errorInfo.classList.toggle("warn", !!s.error);
     // «Riunisci» è più lungo di «Dividi»: la barra si ricontrolla solo quando cambia.
     if (dividi !== ultimoDividi) {
@@ -554,6 +565,7 @@ export function createBars(
     const i = ["1", "2", "3", "4"].indexOf(e.key);
     if (i < 0) return;
     e.preventDefault();
+    if (finestraAperta()) return;
     setSize(SIZES[i][1]);
     refresh();
     notifyPrefs();

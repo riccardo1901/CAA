@@ -1,6 +1,6 @@
 # Piano di M11: miglioramento dell'interfaccia
 
-**Stato**: **approvato dall'utente** (piano completo, tutte le divergenze dalla specifica, risposte sotto). Non è stato ancora cambiato codice. La sezione 0 ha la precedenza su tutto quello che segue.
+**Stato**: **approvato dall'utente** (piano completo, tutte le divergenze dalla specifica, risposte sotto); **blocchi M11-0 … M11-9 fatti** (vedi «Avanzamento» e `docs/RAPPORTO-M11.md`); restano le prove a mano su Windows e la prova con un docente nuovo. La sezione 0 ha la precedenza su tutto quello che segue.
 
 **In una frase**: il foglio resta com'è; tutto quello che gli sta intorno (barre, barra laterale, finestre, messaggi) diventa più ordinato, più calmo e più facile, soprattutto sui portatili da 1366 px, senza aggiungere funzioni.
 
@@ -96,6 +96,14 @@ Tre aiutanti su tre copie del progetto (git worktree), poi uniti nel ramo. Prepa
 - **Dimensione dell'interfaccia** (`ui/dimensione.ts`): «Altro › Dimensione dell'interfaccia» con Normale, Grande, Molto grande (testo 15, 17, 19 px: cambia la radice, tutta l'interfaccia è in rem); il foglio resta uguale (testo a 20 px, A4 a 794 px); si ricorda sul computer.
 - **K16**: il titolo mostra subito la prima riga in grigio. **K18**: in Informazioni «Pittogrammi» non è ripetuto (l'attribuzione stampata è identica).
 - **Prove**: `tests/e2e/primi-minuti.spec.ts` (7), compreso il percorso del docente nuovo (benvenuto → invito → scrive → simbolo → scelta → Stampa). 404 prove Playwright, foglio e matrice invariati.
+
+### M11-9 — fatto (in attesa del via libera e della prova con il docente)
+
+- **Testi (3.10)**: «Butta via» → «Cancella senza inviare» (gli altri erano già fatti nei blocchi); dopo la revisione: etichetta della Memoria «mostra sempre il simbolo» (prima diceva il contrario), «Parole funzionali» al posto di «la politica delle parole funzionali», «Ctrl+1 o Ctrl+2…», «I simboli non arrivano», «versione N» al posto di «rev. N», colonne dell'anteprima delle correzioni in italiano semplice.
+- **Accessibilità (3.8)**: collegamento «Vai al testo» (primo con Tab, non in stampa); pannello laterale come zona «Pannello laterale» (`aside`); controllo finale di contrasto, anelli e nomi esteso a 17 situazioni (benvenuto, invito, scorciatoie, menu Altro, interfaccia molto grande, Pubblica, conferma).
+- **Revisione indipendente**: scorciatoie che cambiavano il documento dietro una finestra, Tab che usciva da Documenti, fuoco perso dopo la tabella «Personalizzato» e dal pannello sopra il foglio, doppia domanda alla chiusura, voci spente del menu «⋯» senza spiegazione da tastiera: tutti corretti con la prova prima. Dettagli e osservazioni non accolte in `docs/RAPPORTO-M11.md`.
+- **Documenti**: `docs/PROVE-M11.md` (16 prove a mano e la prova del docente nuovo), `docs/RAPPORTO-M11.md`, `docs/PROVE-DA-FARE.md`, `SPEC.md` (divergenze approvate ed esito di M11).
+- **Prove**: `tests/e2e/rifinitura.spec.ts` (11).
 
 ---
 

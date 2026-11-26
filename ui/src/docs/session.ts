@@ -328,7 +328,15 @@ export function createSession(deps: SessionDeps): Session {
     return !st.dirty && !st.error;
   }
 
-  async function prepareClose(): Promise<boolean> {
+  // Revisione M11: chiedere di nuovo di chiudere mentre la domanda è aperta non ne apre una seconda.
+  let chiusuraInCorso: Promise<boolean> | null = null;
+  function prepareClose(): Promise<boolean> {
+    chiusuraInCorso ??= faiChiusura().finally(() => {
+      chiusuraInCorso = null;
+    });
+    return chiusuraInCorso;
+  }
+  async function faiChiusura(): Promise<boolean> {
     if (await flush()) return true;
     return deps.confirm({
       domanda: "Il documento non si è salvato. Uscire comunque?",

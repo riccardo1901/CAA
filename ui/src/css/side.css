@@ -213,7 +213,7 @@
 .mem-row img { flex: none; width: 2.25rem; height: 2.25rem; object-fit: contain; }
 .mem-word { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-2); overflow-wrap: anywhere; }
 .mem-row > button { flex: none; }
-/* Etichetta «la politica può nasconderla» (K4): testo, non solo colore. */
+/* Etichetta «mostra sempre il simbolo» (K4): testo, non solo colore. */
 .mem-chip {
   padding: 0 var(--s-2);
   border: 1px solid var(--warn-line);

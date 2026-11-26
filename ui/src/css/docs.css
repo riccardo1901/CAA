@@ -101,8 +101,8 @@
   background: transparent;
   text-align: left;
 }
-.row-menu-item:hover:not(:disabled), .row-menu-item:focus-visible { background: var(--c-accent-soft); border-color: transparent; }
-.row-menu-item:disabled { background: transparent; border-color: transparent; }
+.row-menu-item:hover:not(:disabled, [aria-disabled="true"]), .row-menu-item:focus-visible { background: var(--c-accent-soft); border-color: transparent; }
+.row-menu-item:disabled, .row-menu-item[aria-disabled="true"] { background: transparent; border-color: transparent; color: var(--c-text-off); cursor: default; }
 /* Elimina, Ritira: rosso (con il testo, e la conferma rossa dopo). */
 .row-menu-item.danger-text { color: var(--err-fg); }
 .row-menu-item.danger-text:hover:not(:disabled), .row-menu-item.danger-text:focus-visible { background: var(--err-bg); }
