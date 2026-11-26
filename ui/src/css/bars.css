@@ -78,7 +78,6 @@
 .toolbar > .tb-group + .tb-group { padding-left: var(--s-3); border-left: 1px solid var(--c-line); }
 .tb-label, .tb-sizes { display: inline-flex; align-items: center; gap: var(--s-2); }
 .tb-caption, .tb-label > span { color: var(--c-text-2); }
-.tb-check { display: inline-flex; align-items: center; gap: var(--s-1); cursor: pointer; }
 /* Gruppo a scelta unica (dimensione dei simboli): pulsanti attaccati, uno solo acceso. */
 .segmented { display: inline-flex; }
 .segmented > button { border-radius: 0; margin-left: -1px; }
