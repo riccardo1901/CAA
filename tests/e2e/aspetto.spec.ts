@@ -169,7 +169,7 @@ const STATI: Array<[string, (page: Page) => Promise<void>]> = [
     await apriCompleto(page);
     // Sugli schermi stretti il pannello è chiuso: la linguetta compare aprendolo.
     const linguetta = page.getByRole("tab", { name: "Memoria" });
-    if (!(await linguetta.isVisible())) await page.getByRole("button", { name: "Apri il pannello dei simboli" }).click();
+    if (!(await linguetta.isVisible())) await page.getByRole("button", { name: "Apri il pannello laterale" }).click();
     await linguetta.click();
     await page.locator(".side-memory li").first().waitFor();
   }],

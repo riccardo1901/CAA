@@ -210,7 +210,7 @@ test("un clic sul simbolo di una parola riporta alla scheda Simbolo; Esc nella M
 test("schermo stretto: Esc nella scheda Memoria richiude il pannello che sta sopra il foglio", async ({ page }) => {
   await page.setViewportSize({ width: 1024, height: 600 });
   await open(page, "Marco mangia pane");
-  await page.getByRole("button", { name: "Apri il pannello dei simboli" }).click();
+  await page.getByRole("button", { name: "Apri il pannello laterale" }).click();
   await scheda(page, "Memoria").click();
   await expect(page.locator(".side-panel")).toHaveClass(/sopra/);
   await memoria(page).focus();

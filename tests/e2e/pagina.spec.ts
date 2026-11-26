@@ -226,6 +226,16 @@ test("K2: la casella del piè di pagina dice «il tuo nome» e mostra il nome ve
   await expect(scheda(page).locator("label.pg-check", { hasText: /^il tuo nome/ })).toHaveText(/il tuo nome \(non è ancora scritto/);
 });
 
+test("il nome scritto al primo avvio arriva subito al piè di pagina (senza riavviare il programma)", async ({ page }) => {
+  await apriCompleto(page, { configured: true, path: "G:/CAA", name: "", entries: [] }, "");
+  const box = page.locator(".first-box");
+  await box.getByLabel("Il tuo nome").fill("Anna Verdi");
+  await box.getByRole("button", { name: "Continua" }).click();
+  await expect(box).toHaveCount(0);
+  await stampaIntestazione(page).click();
+  await expect(scheda(page).locator("label.pg-check", { hasText: /^il tuo nome/ })).toHaveText("il tuo nome («Anna Verdi»)");
+});
+
 test("da tastiera si usa tutta la scheda: Tab passa per ogni impostazione nell'ordine dello schermo, Spazio la cambia", async ({ page }) => {
   await open(page, "Marco mangia pane");
   await page.locator(".ProseMirror").click();

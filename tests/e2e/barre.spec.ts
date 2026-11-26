@@ -69,14 +69,14 @@ test("il pulsante del pannello lo chiude e lo riapre; schermo largo: il foglio h
   await apriCompleto(page);
   await expect(pannello(page)).toHaveClass(/open/);
   await expect(pannello(page)).not.toHaveClass(/sopra/);
-  await page.getByRole("button", { name: "Chiudi il pannello dei simboli" }).click();
+  await page.getByRole("button", { name: "Chiudi il pannello laterale" }).click();
   await expect(pannello(page)).toHaveClass(/closed/);
   await expect(page.locator(".side")).toBeHidden();
   // Un clic sul simbolo lo riapre.
   await clicSimbolo(page, "mamma");
   await expect(pannello(page)).toHaveClass(/open/);
-  await page.getByRole("button", { name: "Chiudi il pannello dei simboli" }).click();
-  await page.getByRole("button", { name: "Apri il pannello dei simboli" }).click();
+  await page.getByRole("button", { name: "Chiudi il pannello laterale" }).click();
+  await page.getByRole("button", { name: "Apri il pannello laterale" }).click();
   await expect(pannello(page)).toHaveClass(/open/);
   await expect(page.locator(".side")).toBeVisible();
 });

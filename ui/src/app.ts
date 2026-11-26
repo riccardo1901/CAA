@@ -181,7 +181,13 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
       poll();
       window.setInterval(poll, w.__caaLibPollMs ?? 120_000);
       client?.settings?.getName().then((n) => bars.setAuthor(n), () => undefined);
-      if (client?.settings) void firstRun({ settings: client.settings, library: lib, notice: (m) => hooks.notice?.(m), libraryStatus: showLib });
+      if (client?.settings) {
+        const settings = client.settings;
+        // Il nome scritto al primo avvio vale subito anche per il piè di pagina (prima serviva riavviare).
+        void firstRun({ settings, library: lib, notice: (m) => hooks.notice?.(m), libraryStatus: showLib }).then(() =>
+          settings.getName().then((n) => bars.setAuthor(n), () => undefined),
+        );
+      }
     }
   }
   root.appendChild(app);

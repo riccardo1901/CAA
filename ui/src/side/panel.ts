@@ -122,7 +122,7 @@ export function creaPannelloLaterale(contenuto: HTMLElement, layout: HTMLElement
       s.tab.classList.toggle("on", qui);
     }
     toggle.replaceChildren(icona(ap ? "chiudiPannello" : "apriPannello"));
-    const nome = ap ? "Chiudi il pannello dei simboli" : "Apri il pannello dei simboli";
+    const nome = ap ? "Chiudi il pannello laterale" : "Apri il pannello laterale";
     toggle.setAttribute("aria-label", nome);
     toggle.setAttribute("aria-expanded", String(ap));
     suggerimento(toggle, nome);
