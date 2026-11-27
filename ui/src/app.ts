@@ -19,7 +19,7 @@ import { createBars } from "./toolbar";
 import { symbolKey, type Mode } from "./editor/symbolPlugin";
 import { setSymbols } from "./editor/symbols";
 import { createPanel } from "./panel";
-import { emptyDoc, fragmentsDoc, sampleDoc } from "./sample";
+import { emptyDoc, exampleDoc, fragmentsDoc, sampleDoc } from "./sample";
 import type { Node as PMNode } from "prosemirror-model";
 import { icona } from "./ui/icons";
 import { installaSuggerimenti } from "./ui/tooltip";
@@ -97,7 +97,7 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
     applySize,
     () => size,
     () => (session ? void session.newDocument() : confirmReplace(emptyDoc)()),
-    () => (session ? void session.newDocument(sampleDoc(1)) : confirmReplace(() => sampleDoc(1))()),
+    () => (session ? void session.newDocument(exampleDoc()) : confirmReplace(() => exampleDoc())()),
   );
   bars.collegaPannello(pannello); // la scheda «Pagina» (M11-5): le impostazioni di stampa accanto al foglio
   attachMemoryTab(pannello); // M11-7: la scheda «Memoria» (Cosa ricordo, I miei simboli), dopo «Pagina»
@@ -195,7 +195,7 @@ function enterEngineMode(client: EngineClient | null, info: EngineInfo | null): 
   }
   // L'invito sul foglio vuoto (M11-8): sopra il foglio, non dentro; «Prova con un testo di esempio».
   creaInvito(view, layoutEl.querySelector<HTMLElement>(".sheet-wrap")!, () =>
-    session ? void session.newDocument(sampleDoc(1)) : void confirmReplace(() => sampleDoc(1))(),
+    session ? void session.newDocument(exampleDoc()) : void confirmReplace(() => exampleDoc())(),
   );
   root.appendChild(app);
   onEngineUpdate(bars.refresh);
@@ -240,9 +240,13 @@ export function startApp(mount: HTMLElement): void {
   root.appendChild(layout);
 
   applySize(size);
-  view = createEditor(sheet, sampleDoc(1));
+  // Nell'app vera niente prototipo: foglio vuoto, nessun simbolo finto e nessun pannello di prova, nemmeno per un istante
+  // all'avvio. Il prototipo (forme colorate e pannello) resta solo nel browser, per le prove automatiche.
+  const real = inTauri();
+  view = createEditor(sheet, real ? emptyDoc() : sampleDoc(1), real ? "off" : "A");
   layoutEl = layout;
   panelEl = createPanel(view, applySize, () => size);
+  panelEl.hidden = real;
   layout.appendChild(panelEl);
 
   // Nell'app (Tauri) si passa subito al motore; nel browser restano il prototipo e le sue prove.

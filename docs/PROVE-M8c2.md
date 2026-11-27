@@ -2,11 +2,11 @@
 
 Serve l'app nuova (`caa-app.exe` della CI dell'ultimo commit) e il **pacchetto dati nuovo** (`caa-dati-prova.zip`, 1.706 immagini: ci sono le immagini delle frasi di prova). Chiudi l'app prima di sostituire la cartella `dati`.
 
-Nel «Testo di esempio», in fondo, ci sono tre frasi nuove: «Vado alla scuola media con il ferro da stiro.», «Ho un gatto nero.», «Mi fa male la testa: ho un mal di testa.»
+**Attenzione (correzione):** queste tre frasi NON sono nel «Testo di esempio» del programma: vanno scritte a mano (le immagini ci sono nel pacchetto dati). Le frasi sono: «Vado alla scuola media con il ferro da stiro.», «Ho un gatto nero.», «Mi fa male la testa: ho un mal di testa.»
 
 | # | Cosa fare | Cosa deve succedere |
 | --- | --- | --- |
-| 1 | Clicca **Testo di esempio**, scorri in fondo. Con il mouse **seleziona «scuola media»** (le due parole). | In alto il pulsante **Unisci** diventa attivo (prima era spento). |
+| 1 | Scrivi `Vado alla scuola media con il ferro da stiro.` Con il mouse **seleziona «scuola media»** (le due parole). | In alto il pulsante **Unisci** diventa attivo (prima era spento). |
 | 2 | Clicca **Unisci** (o premi **Ctrl+Maiusc+U**). | «scuola» mostra un solo simbolo (quello di «scuola media», diverso da «scuola» da sola), «media» resta attenuata e senza simbolo. |
 | 3 | Clicca il **simbolo** (parte alta) di «scuola». | La barra laterale mostra la frase intera («scuola media»), la riga "perché", le alternative della frase e un pulsante **Dividi**. Le due parole sono evidenziate in giallo. La casella «usa per tutto il testo» è spenta (un gruppo non ha un lemma solo). |
 | 4 | Clicca **Dividi** (nella barra, o in alto, o **Ctrl+Maiusc+D** con il cursore sulle parole). | Tornano i due simboli separati. **Ctrl+Z** rimette l'unione. |

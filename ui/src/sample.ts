@@ -37,6 +37,19 @@ export function sampleDoc(repeat = 1): PMNode {
   return schema.nodes.doc.create(null, blocks);
 }
 
+/** Il «Testo di esempio» che vede il docente: una breve storia pulita (nessuna riga di prova, niente grassetti strani). */
+export function exampleDoc(): PMNode {
+  const blocks: PMNode[] = [
+    schema.nodes.heading.create({ level: 1 }, schema.text("La bambina e l'uccellino")),
+    paragraph(["C'era una volta una bambina di nome Giulia che viveva in una piccola città vicino al mare. Ogni mattina, prima di andare a scuola, dava da mangiare al suo gatto, che si chiamava Pepe."]),
+    paragraph(["Un giorno, mentre tornava a casa con la sua amica Marta, vide un uccellino ferito sotto l'albero del giardino. Era piccolo, tremava e non riusciva a volare. «Poverino!» disse Giulia."]),
+    paragraph(["Le due amiche presero l'uccellino con delicatezza e lo portarono a casa. La mamma preparò una scatola con un po' di paglia e un panno morbido."]),
+    paragraph(["Per tre giorni Giulia e Marta si occuparono dell'uccellino. Gli davano acqua fresca, qualche briciola di pane e un po' di frutta."]),
+    paragraph(["Il quarto giorno l'uccellino saltellava già nella scatola e cantava piano. Giulia lo lasciò andare in giardino e lui volò sopra i tetti."]),
+  ];
+  return schema.nodes.doc.create(null, blocks);
+}
+
 export function emptyDoc(): PMNode {
   return schema.nodes.doc.create(null, [schema.nodes.paragraph.create()]);
 }
